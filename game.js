@@ -591,6 +591,45 @@ document.querySelectorAll("#roomTeleport [data-room]").forEach(button=>button.ad
 }));
 const hudMenuButton=document.getElementById("hudMenuButton"),hudDrawer=document.getElementById("hudDrawer");
 [document.getElementById("firstPageButton"),document.getElementById("avatarButton"),document.getElementById("roomTeleport")].forEach(element=>hudDrawer.appendChild(element));
+const musicToggle=document.getElementById("musicToggle");
+const musicTracks=[document.getElementById("bakeryMusic"),document.getElementById("sprinkleMusic")];
+let musicTrackIndex=0,musicStarted=false,musicMuted=localStorage.getItem("bakeryMusicMuted")==="true";
+musicTracks.forEach((track,index)=>{
+ track.volume=.34;
+ track.addEventListener("ended",()=>{
+  if(index!==musicTrackIndex||musicMuted)return;
+  musicTrackIndex=(musicTrackIndex+1)%musicTracks.length;
+  musicTracks[musicTrackIndex].currentTime=0;
+  musicTracks[musicTrackIndex].play().catch(handleMusicFailure);
+ });
+ track.addEventListener("error",handleMusicFailure,{once:true});
+});
+function updateMusicToggle(){
+ musicToggle.textContent=musicMuted?"🔇 Music off":"🎵 Music on";
+ musicToggle.setAttribute("aria-pressed",String(musicMuted));
+}
+function handleMusicFailure(){
+ musicTracks.forEach(track=>track.pause());
+ musicToggle.textContent="Music unavailable";
+ musicToggle.disabled=true;
+}
+function startMusic(){
+ if(musicMuted||musicStarted||musicToggle.disabled)return;
+ musicStarted=true;
+ musicTracks[musicTrackIndex].play().catch(()=>{musicStarted=false});
+}
+musicToggle.addEventListener("pointerdown",event=>event.stopPropagation());
+musicToggle.addEventListener("click",()=>{
+ musicMuted=!musicMuted;
+ localStorage.setItem("bakeryMusicMuted",String(musicMuted));
+ updateMusicToggle();
+ if(musicMuted)musicTracks.forEach(track=>track.pause());
+ else{musicStarted=false;startMusic()}
+});
+document.addEventListener("pointerdown",event=>{
+ if(event.target.closest(".place")||document.getElementById("startPage").style.display==="none")startMusic();
+},{passive:true});
+updateMusicToggle();
 function setHudMenu(open){hudDrawer.classList.toggle("open",open);hudMenuButton.setAttribute("aria-expanded",open)}
 hudMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();const open=!hudDrawer.classList.contains("open");if(open)closeKitchenPanels();setHudMenu(open)});
 hudDrawer.addEventListener("pointerdown",event=>{if(event.target.closest("button"))setHudMenu(false)});
