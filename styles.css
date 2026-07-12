@@ -1,0 +1,233 @@
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial;touch-action:none;background:#ffd9e8}#game{width:100%;height:100%}#top{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:5;background:#fff9;padding:8px 14px;border-radius:15px;font-weight:bold}#pad{position:fixed;left:22px;bottom:22px;width:145px;height:145px;border-radius:50%;background:#ffffff88;border:4px solid #fff;z-index:8;touch-action:none}#stick{position:absolute;left:45px;top:45px;width:55px;height:55px;border-radius:50%;background:#c89be8;box-shadow:0 4px 10px #0004}#msg{position:fixed;right:12px;bottom:15px;z-index:5;background:#fffddd;padding:10px;border-radius:14px;max-width:190px}#kitchenBack{display:none;position:fixed;left:18px;bottom:18px;z-index:12;width:auto;height:auto;padding:13px 17px;border:0;border-radius:15px;background:#ead7ff;font-size:18px;font-weight:bold;box-shadow:0 4px #9b78ae}#roomName{position:fixed;top:52px;left:50%;transform:translateX(-50%);z-index:6;background:#fff8;padding:6px 12px;border-radius:12px}#money{position:fixed;top:10px;right:12px;z-index:15;background:#eaffd8;padding:9px 14px;border-radius:14px;font-weight:bold;font-size:18px}#orders{display:none;position:fixed;top:92px;right:15px;z-index:15;width:210px;background:#20243a;color:white;border:7px solid #555;border-radius:10px;padding:10px;text-align:left;box-shadow:0 5px 15px #0005}#orders h3{margin:0 0 7px;text-align:center;color:#8fffa7}#orders div{padding:5px;background:#ffffff16;margin:4px;border-radius:6px}#recipePanel{display:none;position:fixed;left:12px;top:92px;z-index:25;width:210px;background:#fff8e8;border:5px solid #d99b65;border-radius:15px;padding:10px;text-align:left;box-shadow:0 5px 15px #0004}#recipePanel h3{margin:0 0 8px;text-align:center}#recipeName{text-align:center;font-weight:bold;font-size:18px}.ingredient{padding:7px;margin:5px 0;background:white;border-radius:9px}.done{background:#caffc9}#makeFood{display:none}#ingredientGrab{display:none;position:fixed;z-index:40;width:auto;min-width:105px;height:auto;padding:9px 12px;border:0;border-radius:14px;background:#ffd86b;font-size:15px;font-weight:bold;box-shadow:0 5px #ad8430;touch-action:manipulation}#ingredientGrab:active{transform:translateY(3px);box-shadow:0 2px #ad8430}
+#shakeGrab{display:none;position:fixed;z-index:41;width:auto;min-width:125px;height:auto;padding:9px 12px;border:0;border-radius:14px;background:#ff9ed2;font-size:15px;font-weight:bold;box-shadow:0 5px #b85f8e;touch-action:manipulation}
+#shakeGrab:active{transform:translateY(3px);box-shadow:0 2px #b85f8e}#lookPad{position:fixed;right:20px;bottom:105px;width:120px;height:120px;border-radius:50%;background:#ffffff88;border:4px solid white;z-index:30;touch-action:none}#lookStick{position:absolute;left:38px;top:38px;width:44px;height:44px;border-radius:50%;background:#76bfff;box-shadow:0 4px 10px #0004}#lookLabel{position:fixed;right:38px;bottom:230px;z-index:30;background:#fff9;padding:5px 10px;border-radius:10px;font-weight:bold}#stoveButton{display:none;position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:45;width:auto;height:auto;padding:13px 18px;border:0;border-radius:15px;background:#ffb36b;font-size:17px;font-weight:bold;box-shadow:0 5px #b76d2d}#grabButton{position:fixed;right:22px;bottom:105px;z-index:20;width:92px;height:92px;border:0;border-radius:50%;background:#ffd66b;font-size:18px;font-weight:bold;box-shadow:0 6px #b88c31;touch-action:manipulation}#grabButton:active{transform:translateY(4px);box-shadow:0 2px #b88c31}#itemLabel{position:fixed;right:16px;bottom:212px;z-index:20;background:white;padding:9px 12px;border-radius:12px;font-weight:bold;max-width:170px}
+#avatarButton{position:fixed;right:12px;top:52px;z-index:50;width:auto;height:auto;padding:9px 12px;font-size:15px}
+#avatarShop{display:none;position:fixed;inset:0;z-index:100;background:#ffddeb;padding:18px;overflow:auto;text-align:center}
+#avatarCard{max-width:520px;margin:auto;background:white;border-radius:24px;padding:18px}
+.option{width:auto;height:auto;padding:11px;margin:5px;font-size:16px;position:relative;box-sizing:border-box;vertical-align:middle}
+.option.selected,.swatch.selected{outline:0;box-shadow:inset 0 0 0 4px #6c3cff,0 3px 8px #6c3cff55}
+.option.selected::after,.swatch.selected::after{content:"✓";position:absolute;right:2px;top:2px;width:21px;height:21px;border-radius:50%;background:#6c3cff;color:white;font-size:14px;font-weight:bold;line-height:21px;text-align:center;box-shadow:0 1px 4px #0004;pointer-events:none}
+.locked{opacity:.65}
+#avatarPreview{font-size:70px;background:#fff1c9;border-radius:18px;padding:12px;margin:10px}
+
+#startPage{position:fixed;inset:0;z-index:500;background:linear-gradient(#ffd9ec,#d9d4ff);overflow:auto;text-align:center;padding:22px}
+#startCard{max-width:650px;margin:auto;background:#fff;border-radius:25px;padding:20px}
+.place{width:210px;height:110px;font-size:22px;margin:10px}
+.swatch{width:52px;height:52px;border-radius:50%;margin:6px;border:4px solid white;position:relative;box-sizing:border-box;vertical-align:middle}
+#housePanel{display:none;position:fixed;left:50%;bottom:8px;top:auto;transform:translateX(-50%);z-index:210;background:#fffdf4ee;padding:8px;border-radius:16px;width:min(94vw,620px);max-height:175px;overflow:auto;text-align:center;box-shadow:0 4px 18px #0004}
+#housePanel button{width:auto;min-width:86px;height:auto;padding:7px 9px;font-size:13px;margin:3px}
+
+#houseAction{display:none;position:fixed;right:20px;bottom:245px;z-index:90;width:auto;height:auto;padding:12px;border:0;border-radius:15px;background:#ffd66b;font-weight:bold}
+#remotePanel{display:none;position:fixed;right:15px;top:100px;z-index:95;background:#222;color:white;padding:12px;border-radius:18px;width:170px}
+#remotePanel button{width:100%;height:auto;padding:8px;margin:3px 0}
+#tvScreen{display:none;position:fixed;left:50%;top:90px;transform:translateX(-50%);z-index:85;width:300px;max-width:70vw;background:#10131d;color:white;border:9px solid #444;border-radius:12px;padding:15px;text-align:center}
+
+#furnitureMover{display:none;position:fixed;right:12px;top:105px;z-index:350;width:175px;background:#fffdf4f2;border:4px solid #d7a86e;border-radius:18px;padding:9px;text-align:center;box-shadow:0 5px 16px #0004}
+#furnitureMover button{width:48px;height:43px;margin:2px;font-size:20px;border:0;border-radius:10px;background:#ffe09a}
+#furnitureMover #selectFurniture2{width:155px;height:auto;font-size:13px;padding:8px;background:#bfe8ff}
+
+#openTVRemote{display:none;position:fixed;right:12px;top:55px;z-index:360;width:auto;height:auto;padding:10px 13px;border:0;border-radius:14px;background:#bfe8ff;font-weight:bold}
+
+#blenderButton{display:none;position:fixed;left:50%;bottom:150px;transform:translateX(-50%);z-index:380;width:auto;height:auto;padding:12px 18px;border:0;border-radius:16px;background:#ff9ed2;font-weight:bold}
+#smoothieMessage{display:none;position:fixed;left:50%;top:90px;transform:translateX(-50%);z-index:380;background:#fff8;padding:12px;border-radius:15px;font-weight:bold}
+
+#shakePanel{display:none;position:fixed;left:12px;top:100px;z-index:390;width:205px;background:#fffaf0ee;border:4px solid #ff9ecb;border-radius:18px;padding:10px}
+#shakePanel button{width:100%;height:auto;padding:8px;margin:3px 0}
+
+.ingredientTag{
+  position:fixed;z-index:395;display:none;
+  background:#fffdf7ee;border:3px solid #ff9ecb;border-radius:12px;
+  padding:5px 8px;font-weight:bold;font-size:14px;pointer-events:none;
+  box-shadow:0 2px 8px #0003;
+}
+
+#firstPageButton,#avatarButton,#cameraButton,#money,#roomName,
+#pad,#lookPad,#lookLabel,#housePanel,#kitchenBack,#grabButton,
+#itemLabel,#stoveButton,#houseAction{z-index:200 !important}
+#pad,#lookPad{display:block !important;visibility:visible !important}
+canvas{z-index:1 !important}
+#top{z-index:150 !important}
+
+#furnitureMover{display:none;position:fixed;right:12px;top:105px;z-index:350;width:175px;background:#fffdf4f2;border:4px solid #d7a86e;border-radius:18px;padding:9px;text-align:center;box-shadow:0 5px 16px #0004}
+#furnitureMover button{width:48px;height:43px;margin:2px;font-size:20px;border:0;border-radius:10px;background:#ffe09a}
+#furnitureMover #selectFurniture2{width:155px;height:auto;font-size:13px;padding:8px;background:#bfe8ff}
+
+#openTVRemote{display:none;position:fixed;right:12px;top:55px;z-index:360;width:auto;height:auto;padding:10px 13px;border:0;border-radius:14px;background:#bfe8ff;font-weight:bold}
+
+#blenderButton{display:none;position:fixed;left:50%;bottom:150px;transform:translateX(-50%);z-index:380;width:auto;height:auto;padding:12px 18px;border:0;border-radius:16px;background:#ff9ed2;font-weight:bold}
+#smoothieMessage{display:none;position:fixed;left:50%;top:90px;transform:translateX(-50%);z-index:380;background:#fff8;padding:12px;border-radius:15px;font-weight:bold}
+
+#shakePanel{display:none;position:fixed;left:12px;top:100px;z-index:390;width:205px;background:#fffaf0ee;border:4px solid #ff9ecb;border-radius:18px;padding:10px}
+#shakePanel button{width:100%;height:auto;padding:8px;margin:3px 0}
+
+.ingredientTag{
+  position:fixed;z-index:395;display:none;
+  background:#fffdf7ee;border:3px solid #ff9ecb;border-radius:12px;
+  padding:5px 8px;font-weight:bold;font-size:14px;pointer-events:none;
+  box-shadow:0 2px 8px #0003;
+}
+
+#makeChoices{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px}
+#makeChoices button{height:auto;padding:7px 5px;font-size:12px;border:0;border-radius:9px;background:#ffe6f1;font-weight:bold}
+#makeChoices button.activeChoice{outline:3px solid #ff70ad;background:#fff}
+#recipePanel{width:225px;max-height:74vh;overflow:auto}
+#shakePanel [data-shake]{display:none!important}
+#lookLabel{display:none!important}
+#lookPad{right:12px!important;bottom:18px!important;width:92px!important;height:92px!important}
+#lookStick{left:29px!important;top:29px!important;width:34px!important;height:34px!important}
+#msg{right:auto!important;left:50%!important;bottom:auto!important;top:84px!important;transform:translateX(-50%)!important;max-width:min(70vw,430px)!important;padding:7px 11px!important;text-align:center!important;font-size:13px!important;z-index:205!important}
+body.kitchen-clean #grabButton,body.kitchen-clean #itemLabel{display:none!important}
+body.kitchen-clean #lookPad{opacity:.82}
+.activeIngredientGlow{filter:drop-shadow(0 0 8px #fff06a)}
+
+#shakePanel{display:none!important}
+#shakeGrab{display:none!important}
+#blenderReadyIcon{
+  display:none;position:fixed;z-index:410;
+  width:78px;height:78px;border:0;border-radius:50%;
+  background:#ff9ed2;font-size:34px;box-shadow:0 6px #b85f8e;
+  animation:readyPulse .9s infinite alternate;
+}
+#blenderReadyIcon:active{transform:translateY(4px);box-shadow:0 2px #b85f8e}
+@keyframes readyPulse{from{scale:.96}to{scale:1.08}}
+
+#checkHouse{
+  position:fixed;right:12px;top:58px;z-index:500;
+  width:auto;height:auto;padding:10px 15px;border:0;border-radius:15px;
+  background:#bff3d0;font-weight:bold;font-size:16px;
+  box-shadow:0 5px #68ad7e;touch-action:manipulation;
+}
+#checkHouse:active{transform:translateY(3px);box-shadow:0 2px #68ad7e}
+#orders{
+  top:82px!important;
+  right:12px!important;
+  width:220px!important;
+  border-color:#3c4257!important;
+  box-shadow:0 6px 18px #0007!important;
+}
+#orders h3{font-size:18px}
+
+#fixedIngredientGrab{
+  display:none;position:fixed;left:50%;bottom:92px;transform:translateX(-50%);
+  z-index:700;width:auto;min-width:190px;height:auto;padding:13px 18px;
+  border:0;border-radius:17px;background:#ffd86b;font-size:16px;font-weight:bold;
+  box-shadow:0 6px #ad8430;touch-action:manipulation;
+}
+#fixedIngredientGrab:active{transform:translateX(-50%) translateY(4px);box-shadow:0 2px #ad8430}
+
+#blenderAccessoryGrab{
+  display:none;position:fixed;left:50%;bottom:180px;transform:translateX(-50%);
+  z-index:705;width:auto;min-width:175px;height:auto;padding:12px 16px;
+  border:0;border-radius:17px;background:#9fe2ff;font-size:16px;font-weight:bold;
+  box-shadow:0 6px #538db2;touch-action:manipulation;
+}
+#blenderAccessoryGrab:active{transform:translateX(-50%) translateY(4px);box-shadow:0 2px #538db2}
+
+#finishOrders{
+  position:absolute;right:10px;top:10px;z-index:2;
+  width:auto;height:auto;padding:6px 10px;border:0;border-radius:10px;
+  background:#8fffa7;font-weight:bold;font-size:13px;box-shadow:0 3px #40995a;
+}
+#finishOrders:active{transform:translateY(2px);box-shadow:0 1px #40995a}
+#page5Button{
+  display:none;position:fixed;right:15px;top:300px;z-index:40;
+  width:auto;height:auto;padding:11px 14px;border:0;border-radius:14px;
+  background:#d7d7d7;font-weight:bold;font-size:15px;box-shadow:0 5px #8a8a8a;
+}
+#page5Button:active{transform:translateY(3px);box-shadow:0 2px #8a8a8a}
+
+#lookPad,#lookLabel{display:none !important;visibility:hidden !important;pointer-events:none !important}
+
+#restockShelf{
+  display:none;position:fixed;z-index:720;
+  width:auto;min-width:150px;height:auto;padding:12px 14px;
+  border:0;border-radius:16px;background:#b7f0b7;font-size:15px;font-weight:bold;
+  box-shadow:0 6px #6ea26e;touch-action:manipulation;
+}
+#restockShelf:active{transform:translateY(4px);box-shadow:0 2px #6ea26e}
+.storageBoxLabel{
+  display:none;position:fixed;z-index:715;
+  background:#fffef6ee;border:3px solid #9a9a9a;border-radius:12px;
+  padding:4px 7px;font-size:13px;font-weight:bold;pointer-events:none;
+  box-shadow:0 2px 8px #0003;
+}
+
+#boxGrabButton{
+  display:none;position:fixed;
+  z-index:725;width:auto;min-width:150px;height:auto;padding:10px 14px;
+  border:0;border-radius:16px;background:#d9d9d9;font-size:15px;font-weight:bold;
+  box-shadow:0 6px #8b8b8b;touch-action:manipulation;
+}
+#boxGrabButton:active{transform:translateX(-50%) translateY(4px);box-shadow:0 2px #8b8b8b}
+
+#inventoryBox{
+  display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+  z-index:730;min-width:220px;max-width:72vw;padding:10px 14px;
+  background:#fffdf7;border:4px solid #8f8f8f;border-radius:16px;
+  font-weight:bold;font-size:15px;text-align:center;box-shadow:0 5px 14px #0003;
+}
+#inventoryBox .small{display:block;font-size:12px;font-weight:normal;margin-top:4px}
+#inventorySlots{display:flex;gap:7px;justify-content:center;margin-top:7px}
+.inventorySlot{
+  width:62px;min-height:52px;padding:5px;border:3px dashed #aaa;border-radius:11px;
+  background:#f4f4f4;font-size:12px;display:flex;align-items:center;justify-content:center;
+  text-align:center
+}
+.inventorySlot.filled{border-style:solid;border-color:#8c6b4f;background:#fff1dc}
+.storageBoxLabel{display:none !important}
+
+#houseShop{
+  display:none;position:fixed;inset:0;z-index:760;
+  background:#5a456999;backdrop-filter:blur(3px);
+  align-items:center;justify-content:center;padding:18px;
+}
+#houseShopCard{
+  width:min(92vw,520px);max-height:82vh;overflow:auto;
+  background:#fffaf3;border:5px solid #d8a8ff;border-radius:24px;
+  padding:16px;text-align:center;box-shadow:0 10px 28px #0005;
+}
+#houseShopGrid{
+  display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px;
+}
+#houseShopGrid button{
+  width:100%;height:auto;padding:12px 8px;border:0;border-radius:15px;
+  background:#f7e8ff;font-size:15px;font-weight:bold;box-shadow:0 4px #c49bd8;
+}
+#houseShopGrid button:active{transform:translateY(3px);box-shadow:0 1px #c49bd8}
+#closeHouseShop{
+  width:auto;height:auto;padding:9px 14px;border:0;border-radius:13px;
+  background:#ff9eb5;font-weight:bold;font-size:15px;
+}
+#houseShopMessage{min-height:24px;margin-top:10px;font-weight:bold}
+
+#checkHouse{
+  left:12px!important;right:auto!important;top:58px!important;
+}
+#pickupRemoteButton{
+  display:none;position:fixed;z-index:90;width:auto;height:auto;
+  padding:10px 14px;border:0;border-radius:15px;background:#bfe8ff;
+  font-weight:bold;font-size:15px;box-shadow:0 5px #6b9bb8;
+}
+#pickupRemoteButton:active{transform:translateY(3px);box-shadow:0 2px #6b9bb8}
+#handRemote{
+  display:none;position:fixed;right:14px;bottom:22px;z-index:95;
+  width:170px;background:#252833;color:white;border:5px solid #555;
+  border-radius:24px;padding:11px;text-align:center;box-shadow:0 8px 20px #0005;
+}
+#handRemote .remoteShape{
+  background:#111;border-radius:20px;padding:9px;border:2px solid #666;
+}
+#handRemote button{
+  width:46%;height:auto;margin:4px 1%;padding:8px 5px;border:0;
+  border-radius:11px;font-weight:bold;font-size:12px;
+}
+#handRemotePower{background:#ff8f9d}
+#channelArt{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+}
+#channelArt svg{width:100%;height:100%;display:block;transform-origin:center;animation:tvSceneDrift 3s ease-in-out infinite alternate}
+#channelArt svg circle{transform-box:fill-box;transform-origin:center;animation:tvActorBounce 1.2s ease-in-out infinite alternate}
+#channelArt svg text{animation:tvTitlePulse 1.7s ease-in-out infinite alternate}
+@keyframes tvSceneDrift{from{transform:scale(1) translateX(-2px)}to{transform:scale(1.035) translateX(2px)}}
+@keyframes tvActorBounce{from{transform:translateY(0)}to{transform:translateY(-5px)}}
+@keyframes tvTitlePulse{from{opacity:.82}to{opacity:1}}
