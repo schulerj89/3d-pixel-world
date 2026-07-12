@@ -60,7 +60,22 @@
 <div id="speech" style="position:absolute;left:15px;top:8px;right:15px;background:#fff;color:#222;border-radius:12px;padding:5px;font-size:13px">Welcome!</div>
 </div><div id="tvShow" style="font-size:15px;min-height:45px;margin-top:7px"></div></div>
 <div id="remotePanel"><b>📱 TV REMOTE</b><button id="tvPower">⏻ Power</button><button data-channel="news">📰 News</button><button data-channel="chef">👨‍🍳 Chef Show</button><button data-channel="island">🏝️ Island Hearts</button><button data-channel="monsters">⚡ Pocket Pals</button><button id="closeRemote">Close</button></div>
-<div id="startPage"><div id="startCard">
+<div id="startPage">
+<section id="adventureTypeScreen" aria-labelledby="adventureTitle">
+ <div class="adventureSparkles" aria-hidden="true">🌈 ✨ 🌈</div>
+ <p class="adventureEyebrow">YOUR ADVENTURE</p>
+ <h1 id="adventureTitle">Who will you be?</h1>
+ <p class="adventureIntro">Pick a character type to begin. You can customize every look on the next screen!</p>
+ <div id="characterTypeOptions" role="radiogroup" aria-label="Choose your character type">
+  <button type="button" class="characterType" data-character-type="princess" role="radio" aria-checked="false"><span aria-hidden="true">👑</span><b>Princess</b><small>Royal and radiant</small></button>
+  <button type="button" class="characterType" data-character-type="wizard" role="radio" aria-checked="false"><span aria-hidden="true">🧙</span><b>Wizard</b><small>Magical and curious</small></button>
+  <button type="button" class="characterType" data-character-type="explorer" role="radio" aria-checked="false"><span aria-hidden="true">🧭</span><b>Explorer</b><small>Ready for discovery</small></button>
+  <button type="button" class="characterType" data-character-type="beach-star" role="radio" aria-checked="false"><span aria-hidden="true">🏖️</span><b>Beach Star</b><small>Sunny and carefree</small></button>
+ </div>
+ <button id="continueToCustomize" type="button">Customize my character <span aria-hidden="true">→</span></button>
+</section>
+<div id="startCard" aria-hidden="true">
+<button id="backToCharacterTypes" type="button">← Character type</button>
 <h1>✨ My 3D World ✨</h1><h2>Customize your character</h2>
 <div style="display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap">
 <div>

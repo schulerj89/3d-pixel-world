@@ -950,6 +950,38 @@ addEventListener('resize',()=>{C.aspect=innerWidth/innerHeight;C.updateProjectio
 const startPage=document.getElementById("startPage"),housePanel=document.getElementById("housePanel");
 let furniture=[];
 const saved=JSON.parse(localStorage.getItem("my3DWorld")||"{}");
+const adventureTypeScreen=document.getElementById("adventureTypeScreen");
+const startCard=document.getElementById("startCard");
+const characterTypeOptions=document.getElementById("characterTypeOptions");
+const CHARACTER_TYPES=["princess","wizard","explorer","beach-star"];
+function chooseCharacterType(type,shouldSave=true){
+ const safeType=CHARACTER_TYPES.includes(type)?type:"princess";
+ saved.characterType=safeType;
+ characterTypeOptions.querySelectorAll("[data-character-type]").forEach(button=>{
+  const selected=button.dataset.characterType===safeType;
+  button.classList.toggle("selected",selected);
+  button.setAttribute("aria-checked",String(selected));
+ });
+ if(shouldSave)saveWorld();
+}
+function showCharacterTypeChooser(){
+ adventureTypeScreen.hidden=false;
+ startCard.setAttribute("aria-hidden","true");
+}
+function showCharacterCustomization(){
+ adventureTypeScreen.hidden=true;
+ startCard.setAttribute("aria-hidden","false");
+}
+characterTypeOptions.addEventListener("click",event=>{
+ const button=event.target.closest("[data-character-type]");
+ if(button)chooseCharacterType(button.dataset.characterType);
+});
+document.getElementById("continueToCustomize").addEventListener("click",()=>{
+ chooseCharacterType(saved.characterType||"princess");
+ showCharacterCustomization();
+});
+document.getElementById("backToCharacterTypes").addEventListener("click",showCharacterTypeChooser);
+chooseCharacterType(saved.characterType||"princess",false);
 function selectCustomizationButton(area,button){
  area.querySelectorAll("button").forEach(b=>{const selected=b===button;b.classList.toggle("selected",selected);b.setAttribute("aria-pressed",selected)});
 }
@@ -1494,6 +1526,7 @@ document.getElementById("goHouse").addEventListener("click",restoreGameButtons);
 document.getElementById("firstPageButton").addEventListener("pointerdown",function(event){
   event.preventDefault();
   document.getElementById("startPage").style.display="block";
+showCharacterTypeChooser();
 setHousePanel(false);setBuildingMode(false);house.visible=false;setBakeryVisible(false);
 });
 
