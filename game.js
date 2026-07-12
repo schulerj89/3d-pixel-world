@@ -212,13 +212,25 @@ box(3,.2,.6,0x8c553e,-4.5,2.7,-5);for(let i=0;i<4;i++)box(.5,.4,.4,[0xff8fb1,0xf
 box(.35,4,.35,0x8b5a3c,1.0,2,-5.35);
 box(.35,4,.35,0x8b5a3c,3.5,2,-5.35);
 box(2.85,.35,.35,0x8b5a3c,2.25,3.85,-5.35);
-box(2.2,1.1,.9,0xb7c4ca,4.9,.58,-9.2); // oven
-box(1.2,.8,.7,0x555555,4.9,1.45,-9.2);
-box(2.2,1,.9,0xe0b184,2.1,.53,-9.2); // prep counter
-box(.7,.2,.7,0xff8fb1,2.1,1.15,-9.1); // food
-box(1.4,2,.8,0xd8e8ef,6,1,-9.1); // fridge
-box(2.4,.15,.35,0x8c553e,3.4,2.7,-9.8);
-for(let i=0;i<3;i++)box(.4,.35,.3,[0xffd36e,0xff8fb1,0x9fe3c1][i],2.7+i*.7,2.95,-9.7);
+// Kitchen stations follow a perimeter workflow and leave the middle of the room
+// open as a walking lane. Interaction checks below read from this same data.
+const KITCHEN_STATIONS={
+ fridge:{x:6.8,z:-8.6},
+ prep:{x:4.2,z:-8.7},
+ stove:{x:5.5,z:-14.2},
+ blender:{x:-3.2,z:-14.2}
+};
+const kitchenFixtureGroup=new THREE.Group();
+kitchenFixtureGroup.name="kitchen-workflow-fixtures";S.add(kitchenFixtureGroup);
+function kitchenBox(w,h,d,color,x,y,z){return box(w,h,d,color,x,y,z,kitchenFixtureGroup)}
+const fridgeStation=KITCHEN_STATIONS.fridge;
+kitchenBox(1.4,2,.8,0xd8e8ef,fridgeStation.x,1,fridgeStation.z);
+kitchenBox(.08,.8,.06,0x777777,fridgeStation.x-.45,1.15,fridgeStation.z+.43);
+const prepStation=KITCHEN_STATIONS.prep;
+kitchenBox(2.4,1,.9,0xe0b184,prepStation.x,.53,prepStation.z);
+kitchenBox(.7,.2,.7,0xff8fb1,prepStation.x,1.15,prepStation.z+.1);
+kitchenBox(2.4,.15,.35,0x8c553e,prepStation.x,2.7,prepStation.z-.6);
+for(let i=0;i<3;i++)kitchenBox(.4,.35,.3,[0xffd36e,0xff8fb1,0x9fe3c1][i],prepStation.x-.7+i*.7,2.95,prepStation.z-.5);
 
 // Ingredient shelf attached to the kitchen wall
 box(8.4,.22,.65,0x8b5a3c,-.1,2.45,-19.95);
@@ -261,7 +273,7 @@ box(4.5,.65,.18,0xfff0a8,1.2,3.65,-20.15);
 
 // Big 3D stove and oven in the kitchen
 const stoveGroup=new THREE.Group();
-stoveGroup.position.set(5.8,0,-10.7);
+stoveGroup.position.set(KITCHEN_STATIONS.stove.x,0,KITCHEN_STATIONS.stove.z);
 S.add(stoveGroup);
 function stovePart(w,h,d,c,x,y,z){
  let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));
@@ -324,9 +336,9 @@ function makeGrabItem(name,emoji,color,x,y,z){
  grabItems.push(item);
  return item;
 }
-makeGrabItem("Cupcake","🧁",0xff8fb1,1.7,1.45,-9.0);
-makeGrabItem("Cookie","🍪",0xd79a58,2.5,1.45,-9.0);
-makeGrabItem("Cake","🎂",0xffd0e1,3.3,1.45,-9.0);
+makeGrabItem("Cupcake","🧁",0xff8fb1,KITCHEN_STATIONS.prep.x-.7,1.45,KITCHEN_STATIONS.prep.z);
+makeGrabItem("Cookie","🍪",0xd79a58,KITCHEN_STATIONS.prep.x,1.45,KITCHEN_STATIONS.prep.z);
+makeGrabItem("Cake","🎂",0xffd0e1,KITCHEN_STATIONS.prep.x+.7,1.45,KITCHEN_STATIONS.prep.z);
 
 
 
@@ -683,7 +695,8 @@ function moveCameraControl(dt){
 const stoveButton=document.getElementById("stoveButton");
 let stoveIngredients=[];
 function nearStove(){
- return inKitchen && Math.hypot(P.position.x-5.8,P.position.z-(-10.7))<2.2;
+ const station=KITCHEN_STATIONS.stove;
+ return inKitchen && Math.hypot(P.position.x-station.x,P.position.z-station.z)<2.2;
 }
 function updateStoveButton(){
  if(!nearStove()){stoveButton.style.display="none";return}
@@ -854,7 +867,9 @@ blenderPart(.5,.12,.3,0x6b351f,-1.75,1.18,-2.38);
 blenderPart(.38,.65,.38,0xf7f7f7,-1.15,1.32,-2.4);
 blenderPart(.3,.12,.3,0x78bfff,-1.15,1.7,-2.4);
 
-blenderStation.position.set(3.3,0,-12.1);S.add(blenderStation);
+// Local blender geometry is centered at (-3.8, -2.4); offset the group so its
+// working point lands on the data-driven station coordinate.
+blenderStation.position.set(KITCHEN_STATIONS.blender.x+3.8,0,KITCHEN_STATIONS.blender.z+2.4);S.add(blenderStation);
 // The milkshake ingredients now live on the shared food-ingredient shelf.
 for(let i=5;i<blenderStation.children.length;i++) blenderStation.children[i].visible=false;
 // Real 3D avatar preview on the first page
@@ -1354,7 +1369,8 @@ const blenderBtn=document.getElementById("blenderButton");
 const smoothieMsg=document.getElementById("smoothieMessage");
 let blenderBusy=false;
 setInterval(()=>{
- const near=Math.hypot(P.position.x-(-0.5),P.position.z-(-8.5))<2.7;
+ const station=KITCHEN_STATIONS.blender;
+ const near=Math.hypot(P.position.x-station.x,P.position.z-station.z)<2.7;
  blenderBtn.style.display="none";
 },120);
 blenderBtn.onclick=()=>{
@@ -1388,7 +1404,8 @@ function updateShakeList(){
  shakeList.textContent="Blender: "+(shakeIngredients.length?shakeIngredients.map(x=>({strawberry:"🍓 Strawberry",banana:"🍌 Banana",milk:"🥛 Milk",chocolate:"🍫 Chocolate"}[x])).join(", "):"Empty");
 }
 setInterval(()=>{
- const near=Math.hypot(P.position.x-(-0.5),P.position.z-(-8.5))<2.7;
+ const station=KITCHEN_STATIONS.blender;
+ const near=Math.hypot(P.position.x-station.x,P.position.z-station.z)<2.7;
  shakePanel.style.display=(currentPlace==="bakery"&&inKitchen===true&&near)?"block":"none";
  blenderBtn.style.display="none";
 },100);
@@ -1612,7 +1629,8 @@ function finalMilkshakeUI(){
   const target=targetInfo[makeTarget];
   const shakeSelected=target && target.mode==="shake";
   const allReady=shakeSelected && targetMissing().length===0 && !madeShake;
-  const nearBlender=Math.hypot(P.position.x-(-0.5),P.position.z-(-14.5))<3.2;
+ const station=KITCHEN_STATIONS.blender;
+ const nearBlender=Math.hypot(P.position.x-station.x,P.position.z-station.z)<3.2;
   const show=inKitchen && currentPlace==="bakery" && allReady && nearBlender;
 
   if(!show){
@@ -1621,7 +1639,7 @@ function finalMilkshakeUI(){
   }
 
   // Keep the icon directly over the real blender.
-  const p=new THREE.Vector3(-0.5,2.65,-14.5).project(C);
+  const p=new THREE.Vector3(station.x,2.65,station.z).project(C);
   if(p.z<-1||p.z>1){
     blenderReadyIcon.style.display="none";
     return;
@@ -1657,7 +1675,8 @@ addStrawBtn.style.border="4px solid #ff5577";
 
 function positionStrawIcon(){
   if(addStrawBtn.style.display==="none" || !inKitchen || !madeShake)return;
-  const p=new THREE.Vector3(-0.5,2.65,-14.5).project(C);
+  const station=KITCHEN_STATIONS.blender;
+  const p=new THREE.Vector3(station.x,2.65,station.z).project(C);
   addStrawBtn.style.left=((p.x*.5+.5)*innerWidth-38)+"px";
   addStrawBtn.style.top=((-p.y*.5+.5)*innerHeight-88)+"px";
 }
@@ -1840,10 +1859,10 @@ setInterval(()=>{
   }
 
   function cupWorld(){
-    return new THREE.Vector3(3.3-5.15,1.86, -12.1-2.35);
+    return new THREE.Vector3(blenderStation.position.x-5.15,1.86,blenderStation.position.z-2.35);
   }
   function strawWorld(){
-    return new THREE.Vector3(3.3-4.2,1.55, -12.1-2.35);
+    return new THREE.Vector3(blenderStation.position.x-4.2,1.55,blenderStation.position.z-2.35);
   }
 
   function updateBlendVisual(){
