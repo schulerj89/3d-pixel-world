@@ -1080,6 +1080,40 @@ const pvHead=previewBox(.9,.9,.9,0xf2bb91,0,2.2,0),pvShirt=previewBox(1.05,1.05,
 const pvArm1=previewBox(.28,.95,.32,0xf2bb91,-.72,1.3,0),pvArm2=previewBox(.28,.95,.32,0xf2bb91,.72,1.3,0);
 const pvLeg1=previewBox(.38,.95,.45,0x5870c8,-.25,.28,0),pvLeg2=previewBox(.38,.95,.45,0x5870c8,.25,.28,0);
 const pvHairTop=previewBox(.98,.25,.98,0x6b3c35,0,2.68,0),pvHairSide=previewBox(.2,.58,.9,0x6b3c35,-.4,2.35,0);
+// Lightweight primitive wearables are shared conceptually by the in-world
+// player and preview. Keeping each look in its own group makes switching cheap.
+function wearableMesh(parent,geometry,color,x,y,z){
+ const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color}));
+ mesh.position.set(x,y,z);mesh.castShadow=true;parent.add(mesh);return mesh;
+}
+function buildWearables(parent){
+ const looks={};
+ function look(name){const group=new THREE.Group();group.visible=false;parent.add(group);looks[name]={group,colorMeshes:[]};return looks[name]}
+ let w=look("Everyday");
+ w=look("Princess");
+ w.colorMeshes.push(wearableMesh(w.group,new THREE.CylinderGeometry(.72,.98,1.18,8),0xe874ba,0,.83,0));
+ wearableMesh(w.group,new THREE.CylinderGeometry(.47,.47,.13,8),0xffd84d,0,2.72,0);
+ [-.31,-.1,.1,.31].forEach((x,i)=>wearableMesh(w.group,new THREE.ConeGeometry(.12,.34,4),0xffd84d,x,2.93,i%2?.02:0));
+ w=look("Wizard");
+ w.colorMeshes.push(wearableMesh(w.group,new THREE.CylinderGeometry(.66,.9,1.2,8),0x6551c9,0,.82,0));
+ w.colorMeshes.push(wearableMesh(w.group,new THREE.CylinderGeometry(.65,.65,.10,12),0x6551c9,0,2.72,0));
+ const wizardHat=wearableMesh(w.group,new THREE.ConeGeometry(.47,1.05,10),0x6551c9,.08,3.18,0);wizardHat.rotation.z=-.12;w.colorMeshes.push(wizardHat);
+ wearableMesh(w.group,new THREE.BoxGeometry(.14,.14,.08),0xffdc55,-.18,3.18,.38);
+ w=look("Explorer");
+ w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(1.09,.24,.68),0xc9934e,0,1.12,0));
+ w.colorMeshes.push(wearableMesh(w.group,new THREE.CylinderGeometry(.55,.55,.11,12),0xc9934e,0,2.69,0));
+ w.colorMeshes.push(wearableMesh(w.group,new THREE.CylinderGeometry(.38,.43,.24,12),0xc9934e,0,2.82,0));
+ wearableMesh(w.group,new THREE.BoxGeometry(.58,.72,.25),0x6e4b2d,0,1.35,-.43);
+ wearableMesh(w.group,new THREE.BoxGeometry(.16,.16,.73),0xffd45c,0,1.13,.04);
+ w=look("Beach Star");
+ w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(.86,.38,.57),0x28b9cf,0,.72,0));
+ w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(1.08,.18,.67),0x28b9cf,0,1.24,.02));
+ wearableMesh(w.group,new THREE.TorusGeometry(.73,.13,7,18),0xffcf42,0,1.05,0).rotation.x=Math.PI/2;
+ wearableMesh(w.group,new THREE.CylinderGeometry(.54,.54,.08,12),0xf2d36b,0,2.73,0);
+ return looks;
+}
+const playerWearables=buildWearables(P);
+const previewWearables=buildWearables(previewAvatar);
 const pvPuffPieces=[];
 function addPreviewPuff(x,y,z,s){
  let m=previewBox(.34*s,.34*s,.34*s,0x6b3c35,x,y,z);
@@ -1145,6 +1179,46 @@ colorButtons("startHairColor",[0x2b1a12,0x6b3c35,0xc9873c,0xf2d36b,0x222222,0xff
 colorButtons("startSkin",[0xf2bb91,0xd99568,0xb97850,0x7b4932,0x4b2b20],c=>{materialColor(playerHead,c);materialColor(playerLeftArm,c);materialColor(playerRightArm,c);saved.skin=c;materialColor(pvHead,c);materialColor(pvArm1,c);materialColor(pvArm2,c)},saved.skin??0xf2bb91);
 colorButtons("startShirt",[0xb77cff,0xff73aa,0x55c985,0x5b9cff,0xffc83d],c=>{materialColor(playerShirt,c);materialColor(pvShirt,c);saved.shirt=c},Number(saved.shirt??0xb77cff));
 colorButtons("startPants",[0x5870c8,0x292b35,0xd95b91,0x397b55,0xf1f1f1],c=>{materialColor(playerLeftLeg,c);materialColor(playerRightLeg,c);saved.pants=c;materialColor(pvLeg1,c);materialColor(pvLeg2,c)},saved.pants??0x5870c8);
+const OUTFIT_NAMES=["Everyday","Princess","Wizard","Explorer","Beach Star"];
+function normalizedCharacterType(value){
+ const key=String(value||"").toLowerCase().replace(/[^a-z]/g,"");
+ if(key.includes("princess"))return "Princess";
+ if(key.includes("wizard"))return "Wizard";
+ if(key.includes("explorer"))return "Explorer";
+ if(key.includes("beach"))return "Beach Star";
+ return "Everyday";
+}
+function setOutfit(name,{persist=true}={}){
+ if(!OUTFIT_NAMES.includes(name))name="Everyday";
+ Object.entries(playerWearables).forEach(([key,value])=>value.group.visible=key===name);
+ Object.entries(previewWearables).forEach(([key,value])=>value.group.visible=key===name);
+ if(persist){saved.outfit=name;saveWorld()}
+ document.querySelectorAll("#startOutfit .option").forEach(button=>{
+  const selected=button.dataset.outfit===name;
+  button.classList.toggle("selected",selected);button.setAttribute("aria-pressed",selected);
+ });
+}
+function setOutfitColor(color,{persist=true}={}){
+ Object.values(playerWearables).forEach(value=>value.colorMeshes.forEach(mesh=>materialColor(mesh,color)));
+ Object.values(previewWearables).forEach(value=>value.colorMeshes.forEach(mesh=>materialColor(mesh,color)));
+ if(persist){saved.outfitColor=color;saveWorld()}
+}
+const outfitIcons={Everyday:"👕",Princess:"👑",Wizard:"🪄",Explorer:"🧭","Beach Star":"🏖️"};
+OUTFIT_NAMES.forEach(name=>{
+ const button=document.createElement("button");button.className="option";button.dataset.outfit=name;
+ button.textContent=`${outfitIcons[name]} ${name}`;button.onclick=()=>setOutfit(name);
+ startOutfit.appendChild(button);
+});
+const initialOutfit=saved.outfit||normalizedCharacterType(saved.characterType);
+setOutfitColor(Number(saved.outfitColor??0xb65bd4),{persist:false});
+setOutfit(initialOutfit,{persist:false});
+colorButtons("startOutfitColor",[0xb65bd4,0xff76ad,0x36b9c7,0x4f72cf,0x45a568,0xd69642],c=>setOutfitColor(c),Number(saved.outfitColor??0xb65bd4));
+// The preceding character-type screen can call this without rebuilding the avatar.
+window.applyCharacterTypeDefault=type=>{
+ saved.characterType=type;
+ if(!saved.outfit)setOutfit(normalizedCharacterType(type));
+ saveWorld();
+};
 if(saved.skin){materialColor(playerHead,saved.skin);materialColor(playerLeftArm,saved.skin);materialColor(playerRightArm,saved.skin)}
 if(saved.shirt)materialColor(playerShirt,saved.shirt);
 if(saved.pants){materialColor(playerLeftLeg,saved.pants);materialColor(playerRightLeg,saved.pants);materialColor(pvLeg1,saved.pants);materialColor(pvLeg2,saved.pants)}
