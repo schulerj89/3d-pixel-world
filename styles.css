@@ -119,8 +119,8 @@ body:not(.house-mode) #furnitureMover{display:none!important}
 body.house-mode #hudDrawer #roomTeleport{display:none!important}
 body.house-mode #hudDrawer #menuGoHouse{display:none!important}
 body.house-mode #kitchenTools,body.house-mode #orders,body.house-mode #inventoryBox{display:none!important}
-body.bakery-mode #hudDrawer #menuGoBakery,body.beach-mode #hudDrawer #menuGoBeach{display:none!important}
-body.beach-mode #kitchenTools,body.beach-mode #orders,body.beach-mode #inventoryBox,body.beach-mode #roomTeleport{display:none!important}
+body.bakery-mode #hudDrawer #menuGoBakery,body.beach-mode #hudDrawer #menuGoBeach,body.castle-mode #hudDrawer #menuGoCastle{display:none!important}
+body.beach-mode #kitchenTools,body.beach-mode #orders,body.beach-mode #inventoryBox,body.beach-mode #roomTeleport,body.castle-mode #kitchenTools,body.castle-mode #orders,body.castle-mode #inventoryBox,body.castle-mode #roomTeleport{display:none!important}
 body.space-mode #kitchenTools,body.space-mode #orders,body.space-mode #inventoryBox,body.space-mode #roomTeleport{display:none!important}
 body.space-mode #hudDrawer #menuGoSpace{display:none!important}
 body.forest-mode #hudDrawer #menuGoForest{display:none!important}

@@ -624,7 +624,8 @@ document.querySelectorAll("#roomTeleport [data-room]").forEach(button=>button.ad
  event.preventDefault();teleportToRoom(button.dataset.room);
 }));
 const hudMenuButton=document.getElementById("hudMenuButton"),hudDrawer=document.getElementById("hudDrawer");
-[document.getElementById("firstPageButton"),document.getElementById("avatarButton"),document.getElementById("roomTeleport")].forEach(element=>hudDrawer.appendChild(element));
+[document.getElementById("firstPageButton"),document.getElementById("avatarButton"),document.getElementById("roomTeleport"),document.getElementById("menuGoCastle")].forEach(element=>hudDrawer.appendChild(element));
+document.getElementById("menuGoCastle").hidden=false;
 const musicToggle=document.getElementById("musicToggle");
 const menuGoSpace=document.createElement("button");menuGoSpace.id="menuGoSpace";menuGoSpace.type="button";menuGoSpace.textContent="🚀 Go to Space";hudDrawer.insertBefore(menuGoSpace,musicToggle);
 const forestMenuButton=document.createElement("button");forestMenuButton.id="menuGoForest";forestMenuButton.type="button";forestMenuButton.textContent="🌲 Go to Forest";hudDrawer.insertBefore(forestMenuButton,musicToggle);
@@ -685,6 +686,7 @@ document.getElementById("menuGoHouse").addEventListener("pointerdown",event=>{ev
 document.getElementById("menuGoBakery").addEventListener("pointerdown",event=>{event.preventDefault();showBakery()});
 document.getElementById("menuGoBeach").addEventListener("pointerdown",event=>{event.preventDefault();showBeach()});
 menuGoSpace.addEventListener("pointerdown",event=>{event.preventDefault();showSpace()});
+document.getElementById("menuGoCastle").addEventListener("pointerdown",event=>{event.preventDefault();showCastle()});
 document.getElementById("teleportBeach").addEventListener("pointerdown",event=>{event.preventDefault();showBeach()});
 forestMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();showForest()});
 forestTeleportButton.addEventListener("pointerdown",event=>{event.preventDefault();showForest()});
@@ -987,7 +989,8 @@ const canMove=currentPlace==="bakery"?canWalkAt(nextX,nextZ):
  currentPlace==="house"?canWalkInHouse(nextX,nextZ):
  currentPlace==="beach"?canWalkOnBeach(nextX,nextZ):
  currentPlace==="space"?(()=>{const b=ensureSpaceWorld().bounds;return nextX>=b.minX&&nextX<=b.maxX&&nextZ>=b.minZ&&nextZ<=b.maxZ})():
- currentPlace==="forest"?Boolean(forestWorld&&forestWorld.canWalk(nextX,nextZ)):true;
+ currentPlace==="forest"?Boolean(forestWorld&&forestWorld.canWalk(nextX,nextZ)):
+ currentPlace==="castle"?canWalkInCastle(nextX,nextZ):true;
 if(canMove){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
 syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);
 updateCamera();updateHeldItem();updateIngredientGrab();updateStoveButton();customers.forEach((q,i)=>{let u=q.userData,targetX,targetZ;
@@ -1369,6 +1372,81 @@ function makeBeachNpc({x,z,sitting=false,skin=0,wear=0,turn=0}){
  {x:-8,z:4,sitting:false,skin:2,wear:0,turn:.8},{x:1.2,z:1,sitting:true,skin:0,wear:3,turn:2.9}
 ].forEach(makeBeachNpc);
 function canWalkOnBeach(x,z){return x>=-BEACH_CONFIG.halfWidth+.5&&x<=BEACH_CONFIG.halfWidth-.5&&z<=BEACH_CONFIG.nearZ-.5&&z>=BEACH_CONFIG.waterEdgeZ+.35}
+
+// The castle is intentionally lazy: its meshes do not consume GPU resources
+// until the destination is visited, and the shared world loader can dispose it.
+const CASTLE_CONFIG={size:30,spawn:{x:0,z:11.5},camera:{angle:0,height:9,distance:13},gateHalfWidth:2.1,frontWallZ:3.5,backWallZ:-13};
+let castle=null;
+function castleBox(parent,geometry,material,x,y,z,cast=false){
+ const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.castShadow=cast;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+}
+function createCastleWorld(){
+ if(castle)return castle;
+ const group=new THREE.Group();group.name="castle-world";group.visible=false;
+ const geometries={
+  ground:new THREE.BoxGeometry(30,.25,30),wallLong:new THREE.BoxGeometry(9.8,5.2,.65),wallSide:new THREE.BoxGeometry(.65,5.2,17.2),
+  tower:new THREE.CylinderGeometry(1.75,1.95,7.2,10),merlon:new THREE.BoxGeometry(.72,.7,.72),floor:new THREE.BoxGeometry(23,.18,16),
+  column:new THREE.CylinderGeometry(.32,.38,3.5,8),table:new THREE.BoxGeometry(4,.25,1.3),bench:new THREE.BoxGeometry(2.8,.28,.65),
+  body:new THREE.BoxGeometry(.72,.9,.42),head:new THREE.SphereGeometry(.38,8,6),limb:new THREE.BoxGeometry(.2,.75,.2)
+ };
+ const materials={grass:new THREE.MeshStandardMaterial({color:0x73a85c,roughness:1}),stone:new THREE.MeshStandardMaterial({color:0x9aa4b3,roughness:.92}),
+  darkStone:new THREE.MeshStandardMaterial({color:0x687384,roughness:1}),floor:new THREE.MeshStandardMaterial({color:0xb8a789,roughness:1}),wood:new THREE.MeshStandardMaterial({color:0x71452d,roughness:1}),
+  gold:new THREE.MeshStandardMaterial({color:0xe9bd42,roughness:.55}),red:new THREE.MeshStandardMaterial({color:0xa73546,roughness:.9}),blue:new THREE.MeshStandardMaterial({color:0x355fb3,roughness:.9}),skin:new THREE.MeshStandardMaterial({color:0xd69a72,roughness:1})};
+ castleBox(group,geometries.ground,materials.grass,0,-.16,0);
+ castleBox(group,geometries.floor,materials.floor,0,-.03,-4.5);
+ // Two front segments preserve a clearly readable, collision-matched gate.
+ castleBox(group,geometries.wallLong,materials.stone,-7.05,2.6,CASTLE_CONFIG.frontWallZ);
+ castleBox(group,geometries.wallLong,materials.stone,7.05,2.6,CASTLE_CONFIG.frontWallZ);
+ castleBox(group,new THREE.BoxGeometry(4.2,1.25,.7),materials.stone,0,5.25,CASTLE_CONFIG.frontWallZ);
+ castleBox(group,new THREE.BoxGeometry(23,.65,.65),materials.darkStone,0,5.55,CASTLE_CONFIG.backWallZ);
+ castleBox(group,new THREE.BoxGeometry(23,5.2,.65),materials.stone,0,2.6,CASTLE_CONFIG.backWallZ);
+ castleBox(group,geometries.wallSide,materials.stone,-11.5,2.6,-4.75);
+ castleBox(group,geometries.wallSide,materials.stone,11.5,2.6,-4.75);
+ [[-11.5,3.5],[11.5,3.5],[-11.5,-13],[11.5,-13]].forEach(([x,z])=>castleBox(group,geometries.tower,materials.darkStone,x,3.6,z));
+ // Repeated battlements share one geometry/material and stay shadow-free.
+ for(let x=-10.6;x<=10.6;x+=1.35){castleBox(group,geometries.merlon,materials.stone,x,5.9,CASTLE_CONFIG.backWallZ);if(Math.abs(x)>2.35)castleBox(group,geometries.merlon,materials.stone,x,5.9,CASTLE_CONFIG.frontWallZ)}
+ for(let z=-11.8;z<=2.4;z+=1.35){castleBox(group,geometries.merlon,materials.stone,-11.5,5.9,z);castleBox(group,geometries.merlon,materials.stone,11.5,5.9,z)}
+ // Great-hall landmarks: a carpeted aisle, throne dais, banquet tables,
+ // columns and banners make entering through the gate feel consequential.
+ castleBox(group,new THREE.BoxGeometry(3.2,.06,13.5),materials.red,0,.13,-4.2);
+ castleBox(group,new THREE.BoxGeometry(5,.35,2.2),materials.darkStone,0,.25,-11.2);
+ const throne=castleBox(group,new THREE.BoxGeometry(1.7,2.4,.8),materials.gold,0,1.45,-11.35);throne.castShadow=true;
+ [-7,7].forEach(x=>{
+  castleBox(group,geometries.table,materials.wood,x,1,-4.4);
+  castleBox(group,geometries.bench,materials.wood,x-.2,.55,-3.25);castleBox(group,geometries.bench,materials.wood,x+.2,.55,-5.55);
+ });
+ [-9,-5,5,9].forEach(x=>castleBox(group,geometries.column,materials.stone,x,1.75,-8.5));
+ [-7.5,7.5].forEach(x=>{const banner=castleBox(group,new THREE.BoxGeometry(1.7,2.5,.08),x<0?materials.red:materials.blue,x,3.35,-12.62);banner.receiveShadow=false});
+ function guard(x,z,turn,color){
+  const npc=new THREE.Group();castleBox(npc,geometries.body,color,0,1.5,0);castleBox(npc,geometries.head,materials.skin,0,2.3,0);
+  [-.48,.48].forEach(px=>castleBox(npc,geometries.limb,materials.skin,px,1.45,0));[-.22,.22].forEach(px=>castleBox(npc,geometries.limb,materials.darkStone,px,.58,0));
+  const helmet=castleBox(npc,new THREE.ConeGeometry(.48,.7,8),materials.darkStone,0,2.78,0);helmet.receiveShadow=false;
+  npc.position.set(x,0,z);npc.rotation.y=turn;group.add(npc);
+ }
+ guard(-3.3,2,0,materials.red);guard(3.3,2,0,materials.blue);guard(-4,-10,Math.PI,materials.red);guard(4,-10,Math.PI,materials.blue);
+ group.userData.lifecycle={destination:"castle",footprint:"30x30",lazy:true,dispose:"window.worldFactories.castle.destroy()",estimatedMeshes:group.children.length};
+ group.userData.resources={geometries:Object.values(geometries),materials:Object.values(materials)};
+ S.add(group);castle=group;return group;
+}
+function destroyCastleWorld(){
+ if(!castle)return;
+ S.remove(castle);const resources=castle.userData.resources;
+ resources.geometries.forEach(resource=>resource.dispose());resources.materials.forEach(resource=>resource.dispose());
+ castle.traverse(object=>{if(object.isMesh&&!resources.geometries.includes(object.geometry))object.geometry.dispose()});castle=null;
+}
+window.worldFactories=window.worldFactories||{};
+window.worldFactories.castle={create:createCastleWorld,destroy:destroyCastleWorld,metadata:{destination:"castle",size:"30x30",spawnOutside:true,lazy:true}};
+function canWalkInCastle(x,z){
+ const inset=.55;if(x<-15+inset||x>15-inset||z<-15+inset||z>15-inset)return false;
+ // Outer keep walls block the player, while the 4.2-unit gate remains open.
+ if(z>3.05&&z<4.05&&Math.abs(x)>CASTLE_CONFIG.gateHalfWidth&&Math.abs(x)<11.9)return false;
+ if(z<-12.55&&Math.abs(x)<11.9)return false;
+ if(Math.abs(x)>11.05&&Math.abs(x)<11.95&&z>-13.4&&z<4.1)return false;
+ // Keep the throne and banquet tables solid without cluttering the aisle.
+ if(z<-10.75&&z>-12.25&&Math.abs(x)<2.7)return false;
+ if(Math.abs(x)>4.7&&Math.abs(x)<9.3&&z>-6&&z<-2.8)return false;
+ return true;
+}
 // The house shell, camera, spawn, and furniture limits all derive from this
 // one definition so future room-size changes cannot leave build bounds behind.
 const HOUSE_CONFIG={
@@ -1479,7 +1557,7 @@ function setBakeryVisible(show){
 function showBakery(){P.visible=true;
  destroyForestWorld();
  currentPlace="bakery";
- document.body.classList.add("bakery-mode");document.body.classList.remove("house-mode","beach-mode","space-mode","forest-mode");
+ document.body.classList.add("bakery-mode");document.body.classList.remove("house-mode","beach-mode","space-mode","forest-mode","castle-mode");
  S.background.set(0xffd7e6);
  startPage.style.display="none";
  setBakeryVisible(true);
@@ -1487,6 +1565,7 @@ function showBakery(){P.visible=true;
  house.visible=false;
  beach.visible=false;
  hideSpaceWorld();
+ if(castle)castle.visible=false;
  setHousePanel(false);setBuildingMode(false);
  P.position.set(-1,0,2);
  C.position.set(10,11,15);
@@ -1498,7 +1577,7 @@ function showBakery(){P.visible=true;
 function showHouse(){P.visible=true;
  destroyForestWorld();
  currentPlace="house";
- document.body.classList.add("house-mode");document.body.classList.remove("bakery-mode","beach-mode","space-mode","forest-mode");
+ document.body.classList.add("house-mode");document.body.classList.remove("bakery-mode","beach-mode","space-mode","forest-mode","castle-mode");
  S.background.set(0xffd7e6);
  document.body.classList.remove("kitchen-clean","storage-mode");
  startPage.style.display="none";
@@ -1506,6 +1585,7 @@ function showHouse(){P.visible=true;
  house.visible=true;
  beach.visible=false;
  hideSpaceWorld();
+ if(castle)castle.visible=false;
  setHousePanel(false);
  setHudMenu(false);closeKitchenPanels();
  document.getElementById("roomTeleport").style.display="none";
@@ -1525,10 +1605,11 @@ function showHouse(){P.visible=true;
 function showBeach(){
  destroyForestWorld();
  currentPlace="beach";P.visible=true;
- document.body.classList.add("beach-mode");document.body.classList.remove("bakery-mode","house-mode","space-mode","forest-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
+ document.body.classList.add("beach-mode");document.body.classList.remove("bakery-mode","house-mode","space-mode","forest-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(0x9edfff);startPage.style.display="none";
  setBakeryVisible(false);house.visible=false;beach.visible=true;
  hideSpaceWorld();
+ if(castle)castle.visible=false;
  inKitchen=false;inStorage=false;page5Group.visible=false;
  setHousePanel(false);setBuildingMode(false);setHudMenu(false);closeKitchenPanels();
  document.getElementById("orders").style.display="none";
@@ -1542,6 +1623,7 @@ function showBeach(){
 }
 function showSpace(){
  destroyForestWorld();
+ if(castle)castle.visible=false;
  const world=ensureSpaceWorld();currentPlace="space";P.visible=true;
  document.body.classList.add("space-mode");document.body.classList.remove("bakery-mode","house-mode","beach-mode","forest-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(world.background);startPage.style.display="none";
@@ -1556,6 +1638,7 @@ function showSpace(){
 }
 function showForest(){
  hideSpaceWorld();
+ if(castle)castle.visible=false;
  const world=ensureForestWorld(),config=world.config;
  currentPlace="forest";P.visible=true;
  document.body.classList.add("forest-mode");document.body.classList.remove("bakery-mode","house-mode","beach-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
@@ -1569,7 +1652,21 @@ function showForest(){
  cameraAngle=config.camera.angle;cameraHeight=config.camera.height;cameraDistance=config.camera.distance;updateCamera();
  if(window.switchWorldMusic)window.switchWorldMusic("forest");
 }
-goBakery.onclick=showBakery;goHouse.onclick=showHouse;document.getElementById("goBeach").onclick=showBeach;document.getElementById("goSpace").onclick=showSpace;document.getElementById("goForest").onclick=showForest;
+function showCastle(){
+ destroyForestWorld();hideSpaceWorld();
+ const world=createCastleWorld();currentPlace="castle";P.visible=true;
+ document.body.classList.add("castle-mode");document.body.classList.remove("bakery-mode","house-mode","beach-mode","space-mode","forest-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
+ S.background.set(0xa9cef0);startPage.style.display="none";
+ setBakeryVisible(false);house.visible=false;beach.visible=false;world.visible=true;
+ inKitchen=false;inStorage=false;page5Group.visible=false;
+ setHousePanel(false);setBuildingMode(false);setHudMenu(false);closeKitchenPanels();
+ document.getElementById("orders").style.display="none";document.getElementById("recipePanel").style.display="none";document.getElementById("roomTeleport").style.display="none";
+ roomName.style.display="block";roomName.textContent="Royal Castle";
+ P.position.set(CASTLE_CONFIG.spawn.x,0,CASTLE_CONFIG.spawn.z);P.rotation.y=Math.PI;
+ cameraAngle=CASTLE_CONFIG.camera.angle;cameraHeight=CASTLE_CONFIG.camera.height;cameraDistance=CASTLE_CONFIG.camera.distance;updateCamera();
+ if(window.switchWorldMusic)window.switchWorldMusic("castle");
+}
+goBakery.onclick=showBakery;goHouse.onclick=showHouse;document.getElementById("goBeach").onclick=showBeach;document.getElementById("goSpace").onclick=showSpace;document.getElementById("goForest").onclick=showForest;document.getElementById("goCastle").onclick=showCastle;
 
 
 let sitting=false,tvIsOn=false,currentChannel="news";
@@ -1750,7 +1847,7 @@ document.getElementById("rotateF").onclick=()=>{
 };
 
 document.getElementById("deleteFurniture").onclick=()=>{const item=selectedFurniture();if(!item)return;house.remove(item);furniture.splice(selectedFurnitureIndex,1);selectedFurnitureIndex=Math.min(selectedFurnitureIndex,furniture.length-1);updateFurnitureLabel();saveWorld()};
-backPlaces.onclick=()=>{startPage.style.display="block";setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;hideSpaceWorld();destroyForestWorld();setBakeryVisible(false)};
+backPlaces.onclick=()=>{startPage.style.display="block";setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;hideSpaceWorld();destroyForestWorld();if(castle)castle.visible=false;setBakeryVisible(false)};
 
 
 function restoreGameButtons(){
@@ -1789,6 +1886,8 @@ document.getElementById("goBakery").addEventListener("click",restoreGameButtons)
 document.getElementById("goHouse").addEventListener("click",restoreGameButtons);
 document.getElementById("goBeach").addEventListener("click",restoreGameButtons);
 document.getElementById("goSpace").addEventListener("click",restoreGameButtons);
+document.getElementById("goForest").addEventListener("click",restoreGameButtons);
+document.getElementById("goCastle").addEventListener("click",restoreGameButtons);
 
 document.getElementById("firstPageButton").addEventListener("pointerdown",function(event){
   event.preventDefault();
@@ -1797,6 +1896,7 @@ showCharacterTypeChooser();
 setHousePanel(false);setBuildingMode(false);house.visible=false;setBakeryVisible(false);
 beach.visible=false;
 hideSpaceWorld();
+destroyForestWorld();if(castle)castle.visible=false;
 });
 
 // Blender interaction
