@@ -631,7 +631,7 @@ document.addEventListener("pointerdown",event=>{
 },{passive:true});
 updateMusicToggle();
 function setHudMenu(open){hudDrawer.classList.toggle("open",open);hudMenuButton.setAttribute("aria-expanded",open)}
-hudMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();const open=!hudDrawer.classList.contains("open");if(open)closeKitchenPanels();setHudMenu(open)});
+hudMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();const open=!hudDrawer.classList.contains("open");if(open){closeKitchenPanels();if(currentPlace==="house")setHousePanel(false)}setHudMenu(open)});
 hudDrawer.addEventListener("pointerdown",event=>{if(event.target.closest("button"))setHudMenu(false)});
 const kitchenPanelIds=["recipePanel","orders","inventoryBox"];
 function closeKitchenPanels(){
@@ -1313,7 +1313,7 @@ function setHouseTab(name){
  document.querySelectorAll("[data-house-tab]").forEach(b=>b.classList.toggle("active",b.dataset.houseTab===name));
  document.querySelectorAll("[data-house-view]").forEach(v=>v.classList.toggle("active",v.dataset.houseView===name));
 }
-housePanelToggle.addEventListener("pointerdown",e=>{e.preventDefault();setHousePanel(!housePanel.classList.contains("open"))});
+housePanelToggle.addEventListener("pointerdown",e=>{e.preventDefault();const open=!housePanel.classList.contains("open");if(open)setHudMenu(false);setHousePanel(open)});
 closeHousePanel.addEventListener("pointerdown",e=>{e.preventDefault();setHousePanel(false)});
 document.querySelectorAll("[data-house-tab]").forEach(b=>b.addEventListener("pointerdown",e=>{e.preventDefault();setHouseTab(b.dataset.houseTab)}));
 
