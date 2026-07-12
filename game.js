@@ -592,15 +592,19 @@ document.querySelectorAll("#roomTeleport [data-room]").forEach(button=>button.ad
 const hudMenuButton=document.getElementById("hudMenuButton"),hudDrawer=document.getElementById("hudDrawer");
 [document.getElementById("firstPageButton"),document.getElementById("avatarButton"),document.getElementById("roomTeleport")].forEach(element=>hudDrawer.appendChild(element));
 const musicToggle=document.getElementById("musicToggle");
-const musicTracks=[document.getElementById("bakeryMusic"),document.getElementById("sprinkleMusic")];
+const bakeryMusicTracks=[document.getElementById("bakeryMusic"),document.getElementById("sprinkleMusic")];
+const beachMusicTracks=[document.getElementById("beachMusic")];
+const musicTracks=[...bakeryMusicTracks,...beachMusicTracks];
 let musicTrackIndex=0,musicStarted=false,musicMuted=localStorage.getItem("bakeryMusicMuted")==="true";
-musicTracks.forEach((track,index)=>{
+function activeMusicTracks(){return currentPlace==="beach"?beachMusicTracks:bakeryMusicTracks}
+musicTracks.forEach(track=>{
  track.volume=.34;
  track.addEventListener("ended",()=>{
-  if(index!==musicTrackIndex||musicMuted)return;
-  musicTrackIndex=(musicTrackIndex+1)%musicTracks.length;
-  musicTracks[musicTrackIndex].currentTime=0;
-  musicTracks[musicTrackIndex].play().catch(handleMusicFailure);
+  const active=activeMusicTracks();
+  if(track!==active[musicTrackIndex]||musicMuted)return;
+  musicTrackIndex=(musicTrackIndex+1)%active.length;
+  active[musicTrackIndex].currentTime=0;
+  active[musicTrackIndex].play().catch(handleMusicFailure);
  });
  track.addEventListener("error",handleMusicFailure,{once:true});
 });
@@ -616,8 +620,15 @@ function handleMusicFailure(){
 function startMusic(){
  if(musicMuted||musicStarted||musicToggle.disabled)return;
  musicStarted=true;
- musicTracks[musicTrackIndex].play().catch(()=>{musicStarted=false});
+ activeMusicTracks()[musicTrackIndex].play().catch(()=>{musicStarted=false});
 }
+window.switchWorldMusic=()=>{
+ const wasStarted=musicStarted;
+ musicTracks.forEach(track=>{track.pause();track.currentTime=0});
+ musicTrackIndex=0;
+ musicStarted=false;
+ if(wasStarted&&!musicMuted)startMusic();
+};
 musicToggle.addEventListener("pointerdown",event=>event.stopPropagation());
 musicToggle.addEventListener("click",()=>{
  musicMuted=!musicMuted;
@@ -978,6 +989,7 @@ characterTypeOptions.addEventListener("click",event=>{
 });
 document.getElementById("continueToCustomize").addEventListener("click",()=>{
  chooseCharacterType(saved.characterType||"princess");
+ if(window.applyCharacterTypeDefault)window.applyCharacterTypeDefault(saved.characterType);
  showCharacterCustomization();
 });
 document.getElementById("backToCharacterTypes").addEventListener("click",showCharacterTypeChooser);
@@ -1216,7 +1228,7 @@ colorButtons("startOutfitColor",[0xb65bd4,0xff76ad,0x36b9c7,0x4f72cf,0x45a568,0x
 // The preceding character-type screen can call this without rebuilding the avatar.
 window.applyCharacterTypeDefault=type=>{
  saved.characterType=type;
- if(!saved.outfit)setOutfit(normalizedCharacterType(type));
+ setOutfit(normalizedCharacterType(type));
  saveWorld();
 };
 if(saved.skin){materialColor(playerHead,saved.skin);materialColor(playerLeftArm,saved.skin);materialColor(playerRightArm,saved.skin)}
@@ -1344,6 +1356,7 @@ function setBakeryVisible(show){
 }
 function showBakery(){P.visible=true;
  currentPlace="bakery";
+ if(window.switchWorldMusic)window.switchWorldMusic();
  document.body.classList.add("bakery-mode");document.body.classList.remove("house-mode");
  startPage.style.display="none";
  setBakeryVisible(true);
@@ -1358,6 +1371,7 @@ function showBakery(){P.visible=true;
 }
 function showHouse(){P.visible=true;
  currentPlace="house";
+ if(window.switchWorldMusic)window.switchWorldMusic();
  document.body.classList.add("house-mode");document.body.classList.remove("bakery-mode");
  document.body.classList.remove("kitchen-clean","storage-mode");
  startPage.style.display="none";
