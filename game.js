@@ -544,6 +544,40 @@ document.getElementById("makeFood").addEventListener("pointerdown",e=>{
  }
 });
 let currentPlace="bakery";
+const worldLoading=document.getElementById("worldLoading"),worldLoadingTitle=document.getElementById("worldLoadingTitle");
+const disposableWorlds=new Map();
+function disposeWorldRoot(root){
+ if(!root)return;
+ root.traverse(object=>{
+  if(object.geometry)object.geometry.dispose();
+  const materials=Array.isArray(object.material)?object.material:[object.material];
+  materials.filter(Boolean).forEach(material=>{
+   for(const value of Object.values(material))if(value&&value.isTexture)value.dispose();
+   material.dispose();
+  });
+ });
+ if(root.parent)root.parent.remove(root);
+}
+window.registerDisposableWorld=(id,root)=>{disposableWorlds.set(id,root);return root};
+window.unloadDisposableWorlds=except=>{
+ for(const [id,root] of disposableWorlds)if(id!==except){disposeWorldRoot(root);disposableWorlds.delete(id)}
+};
+window.runWorldTransition=(label,place,build)=>{
+ worldLoadingTitle.textContent=label;
+ worldLoading.classList.add("open");worldLoading.setAttribute("aria-hidden","false");
+ return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(()=>{
+  window.unloadDisposableWorlds(place);
+  const result=build();
+  worldLoading.classList.remove("open");worldLoading.setAttribute("aria-hidden","true");
+  resolve(result);
+ },40))));
+};
+window.getGameDebug=()=>({
+ sceneId:currentPlace,loadedWorlds:[...disposableWorlds.keys()],
+ player:{x:+P.position.x.toFixed(2),y:+P.position.y.toFixed(2),z:+P.position.z.toFixed(2)},
+ render:{calls:R.info.render.calls,triangles:R.info.render.triangles},
+ memory:{geometries:R.info.memory.geometries,textures:R.info.memory.textures}
+});
 let inKitchen=false;
 let money=100;
 let servedCount=0;
