@@ -301,6 +301,9 @@ body.kitchen-clean #lookPad{opacity:.82}
   width:46%;height:auto;margin:4px 1%;padding:8px 5px;border:0;
   border-radius:11px;font-weight:bold;font-size:12px;
 }
+.remotePageControls{display:grid;grid-template-columns:42px 1fr 42px;gap:5px;align-items:center;margin:4px 1%;font-size:12px;font-weight:bold}
+#handRemote .remotePageControls button{width:42px;margin:0;padding:7px 4px}
+#handRemotePage{white-space:nowrap;color:#fff}
 #handRemotePower{background:#ff8f9d}
 #channelArt{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;

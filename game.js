@@ -2646,6 +2646,7 @@ setInterval(()=>{
   let pickedRemoteObject=null;
   let tvTextTimer=null;
   let tvTexture=null;
+  let tvPage=0;
 
   const svgArt={
     news:`<svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
@@ -2698,6 +2699,25 @@ setInterval(()=>{
       <text x="150" y="142" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">POCKET PALS ADVENTURES</text>
     </svg>`
   };
+
+  const channelPageThemes={
+    news:[["TOP STORY","#e43f63","#fff3a8"],["WEATHER","#2176ae","#bde8ff"],["HAPPY NEWS","#7c5cff","#d7cfff"]],
+    chef:[["RAINBOW PASTA","#d85b78","#ffe0e8"],["BAKING TIME","#b76532","#ffe0b5"],["TASTE TEST","#438a5e","#d6f5dc"]],
+    island:[["BEACH DAY","#d65b83","#ffe0ed"],["TREASURE HUNT","#a56a24","#ffe3a3"],["SUNSET PARTY","#754ca8","#e4d4ff"]],
+    monsters:[["FOREST QUEST","#17765a","#bff5df"],["CRYSTAL CAVE","#5557bd","#d8d9ff"],["PAL PARADE","#b94787","#ffd3ed"]]
+  };
+  function channelPageArt(name,page=tvPage){
+    const base=svgArt[name]||svgArt.news;
+    const theme=(channelPageThemes[name]||channelPageThemes.news)[page%3];
+    const accents=[
+      `<circle cx="272" cy="122" r="13" fill="${theme[2]}"/><path d="M266 122h12M272 116v12" stroke="${theme[1]}" stroke-width="3"/>`,
+      `<path d="M254 109h36v26h-36z" fill="${theme[2]}"/><path d="M258 115h28M258 122h20M258 129h24" stroke="${theme[1]}" stroke-width="3"/>`,
+      `<path d="M272 106l5 10 12 2-9 8 2 12-10-6-11 6 3-12-9-8 12-2z" fill="${theme[2]}" stroke="${theme[1]}" stroke-width="2"/>`
+    ];
+    const overlay=`<g><rect x="178" y="8" width="114" height="25" rx="12" fill="${theme[1]}"/><text x="235" y="25" text-anchor="middle" font-size="11" font-weight="bold" fill="white">${theme[0]}</text>${accents[page%3]}</g>`;
+    return base.replace("</svg>",overlay+"</svg>");
+  }
+  function updateRemotePageLabel(){document.getElementById("handRemotePage").textContent=(tvPage+1)+" / 3"}
 
   function setRoomLabel(){
     if(currentPlace==="bakery"){
@@ -2762,7 +2782,7 @@ setInterval(()=>{
       screen.material.needsUpdate=true;
       return;
     }
-    const svg=svgArt[name]||svgArt.news;
+    const svg=channelPageArt(name);
     const image=new Image();
     image.onload=()=>{
       const canvas=document.createElement("canvas");
@@ -2886,18 +2906,27 @@ setInterval(()=>{
         document.getElementById("msg").textContent="Press Power on the remote first. 📺";
         return;
       }
-      showTVChannel(btn.dataset.handChannel);
+      tvPage=0;updateRemotePageLabel();showTVChannel(btn.dataset.handChannel);
     });
   });
 
-  // Add SVG placeholder artwork whenever a channel changes.
+  function changeTVPage(direction){
+    if(!carryingRemote)return;
+    if(!tvIsOn){document.getElementById("msg").textContent="Press Power on the remote first. 📺";return}
+    tvPage=(tvPage+direction+3)%3;updateRemotePageLabel();paintTVScreen(currentChannel);showTVTextBriefly();
+  }
+  document.getElementById("handRemotePrevious").addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();changeTVPage(-1)});
+  document.getElementById("handRemoteNext").addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();changeTVPage(1)});
+  updateRemotePageLabel();
+
+  // Route every channel change to the physical TV texture pipeline.
   const oldShowTVChannel=showTVChannel;
   showTVChannel=function(name){
     oldShowTVChannel(name);
     paintTVScreen(name);
     showTVTextBriefly();
-    channelArt.style.display="flex";
-    channelArt.innerHTML=svgArt[name]||svgArt.news;
+    channelArt.style.display="none";
+    channelArt.replaceChildren();
 
     // Keep the original emoji actors hidden because the SVG channel now animates.
     document.getElementById("actor1").style.display="none";
