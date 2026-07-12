@@ -992,7 +992,7 @@ if(Math.hypot(worldX,worldZ)>.08){
 const canMove=currentPlace==="bakery"?canWalkAt(nextX,nextZ):
  currentPlace==="house"?canWalkInHouse(nextX,nextZ):
  currentPlace==="beach"?canWalkOnBeach(nextX,nextZ):
- currentPlace==="space"?(()=>{const b=ensureSpaceWorld().bounds;return nextX>=b.minX&&nextX<=b.maxX&&nextZ>=b.minZ&&nextZ<=b.maxZ})():
+ currentPlace==="space"?ensureSpaceWorld().canWalk(nextX,nextZ):
  currentPlace==="forest"?Boolean(forestWorld&&forestWorld.canWalk(nextX,nextZ)):
  currentPlace==="castle"?canWalkInCastle(nextX,nextZ):true;
 if(canMove){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
@@ -1311,7 +1311,7 @@ function setAstronautHelmet(enabled,{persist=true}={}){
  enabled=!!enabled;playerAstronautHelmet.visible=enabled;previewAstronautHelmet.visible=enabled;
  astronautHelmetButton.classList.toggle("selected",enabled);
  astronautHelmetButton.setAttribute("aria-pressed",String(enabled));
- astronautHelmetButton.textContent=(enabled?"✓ ":"")+"🪖 Astronaut helmet";
+ astronautHelmetButton.textContent="🪖 Astronaut helmet";
  if(persist){saved.astronautHelmet=enabled;saveWorld()}
 }
 astronautHelmetButton.addEventListener("click",()=>setAstronautHelmet(!playerAstronautHelmet.visible));

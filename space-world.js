@@ -62,6 +62,12 @@
       n.position.set(x,0,z);n.rotation.y=turn;n.userData.npcType=kind;group.add(n)
     }
     [{k:"alien",x:-6,z:-5},{k:"alien",x:7,z:-6,s:true,t:2.5},{k:"alien",x:-18,z:16,t:1},{k:"astronaut",x:5,z:7},{k:"astronaut",x:20,z:17,s:true,t:-2},{k:"astronaut",x:-19,z:-18,t:2.8},{k:"alien",x:2,z:-2,s:true},{k:"astronaut",x:12,z:-21,t:.8},{k:"alien",x:23,z:-10,t:-1.2},{k:"astronaut",x:-24,z:5,s:true,t:2}].forEach(v=>npc(v.k,v.x,v.z,v.s,v.t));
-    return {group,bounds:{minX:-34.3,maxX:34.3,minZ:-34.3,maxZ:34.3},spawn:{x:0,z:29},camera:{angle:.25,height:15,distance:22},background:0x090b24,name:"Moonlight Space Station",dispose(){group.parent?.remove(group);resources.forEach(r=>r.dispose?.())}};
+    const structures=window.spaceStructureFactory?window.spaceStructureFactory(THREE):null;
+    if(structures)group.add(structures.group);
+    const bounds={minX:-34.3,maxX:34.3,minZ:-34.3,maxZ:34.3};
+    const collisionBoxes=structures?.collisionBoxes||[];
+    return {group,bounds,spawn:{x:0,z:29},camera:{angle:.25,height:15,distance:22},background:0x090b24,name:"Moonlight Space Station",
+      canWalk(x,z){const radius=.32;if(x<bounds.minX||x>bounds.maxX||z<bounds.minZ||z>bounds.maxZ)return false;return !collisionBoxes.some(box=>x>box.minX-radius&&x<box.maxX+radius&&z>box.minZ-radius&&z<box.maxZ+radius)},
+      dispose(){structures?.dispose();group.parent?.remove(group);resources.forEach(r=>r.dispose?.())}};
   };
 })();
