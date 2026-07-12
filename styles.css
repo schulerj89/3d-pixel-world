@@ -123,6 +123,8 @@ body.bakery-mode #hudDrawer #menuGoBakery,body.beach-mode #hudDrawer #menuGoBeac
 body.beach-mode #kitchenTools,body.beach-mode #orders,body.beach-mode #inventoryBox,body.beach-mode #roomTeleport{display:none!important}
 body.space-mode #kitchenTools,body.space-mode #orders,body.space-mode #inventoryBox,body.space-mode #roomTeleport{display:none!important}
 body.space-mode #hudDrawer #menuGoSpace{display:none!important}
+body.forest-mode #hudDrawer #menuGoForest{display:none!important}
+body.forest-mode #kitchenTools,body.forest-mode #orders,body.forest-mode #inventoryBox,body.forest-mode #roomTeleport,body.forest-mode #housePanelToggle,body.forest-mode #houseAction{display:none!important}
 #housePanelToggle{display:none;position:fixed;left:12px;top:62px;z-index:315;width:auto;height:auto;padding:10px 14px;border:3px solid #d8c9ff;border-radius:14px;background:#fffdf4;font-size:15px;font-weight:bold;box-shadow:0 4px 12px #0003}
 body.house-mode #housePanelToggle{display:block}
 #housePanelToggle[aria-expanded="true"]{border-color:#6c3cff;background:#eee7ff}
