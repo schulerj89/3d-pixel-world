@@ -91,10 +91,10 @@ canvas{z-index:1 !important}
 #hudDrawer>b{grid-column:1/-1;text-align:center;font-size:17px}
 #hudDrawer #firstPageButton,#hudDrawer #avatarButton{position:static!important;width:100%;height:auto;padding:10px 8px;margin:0;border:2px solid #cdb9ff;border-radius:11px;background:#f5efff;box-shadow:none;font-size:14px}
 #hudDrawer #musicToggle{position:static;grid-column:1/-1;width:100%;height:auto;padding:9px 10px;margin:0;border:2px solid #b9d8c6;border-radius:11px;background:#effff4;color:#244632;font-size:14px;font-weight:bold;box-shadow:none}
-#hudDrawer #menuGoHouse{position:static;grid-column:1/-1;width:100%;height:auto;padding:10px;margin:0;border:2px solid #efc0d7;border-radius:11px;background:#fff0f7;font-size:14px;font-weight:bold;box-shadow:none}
+#hudDrawer #menuGoHouse,#hudDrawer #menuGoBakery,#hudDrawer #menuGoBeach{position:static;grid-column:1/-1;width:100%;height:auto;padding:10px;margin:0;border:2px solid #efc0d7;border-radius:11px;background:#fff0f7;font-size:14px;font-weight:bold;box-shadow:none}
 #hudDrawer #musicToggle[aria-pressed="true"]{border-color:#c6c6c6;background:#f2f2f2;color:#666}
 #hudDrawer #musicToggle:disabled{opacity:.6}
-#hudDrawer #roomTeleport{position:static;grid-column:1/-1;display:grid!important;grid-template-columns:repeat(3,1fr);gap:6px;padding:9px;border:0;border-radius:12px;background:#f3edff;box-shadow:none}
+#hudDrawer #roomTeleport{position:static;grid-column:1/-1;display:grid!important;grid-template-columns:repeat(4,1fr);gap:6px;padding:9px;border:0;border-radius:12px;background:#f3edff;box-shadow:none}
 #hudDrawer #roomTeleport>b{grid-column:1/-1}
 #kitchenTools{display:none;position:fixed;left:12px;top:66px;z-index:290;gap:6px;padding:6px;border-radius:13px;background:#fffdf4e8;box-shadow:0 3px 10px #0003}
 body.kitchen-clean #kitchenTools{display:flex}
@@ -117,6 +117,8 @@ body:not(.house-mode) #furnitureMover{display:none!important}
 body.house-mode #hudDrawer #roomTeleport{display:none!important}
 body.house-mode #hudDrawer #menuGoHouse{display:none!important}
 body.house-mode #kitchenTools,body.house-mode #orders,body.house-mode #inventoryBox{display:none!important}
+body.bakery-mode #hudDrawer #menuGoBakery,body.beach-mode #hudDrawer #menuGoBeach{display:none!important}
+body.beach-mode #kitchenTools,body.beach-mode #orders,body.beach-mode #inventoryBox,body.beach-mode #roomTeleport{display:none!important}
 #housePanelToggle{display:none;position:fixed;left:12px;top:62px;z-index:315;width:auto;height:auto;padding:10px 14px;border:3px solid #d8c9ff;border-radius:14px;background:#fffdf4;font-size:15px;font-weight:bold;box-shadow:0 4px 12px #0003}
 body.house-mode #housePanelToggle{display:block}
 #housePanelToggle[aria-expanded="true"]{border-color:#6c3cff;background:#eee7ff}

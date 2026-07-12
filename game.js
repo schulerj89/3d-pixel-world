@@ -645,6 +645,9 @@ function setHudMenu(open){hudDrawer.classList.toggle("open",open);hudMenuButton.
 hudMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();const open=!hudDrawer.classList.contains("open");if(open){closeKitchenPanels();if(currentPlace==="house")setHousePanel(false)}setHudMenu(open)});
 hudDrawer.addEventListener("pointerdown",event=>{if(event.target.closest("button"))setHudMenu(false)});
 document.getElementById("menuGoHouse").addEventListener("pointerdown",event=>{event.preventDefault();showHouse()});
+document.getElementById("menuGoBakery").addEventListener("pointerdown",event=>{event.preventDefault();showBakery()});
+document.getElementById("menuGoBeach").addEventListener("pointerdown",event=>{event.preventDefault();showBeach()});
+document.getElementById("teleportBeach").addEventListener("pointerdown",event=>{event.preventDefault();showBeach()});
 const kitchenPanelIds=["recipePanel","orders","inventoryBox"];
 function closeKitchenPanels(){
  kitchenPanelIds.forEach(id=>document.getElementById(id).classList.remove("hud-open"));
@@ -941,7 +944,8 @@ if(Math.hypot(worldX,worldZ)>.08){
 // The ASCII map owns bakery collision; the centralized house dimensions own
 // the home boundary so the avatar cannot walk beyond the enlarged floor.
 const canMove=currentPlace==="bakery"?canWalkAt(nextX,nextZ):
- currentPlace==="house"?canWalkInHouse(nextX,nextZ):true;
+ currentPlace==="house"?canWalkInHouse(nextX,nextZ):
+ currentPlace==="beach"?canWalkOnBeach(nextX,nextZ):true;
 if(canMove){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
 syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);
 updateCamera();updateHeldItem();updateIngredientGrab();updateStoveButton();customers.forEach((q,i)=>{let u=q.userData,targetX,targetZ;
@@ -1247,6 +1251,59 @@ function saveWorld(){saved.furniture=furniture.map(x=>({
 // Keep the bakery and house as two separate places.
 const bakeryObjects=S.children.filter(obj=>obj!==P && obj!==C && !obj.isLight);
 const house=new THREE.Group();house.visible=false;S.add(house);
+// Beach is a separate, deterministic destination. Repeated palms use instancing,
+// the water is intentionally unlit, and distant/repeated scenery does not cast
+// shadows so the iPad render budget stays focused on the player.
+const beach=new THREE.Group();beach.name="beach-world";beach.visible=false;S.add(beach);
+const BEACH_CONFIG={halfWidth:12,nearZ:9,waterEdgeZ:-7.5,spawn:{x:0,z:5.5},camera:{angle:.22,height:8.2,distance:12}};
+const beachSandMaterial=new THREE.MeshStandardMaterial({color:0xf2d38d,roughness:1});
+const beachSand=new THREE.Mesh(new THREE.BoxGeometry(24,.28,17),beachSandMaterial);
+beachSand.position.set(0,-.08,.5);beachSand.receiveShadow=true;beach.add(beachSand);
+const beachWaterMaterial=new THREE.MeshBasicMaterial({color:0x39b9d1,transparent:true,opacity:.82});
+const beachWater=new THREE.Mesh(new THREE.PlaneGeometry(30,16),beachWaterMaterial);
+beachWater.rotation.x=-Math.PI/2;beachWater.position.set(0,.04,-15.5);beach.add(beachWater);
+const foamMaterial=new THREE.MeshBasicMaterial({color:0xe9ffff,transparent:true,opacity:.88});
+[-7.8,-8.25].forEach((z,index)=>{const foam=new THREE.Mesh(new THREE.PlaneGeometry(24-index*.8,.16),foamMaterial);foam.rotation.x=-Math.PI/2;foam.position.set(0,.065,z);beach.add(foam)});
+const palmPositions=[[-9,-5],[-7.2,5.8],[8.6,-4.7],[9.5,5.2],[-10,1.2],[5.8,1.8]];
+const palmTrunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.18,.28,3.8,7),new THREE.MeshStandardMaterial({color:0x9b6943,roughness:1}),palmPositions.length);
+const palmLeaves=new THREE.InstancedMesh(new THREE.ConeGeometry(1.35,.22,7),new THREE.MeshStandardMaterial({color:0x35a85d,roughness:1,side:THREE.DoubleSide}),palmPositions.length*3);
+const beachMatrix=new THREE.Matrix4(),beachQuat=new THREE.Quaternion(),beachScale=new THREE.Vector3(1,1,1),beachPos=new THREE.Vector3();
+palmPositions.forEach(([x,z],index)=>{
+ beachMatrix.makeTranslation(x,1.9,z);palmTrunks.setMatrixAt(index,beachMatrix);
+ for(let leaf=0;leaf<3;leaf++){
+  beachQuat.setFromEuler(new THREE.Euler(Math.PI/2,(leaf/3)*Math.PI*2,0));
+  beachPos.set(x,3.85,z);beachMatrix.compose(beachPos,beachQuat,beachScale);palmLeaves.setMatrixAt(index*3+leaf,beachMatrix);
+ }
+});
+palmTrunks.castShadow=palmTrunks.receiveShadow=false;palmLeaves.castShadow=palmLeaves.receiveShadow=false;beach.add(palmTrunks,palmLeaves);
+const beachPropMaterials={wood:new THREE.MeshStandardMaterial({color:0xb37a4c,roughness:1}),white:new THREE.MeshStandardMaterial({color:0xfff5df,roughness:1}),pink:new THREE.MeshStandardMaterial({color:0xff79a8,roughness:1}),blue:new THREE.MeshStandardMaterial({color:0x55bde8,roughness:1}),yellow:new THREE.MeshStandardMaterial({color:0xffd75b,roughness:1})};
+function beachMesh(geometry,material,x,y,z,parent=beach){const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.receiveShadow=true;parent.add(mesh);return mesh}
+// Umbrellas, towels, surf boards, and a lifeguard perch give the open sand landmarks.
+[[-5,0,0,beachPropMaterials.pink],[5,0,1,beachPropMaterials.blue]].forEach(([x,,z,color])=>{
+ beachMesh(new THREE.CylinderGeometry(.07,.09,2.5,6),beachPropMaterials.wood,x,1.25,z);
+ beachMesh(new THREE.ConeGeometry(2,.65,12),color,x,2.55,z);
+});
+[[-4.8,1.9,beachPropMaterials.blue],[4.8,2.9,beachPropMaterials.pink],[0,-2.8,beachPropMaterials.yellow]].forEach(([x,z,color])=>beachMesh(new THREE.BoxGeometry(2.4,.05,1.15),color,x,.09,z));
+[-1.3,1.3].forEach((x,index)=>{const board=beachMesh(new THREE.CapsuleGeometry(.3,1.6,4,8),index?beachPropMaterials.pink:beachPropMaterials.blue,x,.8,-6.6);board.rotation.z=.1*(index?1:-1)});
+const beachSkinMaterials=[0x8b5a3c,0xc98962,0xf2c6a0].map(color=>new THREE.MeshStandardMaterial({color,roughness:1}));
+const beachWearMaterials=[beachPropMaterials.pink,beachPropMaterials.blue,beachPropMaterials.yellow,new THREE.MeshStandardMaterial({color:0x77d891,roughness:1})];
+function makeBeachNpc({x,z,sitting=false,skin=0,wear=0,turn=0}){
+ const npc=new THREE.Group(),skinMat=beachSkinMaterials[skin],wearMat=beachWearMaterials[wear];
+ const part=(geometry,material,px,py,pz)=>beachMesh(geometry,material,px,py,pz,npc);
+ part(new THREE.BoxGeometry(.72,.85,.42),wearMat,0,sitting?1.03:1.55,0);
+ part(new THREE.SphereGeometry(.38,8,6),skinMat,0,sitting?1.72:2.35,0);
+ const armY=sitting?1.16:1.5;part(new THREE.BoxGeometry(.2,.72,.2),skinMat,-.48,armY,0);part(new THREE.BoxGeometry(.2,.72,.2),skinMat,.48,armY,0);
+ const legY=sitting?.58:.58,legZ=sitting?.34:0;const legRotation=sitting?Math.PI/2:0;
+ [-.22,.22].forEach(lx=>{const leg=part(new THREE.BoxGeometry(.23,.85,.25),skinMat,lx,legY,legZ);leg.rotation.x=legRotation});
+ if(sitting)part(new THREE.BoxGeometry(1.25,.18,.65),beachPropMaterials.wood,0,.48,-.05);
+ npc.position.set(x,0,z);npc.rotation.y=turn;npc.traverse(obj=>{if(obj.isMesh)obj.castShadow=false});beach.add(npc);
+}
+[
+ {x:-5,z:1.8,sitting:true,skin:1,wear:1,turn:.3},{x:4.8,z:2.8,sitting:true,skin:2,wear:0,turn:-.5},
+ {x:-1.8,z:-3.6,sitting:false,skin:0,wear:2,turn:2.6},{x:7,z:-2.2,sitting:false,skin:1,wear:3,turn:-2.4},
+ {x:-8,z:4,sitting:false,skin:2,wear:0,turn:.8},{x:1.2,z:1,sitting:true,skin:0,wear:3,turn:2.9}
+].forEach(makeBeachNpc);
+function canWalkOnBeach(x,z){return x>=-BEACH_CONFIG.halfWidth+.5&&x<=BEACH_CONFIG.halfWidth-.5&&z<=BEACH_CONFIG.nearZ-.5&&z>=BEACH_CONFIG.waterEdgeZ+.35}
 // The house shell, camera, spawn, and furniture limits all derive from this
 // one definition so future room-size changes cannot leave build bounds behind.
 const HOUSE_CONFIG={
@@ -1356,27 +1413,30 @@ function setBakeryVisible(show){
 }
 function showBakery(){P.visible=true;
  currentPlace="bakery";
- if(window.switchWorldMusic)window.switchWorldMusic();
- document.body.classList.add("bakery-mode");document.body.classList.remove("house-mode");
+ document.body.classList.add("bakery-mode");document.body.classList.remove("house-mode","beach-mode");
+ S.background.set(0xffd7e6);
  startPage.style.display="none";
  setBakeryVisible(true);
  page5Group.visible=true;
  house.visible=false;
+ beach.visible=false;
  setHousePanel(false);setBuildingMode(false);
  P.position.set(-1,0,2);
  C.position.set(10,11,15);
  C.lookAt(0,1,0);
  document.getElementById("roomTeleport").style.display="flex";
  syncBakeryRoomState(true);
+ if(window.switchWorldMusic)window.switchWorldMusic("bakery");
 }
 function showHouse(){P.visible=true;
  currentPlace="house";
- if(window.switchWorldMusic)window.switchWorldMusic();
- document.body.classList.add("house-mode");document.body.classList.remove("bakery-mode");
+ document.body.classList.add("house-mode");document.body.classList.remove("bakery-mode","beach-mode");
+ S.background.set(0xffd7e6);
  document.body.classList.remove("kitchen-clean","storage-mode");
  startPage.style.display="none";
  setBakeryVisible(false);
  house.visible=true;
+ beach.visible=false;
  setHousePanel(false);
  setHudMenu(false);closeKitchenPanels();
  document.getElementById("roomTeleport").style.display="none";
@@ -1391,8 +1451,25 @@ function showHouse(){P.visible=true;
   P.position.z+Math.cos(cameraAngle)*cameraDistance
  );
  C.lookAt(0,1,0);
+ if(window.switchWorldMusic)window.switchWorldMusic("house");
 }
-goBakery.onclick=showBakery;goHouse.onclick=showHouse;
+function showBeach(){
+ currentPlace="beach";P.visible=true;
+ document.body.classList.add("beach-mode");document.body.classList.remove("bakery-mode","house-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
+ S.background.set(0x9edfff);startPage.style.display="none";
+ setBakeryVisible(false);house.visible=false;beach.visible=true;
+ inKitchen=false;inStorage=false;page5Group.visible=false;
+ setHousePanel(false);setBuildingMode(false);setHudMenu(false);closeKitchenPanels();
+ document.getElementById("orders").style.display="none";
+ document.getElementById("recipePanel").style.display="none";
+ document.getElementById("roomTeleport").style.display="none";
+ roomName.style.display="block";roomName.textContent="Sunny Beach";
+ P.position.set(BEACH_CONFIG.spawn.x,0,BEACH_CONFIG.spawn.z);P.rotation.y=Math.PI;
+ cameraAngle=BEACH_CONFIG.camera.angle;cameraHeight=BEACH_CONFIG.camera.height;cameraDistance=BEACH_CONFIG.camera.distance;
+ updateCamera();
+ if(window.switchWorldMusic)window.switchWorldMusic("beach");
+}
+goBakery.onclick=showBakery;goHouse.onclick=showHouse;document.getElementById("goBeach").onclick=showBeach;
 
 
 let sitting=false,tvIsOn=false,currentChannel="news";
@@ -1573,7 +1650,7 @@ document.getElementById("rotateF").onclick=()=>{
 };
 
 document.getElementById("deleteFurniture").onclick=()=>{const item=selectedFurniture();if(!item)return;house.remove(item);furniture.splice(selectedFurnitureIndex,1);selectedFurnitureIndex=Math.min(selectedFurnitureIndex,furniture.length-1);updateFurnitureLabel();saveWorld()};
-backPlaces.onclick=()=>{startPage.style.display="block";setHousePanel(false);setBuildingMode(false);house.visible=false;setBakeryVisible(false)};
+backPlaces.onclick=()=>{startPage.style.display="block";setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;setBakeryVisible(false)};
 
 
 function restoreGameButtons(){
@@ -1616,6 +1693,7 @@ document.getElementById("firstPageButton").addEventListener("pointerdown",functi
   document.getElementById("startPage").style.display="block";
 showCharacterTypeChooser();
 setHousePanel(false);setBuildingMode(false);house.visible=false;setBakeryVisible(false);
+beach.visible=false;
 });
 
 // Blender interaction
