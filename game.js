@@ -997,6 +997,13 @@ const canMove=currentPlace==="bakery"?canWalkAt(nextX,nextZ):
  currentPlace==="castle"?canWalkInCastle(nextX,nextZ):true;
 if(canMove){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
 syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);
+// Sink the avatar slightly while wading and expose the state for future splash
+// effects. Deep water remains traversable but never lets the avatar leave bounds.
+if(currentPlace==="beach"){
+ const wadeDepth=THREE.MathUtils.clamp((BEACH_CONFIG.waterEdgeZ-P.position.z)/5,0,1);
+ P.userData.wading=wadeDepth>0;
+ P.position.y-=wadeDepth*.18;
+}else P.userData.wading=false;
 updateCamera();updateHeldItem();updateIngredientGrab();updateStoveButton();customers.forEach((q,i)=>{let u=q.userData,targetX,targetZ;
 // Everyone stands in one straight line at the same x position
 if(u.stage===0){targetX=3.8;targetZ=-1.8+i*1.15}
@@ -1327,16 +1334,18 @@ function destroyForestWorld(){if(forestWorld){forestWorld.destroy();forestWorld=
 // the water is intentionally unlit, and distant/repeated scenery does not cast
 // shadows so the iPad render budget stays focused on the player.
 const beach=new THREE.Group();beach.name="beach-world";beach.visible=false;S.add(beach);
-const BEACH_CONFIG={halfWidth:12,nearZ:9,waterEdgeZ:-7.5,spawn:{x:0,z:5.5},camera:{angle:.22,height:8.2,distance:12}};
+// The full destination is roughly 50x50. The surf is part of the playable
+// space, so players can wade well past the foam without leaving the world.
+const BEACH_CONFIG={halfWidth:25,nearZ:25,farZ:-25,waterEdgeZ:-5.5,deepWaterZ:-17,spawn:{x:0,z:15},camera:{angle:.22,height:10.5,distance:15.5}};
 const beachSandMaterial=new THREE.MeshStandardMaterial({color:0xf2d38d,roughness:1});
-const beachSand=new THREE.Mesh(new THREE.BoxGeometry(24,.28,17),beachSandMaterial);
-beachSand.position.set(0,-.08,.5);beachSand.receiveShadow=true;beach.add(beachSand);
+const beachSand=new THREE.Mesh(new THREE.BoxGeometry(50,.28,30.5),beachSandMaterial);
+beachSand.position.set(0,-.08,9.75);beachSand.receiveShadow=true;beach.add(beachSand);
 const beachWaterMaterial=new THREE.MeshBasicMaterial({color:0x39b9d1,transparent:true,opacity:.82});
-const beachWater=new THREE.Mesh(new THREE.PlaneGeometry(30,16),beachWaterMaterial);
-beachWater.rotation.x=-Math.PI/2;beachWater.position.set(0,.04,-15.5);beach.add(beachWater);
+const beachWater=new THREE.Mesh(new THREE.PlaneGeometry(50,19.5),beachWaterMaterial);
+beachWater.rotation.x=-Math.PI/2;beachWater.position.set(0,.04,-15.25);beach.add(beachWater);
 const foamMaterial=new THREE.MeshBasicMaterial({color:0xe9ffff,transparent:true,opacity:.88});
-[-7.8,-8.25].forEach((z,index)=>{const foam=new THREE.Mesh(new THREE.PlaneGeometry(24-index*.8,.16),foamMaterial);foam.rotation.x=-Math.PI/2;foam.position.set(0,.065,z);beach.add(foam)});
-const palmPositions=[[-9,-5],[-7.2,5.8],[8.6,-4.7],[9.5,5.2],[-10,1.2],[5.8,1.8]];
+[-5.65,-6.05,-6.55].forEach((z,index)=>{const foam=new THREE.Mesh(new THREE.PlaneGeometry(49-index*.7,.14),foamMaterial);foam.rotation.x=-Math.PI/2;foam.position.set(0,.065,z);beach.add(foam)});
+const palmPositions=[[-22,-2],[-20,8],[-18,20],[-11,4],[-9,18],[-3,9],[5,20],[9,3],[13,14],[19,5],[22,20],[22,-1]];
 const palmTrunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.18,.28,3.8,7),new THREE.MeshStandardMaterial({color:0x9b6943,roughness:1}),palmPositions.length);
 const palmLeaves=new THREE.InstancedMesh(new THREE.ConeGeometry(1.35,.22,7),new THREE.MeshStandardMaterial({color:0x35a85d,roughness:1,side:THREE.DoubleSide}),palmPositions.length*3);
 const beachMatrix=new THREE.Matrix4(),beachQuat=new THREE.Quaternion(),beachScale=new THREE.Vector3(1,1,1),beachPos=new THREE.Vector3();
@@ -1351,12 +1360,12 @@ palmTrunks.castShadow=palmTrunks.receiveShadow=false;palmLeaves.castShadow=palmL
 const beachPropMaterials={wood:new THREE.MeshStandardMaterial({color:0xb37a4c,roughness:1}),white:new THREE.MeshStandardMaterial({color:0xfff5df,roughness:1}),pink:new THREE.MeshStandardMaterial({color:0xff79a8,roughness:1}),blue:new THREE.MeshStandardMaterial({color:0x55bde8,roughness:1}),yellow:new THREE.MeshStandardMaterial({color:0xffd75b,roughness:1})};
 function beachMesh(geometry,material,x,y,z,parent=beach){const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.receiveShadow=true;parent.add(mesh);return mesh}
 // Umbrellas, towels, surf boards, and a lifeguard perch give the open sand landmarks.
-[[-5,0,0,beachPropMaterials.pink],[5,0,1,beachPropMaterials.blue]].forEach(([x,,z,color])=>{
+[[-15,0,3,beachPropMaterials.pink],[0,0,7,beachPropMaterials.blue],[15,0,1,beachPropMaterials.yellow],[10,0,17,beachPropMaterials.pink]].forEach(([x,,z,color])=>{
  beachMesh(new THREE.CylinderGeometry(.07,.09,2.5,6),beachPropMaterials.wood,x,1.25,z);
  beachMesh(new THREE.ConeGeometry(2,.65,12),color,x,2.55,z);
 });
-[[-4.8,1.9,beachPropMaterials.blue],[4.8,2.9,beachPropMaterials.pink],[0,-2.8,beachPropMaterials.yellow]].forEach(([x,z,color])=>beachMesh(new THREE.BoxGeometry(2.4,.05,1.15),color,x,.09,z));
-[-1.3,1.3].forEach((x,index)=>{const board=beachMesh(new THREE.CapsuleGeometry(.3,1.6,4,8),index?beachPropMaterials.pink:beachPropMaterials.blue,x,.8,-6.6);board.rotation.z=.1*(index?1:-1)});
+[[-14.8,4.9,beachPropMaterials.blue],[-.2,9.9,beachPropMaterials.pink],[14.8,3.9,beachPropMaterials.yellow],[9.8,19.9,beachPropMaterials.blue],[-8,16,beachPropMaterials.pink]].forEach(([x,z,color])=>beachMesh(new THREE.BoxGeometry(2.4,.05,1.15),color,x,.09,z));
+[-12,-8,8,12].forEach((x,index)=>{const board=beachMesh(new THREE.CapsuleGeometry(.3,1.6,4,8),index%2?beachPropMaterials.pink:beachPropMaterials.blue,x,.8,-4.7);board.rotation.z=.1*(index%2?1:-1)});
 const beachSkinMaterials=[0x8b5a3c,0xc98962,0xf2c6a0].map(color=>new THREE.MeshStandardMaterial({color,roughness:1}));
 const beachWearMaterials=[beachPropMaterials.pink,beachPropMaterials.blue,beachPropMaterials.yellow,new THREE.MeshStandardMaterial({color:0x77d891,roughness:1})];
 function makeBeachNpc({x,z,sitting=false,skin=0,wear=0,turn=0}){
@@ -1371,11 +1380,13 @@ function makeBeachNpc({x,z,sitting=false,skin=0,wear=0,turn=0}){
  npc.position.set(x,0,z);npc.rotation.y=turn;npc.traverse(obj=>{if(obj.isMesh)obj.castShadow=false});beach.add(npc);
 }
 [
- {x:-5,z:1.8,sitting:true,skin:1,wear:1,turn:.3},{x:4.8,z:2.8,sitting:true,skin:2,wear:0,turn:-.5},
- {x:-1.8,z:-3.6,sitting:false,skin:0,wear:2,turn:2.6},{x:7,z:-2.2,sitting:false,skin:1,wear:3,turn:-2.4},
- {x:-8,z:4,sitting:false,skin:2,wear:0,turn:.8},{x:1.2,z:1,sitting:true,skin:0,wear:3,turn:2.9}
+ {x:-15,z:4.8,sitting:true,skin:1,wear:1,turn:.3},{x:0,z:9.8,sitting:true,skin:2,wear:0,turn:-.5},
+ {x:-7,z:-2.8,sitting:false,skin:0,wear:2,turn:2.6},{x:13,z:-2.2,sitting:false,skin:1,wear:3,turn:-2.4},
+ {x:-19,z:12,sitting:false,skin:2,wear:0,turn:.8},{x:10,z:19.8,sitting:true,skin:0,wear:3,turn:2.9},
+ {x:18,z:8,sitting:false,skin:0,wear:1,turn:-.8},{x:-8,z:16,sitting:true,skin:1,wear:2,turn:2.2},
+ {x:4,z:-10,sitting:false,skin:2,wear:3,turn:.2},{x:-15,z:-8,sitting:false,skin:1,wear:0,turn:2.8}
 ].forEach(makeBeachNpc);
-function canWalkOnBeach(x,z){return x>=-BEACH_CONFIG.halfWidth+.5&&x<=BEACH_CONFIG.halfWidth-.5&&z<=BEACH_CONFIG.nearZ-.5&&z>=BEACH_CONFIG.waterEdgeZ+.35}
+function canWalkOnBeach(x,z){return x>=-BEACH_CONFIG.halfWidth+.55&&x<=BEACH_CONFIG.halfWidth-.55&&z<=BEACH_CONFIG.nearZ-.55&&z>=BEACH_CONFIG.farZ+.55}
 
 // The castle is intentionally lazy: its meshes do not consume GPU resources
 // until the destination is visited, and the shared world loader can dispose it.
