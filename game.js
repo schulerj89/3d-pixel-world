@@ -966,10 +966,10 @@ function blenderPart(w,h,d,c,x,y,z){
  m.position.set(x,y,z);m.castShadow=true;blenderStation.add(m);return m;
 }
 blenderPart(1.8,.85,1,0xf1c27d,-3.8,.43,-2.4);
-blenderPart(.65,.35,.55,0xdddddd,-3.8,1.02,-2.4);
-blenderPart(.55,.8,.5,0x99ddff,-3.8,1.58,-2.4);
-blenderPart(.62,.12,.56,0x555555,-3.8,2.03,-2.4);
-blenderPart(.12,.12,.05,0xff5555,-3.8,1.03,-1.89);
+const blenderBase=blenderPart(.65,.35,.55,0xdddddd,-3.8,1.02,-2.4);
+const blenderJar=blenderPart(.55,.8,.5,0x99ddff,-3.8,1.58,-2.4);
+const blenderLid=blenderPart(.62,.12,.56,0x555555,-3.8,2.03,-2.4);
+const blenderPower=blenderPart(.12,.12,.05,0xff5555,-3.8,1.03,-1.89);
 // Fruit bowl and voxel fruits
 blenderPart(1,.18,.65,0xd9a05b,-2.45,1.02,-2.4);
 [
@@ -987,6 +987,55 @@ blenderPart(.3,.12,.3,0x78bfff,-1.15,1.7,-2.4);
 blenderStation.position.set(KITCHEN_STATIONS.blender.x+3.8,0,KITCHEN_STATIONS.blender.z+2.4);S.add(blenderStation);
 // The milkshake ingredients now live on the shared food-ingredient shelf.
 for(let i=5;i<blenderStation.children.length;i++) blenderStation.children[i].visible=false;
+
+// A short, prop-local blender effect. Web Audio keeps this playful sound tiny and
+// asset-free, while animating only the appliance leaves its counter and props still.
+let blenderEffectRunning=false;
+function playBlenderSound(durationMs){
+ const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+ if(!AudioContextClass)return;
+ const context=playBlenderSound.context||(playBlenderSound.context=new AudioContextClass());
+ if(context.state==="suspended")context.resume();
+ const now=context.currentTime,duration=durationMs/1000;
+ const output=context.createGain(),filter=context.createBiquadFilter();
+ output.gain.setValueAtTime(.0001,now);
+ output.gain.exponentialRampToValueAtTime(.075,now+.035);
+ output.gain.setValueAtTime(.075,now+Math.max(.05,duration-.12));
+ output.gain.exponentialRampToValueAtTime(.0001,now+duration);
+ filter.type="lowpass";filter.frequency.value=950;filter.Q.value=2.5;
+ filter.connect(output);output.connect(context.destination);
+ [96,144].forEach((frequency,index)=>{
+  const oscillator=context.createOscillator(),gain=context.createGain();
+  oscillator.type=index?"sawtooth":"square";
+  oscillator.frequency.setValueAtTime(frequency,now);
+  oscillator.frequency.linearRampToValueAtTime(frequency*1.12,now+.18);
+  oscillator.frequency.setValueAtTime(frequency*1.12,now+Math.max(.2,duration-.18));
+  oscillator.frequency.linearRampToValueAtTime(frequency*.82,now+duration);
+  gain.gain.value=index?.18:.28;
+  oscillator.connect(gain);gain.connect(filter);oscillator.start(now);oscillator.stop(now+duration);
+ });
+}
+function runBlenderEffect(durationMs=1900){
+ if(blenderEffectRunning)return;
+ blenderEffectRunning=true;playBlenderSound(durationMs);
+ const start=performance.now();
+ const baseY=blenderBase.position.y,jarY=blenderJar.position.y,lidY=blenderLid.position.y;
+ if(blenderPower.material.emissive){blenderPower.material.emissive.setHex(0xff3300);blenderPower.material.emissiveIntensity=1.4}
+ function frame(now){
+  const elapsed=now-start,fade=Math.min(1,elapsed/100,(durationMs-elapsed)/140),wobble=Math.max(0,fade);
+  const shake=Math.sin(elapsed*.12)*.035*wobble;
+  blenderBase.position.y=baseY+Math.abs(shake)*.18;
+  blenderJar.position.set(-3.8+shake,jarY+Math.abs(shake)*.28,-2.4);
+  blenderLid.position.set(-3.8+shake*1.1,lidY+Math.abs(shake)*.28,-2.4);
+  blenderJar.rotation.z=shake*.65;blenderLid.rotation.z=shake*.72;
+  if(elapsed<durationMs){requestAnimationFrame(frame);return}
+  blenderBase.position.y=baseY;blenderJar.position.set(-3.8,jarY,-2.4);blenderLid.position.set(-3.8,lidY,-2.4);
+  blenderJar.rotation.z=0;blenderLid.rotation.z=0;
+  if(blenderPower.material.emissive){blenderPower.material.emissive.setHex(0);blenderPower.material.emissiveIntensity=0}
+  blenderEffectRunning=false;
+ }
+ requestAnimationFrame(frame);
+}
 // Real 3D avatar preview on the first page
 const previewScene=new THREE.Scene();previewScene.background=new THREE.Color(0xe9f7ff);
 const previewCamera=new THREE.PerspectiveCamera(45,210/270,.1,50);previewCamera.position.set(0,2.3,6);previewCamera.lookAt(0,1.2,0);
@@ -1460,6 +1509,7 @@ setInterval(()=>{
 blenderBtn.onclick=()=>{
  if(blenderBusy)return;
  blenderBusy=true;
+ runBlenderEffect();
  blenderBtn.textContent="🌀 BLENDING...";
  smoothieMsg.style.display="block";
  smoothieMsg.textContent="🍓 Adding strawberries, banana, and fruit!";
@@ -1692,6 +1742,7 @@ newBlend.addEventListener("pointerdown",e=>{
  const t=targetInfo[makeTarget];
  if(t.mode!=="shake"){shakeResult.textContent="Choose a milkshake first!";return}
  if(targetMissing().length){shakeResult.textContent="You still need: "+targetMissing().map(prettyIngredient).join(", ");return}
+ runBlenderEffect();
  madeShake=makeTarget==="strawberryShake"?"strawberry":"chocolate";
  shakeResult.textContent=t.name+" made! Add the striped straw! 🥤";
  addStrawBtn.style.display="block";
@@ -1739,6 +1790,7 @@ blenderReadyIcon.addEventListener("pointerdown",e=>{
   const target=targetInfo[makeTarget];
   if(!target || target.mode!=="shake" || targetMissing().length)return;
 
+  runBlenderEffect();
   madeShake=makeTarget==="strawberryShake"?"strawberry":"chocolate";
   blenderReadyIcon.style.display="none";
   addStrawBtn.style.display="block";
