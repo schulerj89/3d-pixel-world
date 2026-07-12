@@ -566,10 +566,12 @@ window.runWorldTransition=(label,place,build)=>{
  worldLoadingTitle.textContent=label;
  worldLoading.classList.add("open");worldLoading.setAttribute("aria-hidden","false");
  return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(()=>{
-  if(window.releaseLargeWorlds)window.releaseLargeWorlds(place);
-  window.unloadDisposableWorlds(place);
   let result;
-  try{result=build()}finally{worldLoading.classList.remove("open");worldLoading.setAttribute("aria-hidden","true")}
+  try{
+   if(window.releaseLargeWorlds)window.releaseLargeWorlds(place);
+   window.unloadDisposableWorlds(place);
+   result=build();
+  }finally{worldLoading.classList.remove("open");worldLoading.setAttribute("aria-hidden","true")}
   resolve(result);
  },40))));
 };

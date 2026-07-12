@@ -52,7 +52,7 @@
    return {
     root,config:CONFIG,metadata:{...window.worldFactories.forest.metadata,instances:treeSpots.length*3+flowerSpots.length*2,animalCount:6},
     canWalk(x,z){if(x<-14.35||x>14.35||z<-14.35||z>14.35)return false;return !blockingTrees.some(tree=>Math.hypot(x-tree.x,z-tree.z)<tree.r)},
-    destroy(){scene.remove(root);root.traverse(obj=>{if(obj.isMesh||obj.isInstancedMesh){obj.geometry?.dispose();if(Array.isArray(obj.material))obj.material.forEach(item=>item.dispose());else obj.material?.dispose()}});resources.forEach(item=>item.dispose?.())}
+    destroy(){scene.remove(root);root.traverse(obj=>{if(obj.isMesh||obj.isInstancedMesh){if(typeof obj.geometry?.dispose==="function")obj.geometry.dispose();const materials=Array.isArray(obj.material)?obj.material:[obj.material];materials.forEach(item=>{if(typeof item?.dispose==="function")item.dispose()})}});resources.forEach(item=>{if(typeof item?.dispose==="function")item.dispose()})}
    };
   }
  };
