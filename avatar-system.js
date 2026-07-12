@@ -6,7 +6,7 @@ const saved=JSON.parse(localStorage.getItem("my3DWorld")||"{}");
 const adventureTypeScreen=document.getElementById("adventureTypeScreen");
 const startCard=document.getElementById("startCard");
 const characterTypeOptions=document.getElementById("characterTypeOptions");
-const CHARACTER_TYPES=["princess","wizard","explorer","beach-star"];
+const CHARACTER_TYPES=["princess","wizard","explorer","beach-star","astronaut"];
 function chooseCharacterType(type,shouldSave=true){
  const safeType=CHARACTER_TYPES.includes(type)?type:"princess";
  saved.characterType=safeType;
@@ -134,13 +134,15 @@ const pvHead=previewBox(.9,.9,.9,0xf2bb91,0,2.2,0),pvShirt=previewBox(1.05,1.05,
 const pvArm1=previewBox(.28,.95,.32,0xf2bb91,-.72,1.3,0),pvArm2=previewBox(.28,.95,.32,0xf2bb91,.72,1.3,0);
 const pvLeg1=previewBox(.38,.95,.45,0x5870c8,-.25,.28,0),pvLeg2=previewBox(.38,.95,.45,0x5870c8,.25,.28,0);
 const pvHairTop=previewBox(.98,.25,.98,0x6b3c35,0,2.68,0),pvHairSide=previewBox(.2,.58,.9,0x6b3c35,-.4,2.35,0);
+const playerAttachmentRig=new ThreeCharacterAttachmentRig({head:playerHead,torso:playerShirt,leftArm:playerLeftArm,rightArm:playerRightArm,leftLeg:playerLeftLeg,rightLeg:playerRightLeg});
+const previewAttachmentRig=new ThreeCharacterAttachmentRig({head:pvHead,torso:pvShirt,leftArm:pvArm1,rightArm:pvArm2,leftLeg:pvLeg1,rightLeg:pvLeg2});
 // Lightweight primitive wearables are shared conceptually by the in-world
 // player and preview. Keeping each look in its own group makes switching cheap.
 function wearableMesh(parent,geometry,color,x,y,z){
  const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color}));
  mesh.position.set(x,y,z);mesh.castShadow=true;parent.add(mesh);return mesh;
 }
-function buildWearables(parent){
+function buildWearables(parent,rig){
  const looks={};
  function look(name){const group=new THREE.Group();group.visible=false;parent.add(group);looks[name]={group,colorMeshes:[]};return looks[name]}
  let w=look("Everyday");
@@ -165,29 +167,35 @@ function buildWearables(parent){
  wearableMesh(w.group,new THREE.TorusGeometry(.73,.13,7,18),0xffcf42,0,1.05,0).rotation.x=Math.PI/2;
  wearableMesh(w.group,new THREE.CylinderGeometry(.54,.54,.08,12),0xf2d36b,0,2.73,0);
  w=look("Astronaut");
- w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(1.12,1.12,.72),0xe8edf4,0,1.25,0));
- w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(.34,.98,.40),0xe8edf4,-.72,1.3,0));
- w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(.34,.98,.40),0xe8edf4,.72,1.3,0));
- w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(.48,.43,.60),0xe8edf4,-.25,.24,.04));
- w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(.48,.43,.60),0xe8edf4,.25,.24,.04));
- wearableMesh(w.group,new THREE.BoxGeometry(.74,.82,.28),0x9aa8b8,0,1.34,-.48);
- wearableMesh(w.group,new THREE.BoxGeometry(.46,.24,.05),0x28384f,0,1.37,.39);
- [-.14,0,.14].forEach((x,index)=>wearableMesh(w.group,new THREE.BoxGeometry(.08,.08,.06),[0x66d6ff,0xffd34f,0xff6b79][index],x,1.37,.44));
+ w.attachedMeshes=[];
+ function suitPart(slot,geometry,color,position){
+  const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color}));mesh.castShadow=true;
+  rig.attach(slot,mesh,position);w.attachedMeshes.push(mesh);return mesh;
+ }
+ w.colorMeshes.push(suitPart("torso",new THREE.BoxGeometry(1.12,1.12,.72),0xe8edf4,[0,.05,0]));
+ w.colorMeshes.push(suitPart("leftArm",new THREE.BoxGeometry(.34,.98,.40),0xe8edf4,[0,.1,0]));
+ w.colorMeshes.push(suitPart("rightArm",new THREE.BoxGeometry(.34,.98,.40),0xe8edf4,[0,.1,0]));
+ w.colorMeshes.push(suitPart("leftLeg",new THREE.BoxGeometry(.48,.43,.60),0xe8edf4,[0,-.11,.04]));
+ w.colorMeshes.push(suitPart("rightLeg",new THREE.BoxGeometry(.48,.43,.60),0xe8edf4,[0,-.11,.04]));
+ suitPart("torso",new THREE.BoxGeometry(.74,.82,.28),0x9aa8b8,[0,.14,-.48]);
+ suitPart("torso",new THREE.BoxGeometry(.46,.24,.05),0x28384f,[0,.17,.39]);
+ [-.14,0,.14].forEach((x,index)=>suitPart("torso",new THREE.BoxGeometry(.08,.08,.06),[0x66d6ff,0xffd34f,0xff6b79][index],[x,.17,.44]));
+ w.setVisible=visible=>{w.group.visible=visible;w.attachedMeshes.forEach(mesh=>mesh.visible=visible)};
  return looks;
 }
-const playerWearables=buildWearables(P);
-const previewWearables=buildWearables(previewAvatar);
-function buildAstronautHelmet(parent){
- const group=new THREE.Group();parent.add(group);
- const shell=wearableMesh(group,new THREE.SphereGeometry(.62,14,10),0xe8edf4,0,2.25,0);shell.scale.set(1,1.03,.92);
+const playerWearables=buildWearables(P,playerAttachmentRig);
+const previewWearables=buildWearables(previewAvatar,previewAttachmentRig);
+function buildAstronautHelmet(rig){
+ const group=new THREE.Group();rig.attach("head",group,[0,.25,0]);
+ const shell=wearableMesh(group,new THREE.SphereGeometry(.62,14,10),0xe8edf4,0,0,0);shell.scale.set(1,1.03,.92);
  shell.material.transparent=true;shell.material.opacity=.28;shell.material.roughness=.3;
- const visor=wearableMesh(group,new THREE.SphereGeometry(.53,14,9),0x79c8e8,0,2.24,.10);
+ const visor=wearableMesh(group,new THREE.SphereGeometry(.53,14,9),0x79c8e8,0,-.01,.10);
  visor.material.transparent=true;visor.material.opacity=.35;visor.material.roughness=.2;visor.scale.set(.88,.72,.92);
- const collar=wearableMesh(group,new THREE.TorusGeometry(.56,.07,6,18),0x9aa8b8,0,1.88,0);collar.rotation.x=Math.PI/2;
+ const collar=wearableMesh(group,new THREE.TorusGeometry(.56,.07,6,18),0x9aa8b8,0,-.37,0);collar.rotation.x=Math.PI/2;
  group.visible=false;return group;
 }
-const playerAstronautHelmet=buildAstronautHelmet(P);
-const previewAstronautHelmet=buildAstronautHelmet(previewAvatar);
+const playerAstronautHelmet=buildAstronautHelmet(playerAttachmentRig);
+const previewAstronautHelmet=buildAstronautHelmet(previewAttachmentRig);
 const pvPuffPieces=[];
 function addPreviewPuff(x,y,z,s){
  let m=previewBox(.34*s,.34*s,.34*s,0x6b3c35,x,y,z);
@@ -265,8 +273,8 @@ function normalizedCharacterType(value){
 }
 function setOutfit(name,{persist=true}={}){
  if(!OUTFIT_NAMES.includes(name))name="Everyday";
- Object.entries(playerWearables).forEach(([key,value])=>value.group.visible=key===name);
- Object.entries(previewWearables).forEach(([key,value])=>value.group.visible=key===name);
+ Object.entries(playerWearables).forEach(([key,value])=>(value.setVisible||((visible)=>value.group.visible=visible))(key===name));
+ Object.entries(previewWearables).forEach(([key,value])=>(value.setVisible||((visible)=>value.group.visible=visible))(key===name));
  if(persist){saved.outfit=name;saveWorld()}
  document.querySelectorAll("#startOutfit .option").forEach(button=>{
   const selected=button.dataset.outfit===name;
