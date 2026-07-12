@@ -373,13 +373,17 @@ const ROOM_SPAWNS={bakery:{x:-1,z:2},kitchen:{x:2.2,z:-8},storage:{x:19.8,z:-8.2
 let activeRoomId="";
 function syncBakeryRoomState(force=false){
  if(currentPlace!=="bakery")return;
+ document.body.classList.add("bakery-mode");document.body.classList.remove("house-mode");
  const room=roomAtWorld(P.position.x,P.position.z);
  const roomId=room.id==="corridor"?"kitchen":room.id;
  inStorage=roomId==="storage";
  inKitchen=roomId==="kitchen";
+ document.body.classList.toggle("storage-mode",inStorage);
+ document.body.classList.toggle("kitchen-room-mode",inKitchen);
  page5Group.visible=true;
  if(!force&&roomId===activeRoomId)return;
  activeRoomId=roomId;
+ closeKitchenPanels();
  roomName.style.display="block";
  roomName.textContent=roomId==="bakery"?"Main Bakery":roomId==="kitchen"?"Bakery Kitchen":"Bakery Storage";
  recipePanel.style.display=inKitchen?"block":"none";
@@ -395,6 +399,22 @@ function teleportToRoom(roomId){
 }
 document.querySelectorAll("#roomTeleport [data-room]").forEach(button=>button.addEventListener("pointerdown",event=>{
  event.preventDefault();teleportToRoom(button.dataset.room);
+}));
+const hudMenuButton=document.getElementById("hudMenuButton"),hudDrawer=document.getElementById("hudDrawer");
+[document.getElementById("firstPageButton"),document.getElementById("avatarButton"),document.getElementById("roomTeleport")].forEach(element=>hudDrawer.appendChild(element));
+function setHudMenu(open){hudDrawer.classList.toggle("open",open);hudMenuButton.setAttribute("aria-expanded",open)}
+hudMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();const open=!hudDrawer.classList.contains("open");if(open)closeKitchenPanels();setHudMenu(open)});
+hudDrawer.addEventListener("pointerdown",event=>{if(event.target.closest("button"))setHudMenu(false)});
+const kitchenPanelIds=["recipePanel","orders","inventoryBox"];
+function closeKitchenPanels(){
+ kitchenPanelIds.forEach(id=>document.getElementById(id).classList.remove("hud-open"));
+ document.querySelectorAll("#kitchenTools button").forEach(button=>button.classList.remove("active"));
+}
+document.querySelectorAll("#kitchenTools button").forEach(button=>button.addEventListener("pointerdown",event=>{
+ event.preventDefault();
+ const panel=document.getElementById(button.dataset.panel),willOpen=!panel.classList.contains("hud-open");
+ closeKitchenPanels();setHudMenu(false);
+ if(willOpen){panel.classList.add("hud-open");button.classList.add("active")}
 }));
 function enterKitchen(){
  teleportToRoom("kitchen");
@@ -883,6 +903,7 @@ function setBakeryVisible(show){
 }
 function showBakery(){P.visible=true;
  currentPlace="bakery";
+ document.body.classList.add("bakery-mode");document.body.classList.remove("house-mode");
  startPage.style.display="none";
  setBakeryVisible(true);
  page5Group.visible=true;
@@ -896,6 +917,7 @@ function showBakery(){P.visible=true;
 }
 function showHouse(){P.visible=true;
  currentPlace="house";
+ document.body.classList.add("house-mode");document.body.classList.remove("bakery-mode");
  startPage.style.display="none";
  setBakeryVisible(false);
  house.visible=true;
@@ -1277,9 +1299,10 @@ const ingredientTags = [
 ];
 function updateIngredientTags(){
   const page4Open = currentPlace==="bakery" && inKitchen===true && inStorage!==true;
+  const nearShelf=Math.hypot(P.position.x-(-.1),P.position.z-(-19.6))<5.2;
   ingredientTags.forEach(t=>{
     const el=document.getElementById(t.id);
-    if(!page4Open){el.style.display="none";return;}
+    if(!page4Open||!nearShelf){el.style.display="none";return;}
     const v=t.pos.clone().project(C);
     if(v.z<-1||v.z>1){el.style.display="none";return;}
     el.style.display="block";
