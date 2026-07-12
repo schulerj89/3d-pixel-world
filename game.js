@@ -441,6 +441,37 @@ const playerHairTop=playerMeshes[6];
 const playerHairSide=playerMeshes[7];
 // The message area is reserved for useful, contextual feedback during play.
 document.getElementById("msg").textContent="";
+// Voxel hairstyles stay as small data sets so the world avatar and the
+// customization preview always use the same silhouette. Each entry is
+// [x, y, z, scale] for curls or [x, y, z, width, height, depth, tilt] for layers.
+const PUFF_HAIR_VOXELS=[
+ [-.50,2.56,.02,.95],[-.27,2.73,.05,1.02],[0,2.80,.04,1.08],[.27,2.73,.05,1.02],[.50,2.56,.02,.95],
+ [-.57,2.32,0,1],[-.60,2.08,-.03,.94],[.57,2.32,0,1],[.60,2.08,-.03,.94],
+ [-.42,2.59,-.29,.98],[0,2.73,-.36,1.1],[.42,2.59,-.29,.98],
+ [-.52,2.34,-.38,1.02],[0,2.48,-.46,1.15],[.52,2.34,-.38,1.02],
+ [-.43,2.08,-.41,.94],[0,2.14,-.48,1.02],[.43,2.08,-.41,.94],
+ [-.31,2.46,.34,.72],[0,2.52,.38,.68],[.31,2.46,.34,.72]
+];
+const SHORT_HAIR_VOXELS=[
+ [-.45,2.58,.02,1],[-.22,2.75,.02,1],[.02,2.80,.02,1.05],[.27,2.73,.02,1],[.48,2.56,.02,.95],
+ [-.55,2.36,0,1],[-.60,2.12,-.02,1],[.57,2.34,0,1],[.61,2.10,-.02,1],
+ [-.54,1.88,-.05,.9],[.54,1.88,-.05,.9],
+ [-.38,2.65,-.30,1],[0,2.76,-.36,1.1],[.38,2.64,-.30,1],
+ [-.50,2.38,-.38,1],[0,2.48,-.46,1.15],[.50,2.36,-.38,1],
+ [-.46,2.08,-.40,.95],[0,2.14,-.48,1.05],[.46,2.06,-.40,.95],
+ [-.28,2.42,.36,.62],[.05,2.50,.39,.58],[.34,2.38,.36,.58],
+ [-.42,1.88,-.34,.78],[0,1.92,-.44,.86],[.42,1.88,-.34,.78]
+];
+const LONG_HAIR_LAYERS=[
+ [-.28,2.62,.02,.38,.28,.76,-.10],[.28,2.62,.02,.38,.28,.76,.10],
+ [-.43,2.38,-.02,.30,.55,.70,-.12],[.43,2.38,-.02,.30,.55,.70,.12],
+ [-.53,2.02,-.08,.30,.62,.58,-.10],[.53,2.02,-.08,.30,.62,.58,.10],
+ [-.58,1.60,-.12,.34,.58,.52,.10],[.58,1.60,-.12,.34,.58,.52,-.10],
+ [-.53,1.20,-.16,.32,.52,.46,-.14],[.53,1.20,-.16,.32,.52,.46,.14],
+ [0,2.42,-.42,.78,.55,.25,0],[0,1.95,-.45,.88,.62,.24,0],
+ [0,1.45,-.43,.82,.58,.22,0],[0,1.02,-.38,.70,.46,.20,0],
+ [-.20,2.50,.35,.24,.34,.24,-.08],[.20,2.50,.35,.24,.34,.24,.08]
+];
 // Extra pieces used to make the puffy style fuller and rounder.
 const playerPuffPieces=[];
 function addPlayerPuff(x,y,z,s){
@@ -451,43 +482,21 @@ function addPlayerPuff(x,y,z,s){
  m.position.set(x,y,z);m.castShadow=true;m.visible=false;P.add(m);
  playerPuffPieces.push(m);
 }
-[
-[-.46,2.55,0,.9],[-.25,2.72,0,1],[0,2.78,0,1.05],[.25,2.72,0,1],[.46,2.55,0,.9],
-[-.53,2.3,0,.95],[.53,2.3,0,.95],[-.48,2.05,0,.8],[.48,2.05,0,.8],
-[-.38,2.55,-.28,.9],[0,2.7,-.32,1],[.38,2.55,-.28,.9],
-[-.42,2.3,-.35,.95],[0,2.45,-.42,1.1],[.42,2.3,-.35,.95],
-[-.3,2.05,-.38,.85],[.3,2.05,-.38,.85]
-].forEach(a=>addPlayerPuff(...a));
+PUFF_HAIR_VOXELS.forEach(a=>addPlayerPuff(...a));
 const playerLongPieces=[];
 function addPlayerLong(x,y,z,w,h,d,ry=0){
  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:0x6b3c35}));
  m.position.set(x,y,z);m.rotation.z=ry;m.castShadow=true;m.visible=false;P.add(m);playerLongPieces.push(m);
 }
 // Layered, center-parted long hair that flows down both sides and the back.
-[
-[-.28,2.62,.02,.38,.28,.76,-.10],[.28,2.62,.02,.38,.28,.76,.10],
-[-.43,2.38,-.02,.30,.55,.70,-.12],[.43,2.38,-.02,.30,.55,.70,.12],
-[-.53,2.02,-.08,.30,.62,.58,-.10],[.53,2.02,-.08,.30,.62,.58,.10],
-[-.58,1.60,-.12,.34,.58,.52,.10],[.58,1.60,-.12,.34,.58,.52,-.10],
-[-.53,1.20,-.16,.32,.52,.46,-.14],[.53,1.20,-.16,.32,.52,.46,.14],
-[0,2.42,-.42,.78,.55,.25,0],[0,1.95,-.45,.88,.62,.24,0],
-[0,1.45,-.43,.82,.58,.22,0],[0,1.02,-.38,.70,.46,.20,0]
-].forEach(a=>addPlayerLong(...a));
+LONG_HAIR_LAYERS.forEach(a=>addPlayerLong(...a));
 const playerShortCurlPieces=[];
 function addPlayerShortCurl(x,y,z,s){
  const m=new THREE.Mesh(new THREE.BoxGeometry(.30*s,.30*s,.30*s),new THREE.MeshStandardMaterial({color:0x6b3c35}));
  m.position.set(x,y,z);m.castShadow=true;m.visible=false;P.add(m);playerShortCurlPieces.push(m);
 }
 // Rounded curly bob: full top, sides, back, and a few forehead curls.
-[
-[-.45,2.58,.02,1],[-.22,2.75,.02,1],[.02,2.80,.02,1.05],[.27,2.73,.02,1],[.48,2.56,.02,.95],
-[-.55,2.36,0,1],[-.60,2.12,-.02,1],[.57,2.34,0,1],[.61,2.10,-.02,1],
-[-.54,1.88,-.05,.9],[.54,1.88,-.05,.9],
-[-.38,2.65,-.30,1],[0,2.76,-.36,1.1],[.38,2.64,-.30,1],
-[-.50,2.38,-.38,1],[0,2.48,-.46,1.15],[.50,2.36,-.38,1],
-[-.46,2.08,-.40,.95],[0,2.14,-.48,1.05],[.46,2.06,-.40,.95],
-[-.28,2.42,.36,.62],[.05,2.50,.39,.58],[.34,2.38,.36,.58]
-].forEach(a=>addPlayerShortCurl(...a));
+SHORT_HAIR_VOXELS.forEach(a=>addPlayerShortCurl(...a));
 
 let cashier=person(0xff7fa8);cashier.position.set(2.7,0,-.3);
 let vx=0,vz=0,walk=0;const customers=[]; // No customers in this version.function spawn(){if(customers.length>5)return;let q=person(Math.random()*0xffffff);q.position.set(6.5,0,4.5);q.userData={stage:0,wait:180+Math.random()*180};customers.push(q)}// Customers removed.
@@ -952,39 +961,17 @@ function addPreviewPuff(x,y,z,s){
  let m=previewBox(.34*s,.34*s,.34*s,0x6b3c35,x,y,z);
  m.visible=false;pvPuffPieces.push(m);
 }
-[
-[-.55,2.65,0,.95],[-.3,2.85,0,1.05],[0,2.92,0,1.12],[.3,2.85,0,1.05],[.55,2.65,0,.95],
-[-.62,2.38,0,1], [.62,2.38,0,1],[-.58,2.12,0,.9],[.58,2.12,0,.9],
-[-.45,2.7,-.32,1], [0,2.88,-.38,1.15],[.45,2.7,-.32,1],
-[-.52,2.42,-.42,1.05],[0,2.55,-.5,1.2],[.52,2.42,-.42,1.05],
-[-.4,2.15,-.43,.9],[.4,2.15,-.43,.9]
-].forEach(a=>addPreviewPuff(...a));
+PUFF_HAIR_VOXELS.forEach(a=>addPreviewPuff(...a));
 const pvLongPieces=[];
 function addPreviewLong(x,y,z,w,h,d,rz=0){
  let m=previewBox(w,h,d,0x6b3c35,x,y,z);m.rotation.z=rz;m.visible=false;pvLongPieces.push(m);
 }
-[
-[-.34,2.75,.02,.42,.30,.82,-.10],[.34,2.75,.02,.42,.30,.82,.10],
-[-.50,2.46,-.02,.32,.58,.74,-.12],[.50,2.46,-.02,.32,.58,.74,.12],
-[-.62,2.05,-.08,.34,.68,.62,-.10],[.62,2.05,-.08,.34,.68,.62,.10],
-[-.68,1.58,-.12,.38,.66,.56,.10],[.68,1.58,-.12,.38,.66,.56,-.10],
-[-.62,1.12,-.16,.36,.58,.50,-.14],[.62,1.12,-.16,.36,.58,.50,.14],
-[0,2.53,-.47,.90,.60,.27,0],[0,2.02,-.50,1,.68,.26,0],
-[0,1.49,-.48,.94,.64,.24,0],[0,1.02,-.42,.78,.50,.22,0]
-].forEach(a=>addPreviewLong(...a));
+LONG_HAIR_LAYERS.forEach(a=>addPreviewLong(...a));
 const pvShortCurlPieces=[];
 function addPreviewShortCurl(x,y,z,s){
  let m=previewBox(.31*s,.31*s,.31*s,0x6b3c35,x,y,z);m.visible=false;pvShortCurlPieces.push(m);
 }
-[
-[-.55,2.72,.02,1],[-.28,2.91,.02,1],[0,2.97,.02,1.08],[.29,2.90,.02,1],[.56,2.70,.02,.98],
-[-.66,2.45,0,1.05],[-.70,2.17,-.02,1.03],[.66,2.43,0,1.05],[.70,2.15,-.02,1.03],
-[-.63,1.90,-.05,.94],[.63,1.90,-.05,.94],
-[-.48,2.78,-.34,1],[0,2.92,-.42,1.14],[.48,2.76,-.34,1],
-[-.60,2.48,-.45,1.05],[0,2.58,-.54,1.2],[.60,2.46,-.45,1.05],
-[-.56,2.16,-.47,1],[0,2.22,-.56,1.1],[.56,2.14,-.47,1],
-[-.34,2.52,.42,.65],[.04,2.60,.45,.62],[.40,2.48,.42,.62]
-].forEach(a=>addPreviewShortCurl(...a));
+SHORT_HAIR_VOXELS.forEach(a=>addPreviewShortCurl(...a));
 
 
 
