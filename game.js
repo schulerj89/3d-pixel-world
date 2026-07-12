@@ -2061,6 +2061,8 @@ setInterval(()=>{
   let draggingCamera=false;
   let dragId=null;
   let lastX=0,lastY=0;
+  const touchPointers=new Map();
+  let pinchDistance=0;
 
   function interactiveTarget(el){
     return !!el.closest("button, #pad, #housePanel, #orders, #recipePanel, #avatarShop, #remotePanel, #tvScreen, #furnitureMover");
@@ -2068,6 +2070,16 @@ setInterval(()=>{
 
   gameArea.addEventListener("pointerdown",e=>{
     if(interactiveTarget(e.target)) return;
+    if(e.pointerType==="touch"){
+      touchPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(touchPointers.size===2){
+        const points=[...touchPointers.values()];
+        pinchDistance=Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y);
+        draggingCamera=false;
+        dragId=null;
+        return;
+      }
+    }
     draggingCamera=true;
     dragId=e.pointerId;
     lastX=e.clientX;
@@ -2076,6 +2088,16 @@ setInterval(()=>{
   });
 
   gameArea.addEventListener("pointermove",e=>{
+    if(e.pointerType==="touch"&&touchPointers.has(e.pointerId)){
+      touchPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(touchPointers.size>=2){
+        const points=[...touchPointers.values()];
+        const distance=Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y);
+        if(pinchDistance>0)cameraDistance=Math.max(5,Math.min(18,cameraDistance+(pinchDistance-distance)*.025));
+        pinchDistance=distance;
+        return;
+      }
+    }
     if(!draggingCamera || e.pointerId!==dragId) return;
     const dx=e.clientX-lastX;
     const dy=e.clientY-lastY;
@@ -2091,8 +2113,13 @@ setInterval(()=>{
     draggingCamera=false;
     dragId=null;
   }
-  gameArea.addEventListener("pointerup",e=>{draggingCamera=false;dragId=null;});
-  gameArea.addEventListener("pointercancel",e=>{draggingCamera=false;dragId=null;});
+  function releasePointer(e){
+    touchPointers.delete(e.pointerId);
+    if(touchPointers.size<2)pinchDistance=0;
+    if(e.pointerId===dragId){draggingCamera=false;dragId=null}
+  }
+  gameArea.addEventListener("pointerup",releasePointer);
+  gameArea.addEventListener("pointercancel",releasePointer);
 
   // Also disable the old look pad behavior variables if they exist.
   if(typeof looking!=="undefined") looking=false;
@@ -2544,6 +2571,7 @@ setInterval(()=>{
 
   let carryingRemote=false;
   let pickedRemoteObject=null;
+  let tvTextTimer=null;
 
   const svgArt={
     news:`<svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
@@ -2628,6 +2656,37 @@ setInterval(()=>{
       lastPickupVisible=show;
     }
     el.style.display=value;
+    el.setAttribute("aria-hidden",String(!show));
+  }
+
+  function houseTV(){
+    return furniture.find(f=>f.userData.kind==="tv"&&f.visible!==false);
+  }
+
+  function positionTVScreen(){
+    if(!tvIsOn)return;
+    if(currentPlace!=="house"){tvScreenEl.style.display="none";return}
+    const tv=houseTV();
+    if(!tv){tvScreenEl.style.display="none";return}
+    tvScreenEl.style.display="block";
+    const p=tv.position.clone();
+    p.y+=1.55;
+    p.project(C);
+    const halfW=tvScreenEl.offsetWidth/2,halfH=tvScreenEl.offsetHeight/2;
+    const x=Math.max(halfW+8,Math.min(innerWidth-halfW-8,(p.x*.5+.5)*innerWidth));
+    const y=Math.max(halfH+8,Math.min(innerHeight-halfH-8,(-p.y*.5+.5)*innerHeight));
+    tvScreenEl.style.left=x+"px";
+    tvScreenEl.style.top=y+"px";
+  }
+
+  function showTVTextBriefly(){
+    clearTimeout(tvTextTimer);
+    tvTitleEl.style.visibility="visible";
+    tvShowEl.style.visibility="visible";
+    tvTextTimer=setTimeout(()=>{
+      tvTitleEl.style.visibility="hidden";
+      tvShowEl.style.visibility="hidden";
+    },3000);
   }
 
   function updateRemotePickup(){
@@ -2682,7 +2741,7 @@ setInterval(()=>{
     carryingRemote=true;
     pickedRemoteObject=remote;
     remote.visible=false;
-    handRemote.style.display="block";
+    setRemoteVisible(handRemote,true,"hand");
     document.getElementById("msg").textContent="You picked up the TV remote! Use the remote at the bottom-right. 📱";
   });
 
@@ -2696,7 +2755,7 @@ setInterval(()=>{
       pickedRemoteObject=null;
       saveWorld();
     }
-    handRemote.style.display="none";
+    setRemoteVisible(handRemote,false,"hand");
 
     // Putting the remote down also closes and powers off the TV popup.
     tvIsOn=false;
@@ -2720,7 +2779,8 @@ setInterval(()=>{
     }
     tvIsOn=!tvIsOn;
     tvScreenEl.style.display=tvIsOn?"block":"none";
-    if(tvIsOn)showTVChannel(currentChannel);
+    if(tvIsOn){showTVChannel(currentChannel);positionTVScreen();showTVTextBriefly()}
+    else clearTimeout(tvTextTimer);
   }
 
   document.getElementById("handRemotePower").addEventListener("pointerdown",e=>{
@@ -2744,6 +2804,7 @@ setInterval(()=>{
   const oldShowTVChannel=showTVChannel;
   showTVChannel=function(name){
     oldShowTVChannel(name);
+    showTVTextBriefly();
     channelArt.style.display="flex";
     channelArt.innerHTML=svgArt[name]||svgArt.news;
 
@@ -2766,5 +2827,5 @@ setInterval(()=>{
     rug.visible=true;
   });
 
-  setInterval(updateRemotePickup,100);
+  setInterval(()=>{updateRemotePickup();positionTVScreen()},100);
 })();
