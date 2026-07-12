@@ -284,8 +284,11 @@ body.kitchen-clean #lookPad{opacity:.82}
 }
 #pickupRemoteButton{
   display:none;position:fixed;z-index:90;width:54px;height:54px;
-  padding:0;border:0;background:transparent;opacity:0;touch-action:manipulation;
+  padding:0;border:3px solid #fff;background:#292c34;color:#fff;opacity:1;
+  border-radius:50%;box-shadow:0 4px 12px #0006;touch-action:manipulation;
 }
+#pickupRemoteButton::before{content:"📱";font-size:27px;line-height:1}
+#pickupRemoteButton:active{transform:scale(.92)}
 #handRemote{
   display:none;position:fixed;right:14px;bottom:22px;z-index:95;
   width:170px;background:#252833;color:white;border:5px solid #555;
