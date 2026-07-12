@@ -1113,14 +1113,14 @@ hbox(HOUSE_CONFIG.width,HOUSE_CONFIG.wallHeight,HOUSE_CONFIG.wallThickness,0xdde
 hbox(HOUSE_CONFIG.wallThickness,HOUSE_CONFIG.wallHeight,HOUSE_CONFIG.depth,0xffe5ef,-HOUSE_HALF_WIDTH+HOUSE_CONFIG.wallThickness/2,HOUSE_CONFIG.wallHeight/2,0);
 function addFurniture(kind,loading=false,savedItem=null){
  let g=new THREE.Group(),n=furniture.length,x=-5+(n%6)*2,z=-4+Math.floor(n/6)*2;
- function q(w,h,d,c,px,py,pz){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(px,py,pz);m.castShadow=true;g.add(m)}
+ function q(w,h,d,c,px,py,pz){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(px,py,pz);m.castShadow=true;g.add(m);return m}
  if(kind==="sofa"){q(2,.7,.8,0xe889ad,0,.55,0);q(2,.8,.25,0xd96f9a,0,1,-.3);q(.25,.7,.8,0xd96f9a,-1,.65,0);q(.25,.7,.8,0xd96f9a,1,.65,0)}
  if(kind==="table"){q(1.7,.18,1.1,0x9b6645,0,1,0);for(let a of[-.65,.65])for(let b of[-.35,.35])q(.14,1,.14,0x74472f,a,.5,b)}
  if(kind==="bed"){q(2.2,.45,1.3,0xffffff,0,.45,0);q(2.2,.25,1.3,0x8fc5ff,0,.72,0);q(.7,.18,1,0xffffff,-.6,.92,0)}
  if(kind==="lamp"){q(.55,.12,.55,0x555555,0,.08,0);q(.12,1.5,.12,0x777777,0,.8,0);q(.8,.65,.8,0xffe978,0,1.65,0)}
  if(kind==="chair"){q(.8,.18,.8,0x8f613f,0,.8,0);q(.8,1,.18,0x8f613f,0,1.3,-.3);q(.12,.8,.12,0x68442d,-.3,.4,0);q(.12,.8,.12,0x68442d,.3,.4,0)}
  if(kind==="fridge"){q(1.25,2.4,.9,0xdcecf2,0,1.2,0);q(.08,1,.08,0x777777,.48,1.55,.48)}
- if(kind==="tv"){q(2.5,1.5,.22,0x20232b,0,1.65,0);q(2.15,1.15,.05,0x62a9d8,0,1.65,.14);q(.2,.8,.2,0x555555,0,.65,0);q(1.3,.15,.55,0x555555,0,.2,0)}
+ if(kind==="tv"){q(2.5,1.5,.22,0x20232b,0,1.65,0);g.userData.tvScreen=q(2.15,1.15,.05,0x151923,0,1.65,.14);q(.2,.8,.2,0x555555,0,.65,0);q(1.3,.15,.55,0x555555,0,.2,0)}
  // Keep the power button clearly above the remote body. Coplanar faces here
  // z-fight in WebGL and make the button appear to flash as the camera moves.
  if(kind==="remote"){q(.35,.12,.75,0x333333,0,.15,0);q(.1,.04,.1,0xff5555,0,.255,-.25)}
@@ -2574,6 +2574,7 @@ setInterval(()=>{
   let carryingRemote=false;
   let pickedRemoteObject=null;
   let tvTextTimer=null;
+  let tvTexture=null;
 
   const svgArt={
     news:`<svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
@@ -2666,29 +2667,44 @@ setInterval(()=>{
   }
 
   function positionTVScreen(){
-    if(!tvIsOn)return;
-    if(currentPlace!=="house"){tvScreenEl.style.display="none";return}
-    const tv=houseTV();
-    if(!tv){tvScreenEl.style.display="none";return}
-    tvScreenEl.style.display="block";
-    const p=tv.position.clone();
-    p.y+=1.55;
-    p.project(C);
-    const halfW=tvScreenEl.offsetWidth/2,halfH=tvScreenEl.offsetHeight/2;
-    const x=Math.max(halfW+8,Math.min(innerWidth-halfW-8,(p.x*.5+.5)*innerWidth));
-    const y=Math.max(halfH+8,Math.min(innerHeight-halfH-8,(-p.y*.5+.5)*innerHeight));
-    tvScreenEl.style.left=x+"px";
-    tvScreenEl.style.top=y+"px";
+    // Channel artwork is rendered on the 3D screen, never as a floating panel.
+    tvScreenEl.style.display="none";
   }
 
   function showTVTextBriefly(){
     clearTimeout(tvTextTimer);
-    tvTitleEl.style.visibility="visible";
-    tvShowEl.style.visibility="visible";
+    const message=document.getElementById("msg");
+    message.textContent=shows[currentChannel][0]+" — "+shows[currentChannel][1];
     tvTextTimer=setTimeout(()=>{
-      tvTitleEl.style.visibility="hidden";
-      tvShowEl.style.visibility="hidden";
+      if(message.textContent.includes(shows[currentChannel][0]))message.textContent="";
     },3000);
+  }
+
+  function paintTVScreen(name){
+    const tv=houseTV();
+    const screen=tv&&tv.userData.tvScreen;
+    if(!screen)return;
+    if(!tvIsOn){
+      if(tvTexture){tvTexture.dispose();tvTexture=null}
+      screen.material.map=null;
+      screen.material.color.setHex(0x151923);
+      screen.material.needsUpdate=true;
+      return;
+    }
+    const svg=svgArt[name]||svgArt.news;
+    const image=new Image();
+    image.onload=()=>{
+      const canvas=document.createElement("canvas");
+      canvas.width=600;canvas.height=300;
+      canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);
+      if(tvTexture)tvTexture.dispose();
+      tvTexture=new THREE.CanvasTexture(canvas);
+      tvTexture.colorSpace=THREE.SRGBColorSpace;
+      screen.material.color.setHex(0xffffff);
+      screen.material.map=tvTexture;
+      screen.material.needsUpdate=true;
+    };
+    image.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
   }
 
   function updateRemotePickup(){
@@ -2762,6 +2778,7 @@ setInterval(()=>{
     // Putting the remote down also closes and powers off the TV popup.
     tvIsOn=false;
     tvScreenEl.style.display="none";
+    paintTVScreen(currentChannel);
     if(tvAnimationTimer){
       clearInterval(tvAnimationTimer);
       tvAnimationTimer=null;
@@ -2780,9 +2797,9 @@ setInterval(()=>{
       return;
     }
     tvIsOn=!tvIsOn;
-    tvScreenEl.style.display=tvIsOn?"block":"none";
-    if(tvIsOn){showTVChannel(currentChannel);positionTVScreen();showTVTextBriefly()}
-    else clearTimeout(tvTextTimer);
+    tvScreenEl.style.display="none";
+    if(tvIsOn){showTVChannel(currentChannel);showTVTextBriefly()}
+    else{clearTimeout(tvTextTimer);paintTVScreen(currentChannel)}
   }
 
   document.getElementById("handRemotePower").addEventListener("pointerdown",e=>{
@@ -2806,6 +2823,7 @@ setInterval(()=>{
   const oldShowTVChannel=showTVChannel;
   showTVChannel=function(name){
     oldShowTVChannel(name);
+    paintTVScreen(name);
     showTVTextBriefly();
     channelArt.style.display="flex";
     channelArt.innerHTML=svgArt[name]||svgArt.news;
