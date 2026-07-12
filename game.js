@@ -633,6 +633,7 @@ updateMusicToggle();
 function setHudMenu(open){hudDrawer.classList.toggle("open",open);hudMenuButton.setAttribute("aria-expanded",open)}
 hudMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();const open=!hudDrawer.classList.contains("open");if(open){closeKitchenPanels();if(currentPlace==="house")setHousePanel(false)}setHudMenu(open)});
 hudDrawer.addEventListener("pointerdown",event=>{if(event.target.closest("button"))setHudMenu(false)});
+document.getElementById("menuGoHouse").addEventListener("pointerdown",event=>{event.preventDefault();showHouse()});
 const kitchenPanelIds=["recipePanel","orders","inventoryBox"];
 function closeKitchenPanels(){
  kitchenPanelIds.forEach(id=>document.getElementById(id).classList.remove("hud-open"));
@@ -1196,10 +1197,12 @@ function showBakery(){P.visible=true;
 function showHouse(){P.visible=true;
  currentPlace="house";
  document.body.classList.add("house-mode");document.body.classList.remove("bakery-mode");
+ document.body.classList.remove("kitchen-clean","storage-mode");
  startPage.style.display="none";
  setBakeryVisible(false);
  house.visible=true;
  setHousePanel(false);
+ setHudMenu(false);closeKitchenPanels();
  document.getElementById("roomTeleport").style.display="none";
  setBuildingMode(false);
  P.position.set(HOUSE_CONFIG.spawn.x,0,HOUSE_CONFIG.spawn.z);
