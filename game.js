@@ -1,10 +1,11 @@
 const S=new THREE.Scene();S.background=new THREE.Color(0xffd7e6);const C=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,100);C.position.set(10,11,15);C.lookAt(0,1,-2);const R=new THREE.WebGLRenderer({antialias:true});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));R.shadowMap.enabled=true;game.appendChild(R.domElement);S.add(new THREE.HemisphereLight(0xffffff,0x805060,2.4));let sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(5,10,7);sun.castShadow=true;S.add(sun);
 function box(w,h,d,c,x,y,z,parent=S){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;parent.add(m);return m}
-// Connected bakery room system. In each map, # is a wall and . is walkable floor.
+// Connected bakery room system. In each map, # is a wall, . is walkable floor,
+// and D is a decorative, collision-solid entrance door.
 // The main bakery has a 20 x 20 tile interior; shared doorway dots connect every room.
 const ROOM_LAYOUTS=[
  {id:"bakery",name:"Main Bakery",originX:-10.5,originZ:15.5,floor:0xc98b68,wall:0xffd8e5,map:`
-######################
+##########DD##########
 #....................#
 #....................#
 #....................#
@@ -75,7 +76,7 @@ const roomMatrix=new THREE.Matrix4();
 // the bakery finish authoritative at its threshold.
 const claimedFloorTiles=new Set();
 ROOM_LAYOUTS.forEach(room=>{
- const floorTiles=[],wallTiles=[];
+ const floorTiles=[],wallTiles=[],doorTiles=[];
  room.rows.forEach((row,rowIndex)=>[...row].forEach((tile,colIndex)=>{
   const position={x:room.originX+colIndex,z:room.originZ-rowIndex};
   if(tile==="#")wallTiles.push(position);
@@ -86,6 +87,7 @@ ROOM_LAYOUTS.forEach(room=>{
     floorTiles.push(position);
    }
   }
+  else if(tile==="D")doorTiles.push(position);
  }));
  const floorMaterial=new THREE.MeshStandardMaterial({color:room.floor,roughness:1,metalness:0});
  const floorMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.18,1),floorMaterial,floorTiles.length);
@@ -98,6 +100,28 @@ ROOM_LAYOUTS.forEach(room=>{
   const wallMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,5,1),new THREE.MeshStandardMaterial({color:room.wall}),wallTiles.length);
   wallTiles.forEach((tile,index)=>{roomMatrix.makeTranslation(tile.x,2.5,tile.z);wallMesh.setMatrixAt(index,roomMatrix)});
   wallMesh.castShadow=wallMesh.receiveShadow=true;roomWorldGroup.add(wallMesh);
+ }
+ if(doorTiles.length){
+  const entrance=new THREE.Group();
+  const doorMaterial=new THREE.MeshStandardMaterial({color:0x5f3428,roughness:.72});
+  const trimMaterial=new THREE.MeshStandardMaterial({color:0xfff0cf,roughness:.65});
+  const metalMaterial=new THREE.MeshStandardMaterial({color:0xe5b84d,metalness:.55,roughness:.35});
+  const addEntrancePart=(geometry,material,x,y,z)=>{
+   const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.castShadow=mesh.receiveShadow=true;entrance.add(mesh);return mesh;
+  };
+  doorTiles.forEach((tile,index)=>{
+   addEntrancePart(new THREE.BoxGeometry(.96,3.75,.38),doorMaterial,tile.x,1.88,tile.z);
+   addEntrancePart(new THREE.BoxGeometry(.66,.72,.05),trimMaterial,tile.x,2.5,tile.z-.215);
+   addEntrancePart(new THREE.BoxGeometry(.66,.72,.05),trimMaterial,tile.x,1.45,tile.z-.215);
+   const handleX=tile.x+(index<doorTiles.length/2 ? .27 : -.27);
+   addEntrancePart(new THREE.SphereGeometry(.09,12,8),metalMaterial,handleX,1.85,tile.z-.27);
+  });
+  const minX=Math.min(...doorTiles.map(tile=>tile.x)),maxX=Math.max(...doorTiles.map(tile=>tile.x));
+  const centerX=(minX+maxX)/2,centerZ=doorTiles[0].z;
+  addEntrancePart(new THREE.BoxGeometry(.24,4.65,.54),trimMaterial,minX-.6,2.32,centerZ);
+  addEntrancePart(new THREE.BoxGeometry(.24,4.65,.54),trimMaterial,maxX+.6,2.32,centerZ);
+  addEntrancePart(new THREE.BoxGeometry(maxX-minX+2.2,.28,.54),trimMaterial,centerX,4.52,centerZ);
+  roomWorldGroup.add(entrance);
  }
 });
 function tileAtWorld(x,z){
