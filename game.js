@@ -141,6 +141,70 @@ function roomAtWorld(x,z){
  if(x>=-6&&x<=9&&z<=-5&&z>=-21)return ROOM_LAYOUTS.find(room=>room.id==="kitchen");
  return ROOM_LAYOUTS.find(room=>room.id==="bakery");
 }
+// Voxel decorations for the main room. Keeping the models and placements in data
+// makes it easy to dress the bakery without scattering one-off meshes through the scene.
+const bakeryDecorGroup=new THREE.Group();
+bakeryDecorGroup.name="main-bakery-decor";
+S.add(bakeryDecorGroup);
+function addBakeryDecorPart(parent,w,h,d,color,x,y,z){
+ const part=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color}));
+ part.position.set(x,y,z);part.castShadow=true;part.receiveShadow=true;parent.add(part);
+}
+const BAKERY_DECOR_MODELS={
+ plant(g){
+  addBakeryDecorPart(g,.9,.65,.9,0xc56f52,0,.33,0);
+  addBakeryDecorPart(g,.55,.18,.55,0x8a4a38,0,.72,0);
+  addBakeryDecorPart(g,.16,1,.16,0x4f8b55,0,1.18,0);
+  [[-.32,1.2,0],[.32,1.35,.03],[0,1.55,-.25],[.08,1.12,.3]].forEach(([x,y,z])=>
+   addBakeryDecorPart(g,.55,.42,.18,0x78b967,x,y,z));
+ },
+ cafeTable(g){
+  addBakeryDecorPart(g,2.4,.18,1.35,0xf2cf9f,0,1.25,0);
+  addBakeryDecorPart(g,.28,1.2,.28,0x8c553e,0,.62,0);
+  [-1,1].forEach(x=>{
+   addBakeryDecorPart(g,.75,.16,.75,0xd88c83,x,.65,0);
+   addBakeryDecorPart(g,.18,.65,.18,0x8c553e,x,.32,0);
+  });
+  addBakeryDecorPart(g,.38,.38,.38,0xfff2c2,0,1.53,0);
+  addBakeryDecorPart(g,.28,.12,.28,0xff9db8,0,1.78,0);
+ },
+ pastryCase(g){
+  addBakeryDecorPart(g,3.1,.7,.9,0x9d6046,0,.35,0);
+  addBakeryDecorPart(g,3,.95,.82,0xaee5ee,0,1.16,0);
+  addBakeryDecorPart(g,2.75,.12,.7,0xf7e0ba,0,.95,0);
+  [-.9,0,.9].forEach((x,index)=>{
+   addBakeryDecorPart(g,.48,.22,.42,[0xff9fba,0xe1a866,0xffdb72][index],x,1.12,.06);
+   addBakeryDecorPart(g,.3,.12,.3,0xfff0dc,x,1.3,.06);
+  });
+ },
+ menuBoard(g){
+  addBakeryDecorPart(g,3.7,2,.18,0x704839,0,2.4,0);
+  addBakeryDecorPart(g,3.35,1.65,.08,0x315044,0,2.4,.12);
+  [2.85,2.4,1.95].forEach((y,index)=>
+   addBakeryDecorPart(g,2.25-index*.35,.09,.05,0xfff2d5,-.25,y,.19));
+  addBakeryDecorPart(g,.45,.45,.05,0xf7b45d,1.25,2.55,.19);
+ },
+ breadRack(g){
+  [-1.15,0,1.15].forEach(y=>addBakeryDecorPart(g,3,.14,.7,0x956047,0,y+1.35,0));
+  [-1.35,1.35].forEach(x=>addBakeryDecorPart(g,.16,2.8,.7,0x75452f,x,1.4,0));
+  [-.85,0,.85].forEach(x=>{
+   addBakeryDecorPart(g,.62,.28,.45,0xdca85f,x,1.52,.02);
+   addBakeryDecorPart(g,.48,.12,.48,0xf0c978,x,1.75,.02);
+  });
+ }
+};
+[
+ {model:"plant",x:-8.4,z:12.7},
+ {model:"plant",x:8.4,z:12.7},
+ {model:"cafeTable",x:-7.3,z:8.1,rotation:Math.PI/2},
+ {model:"cafeTable",x:7.3,z:7.2,rotation:Math.PI/2},
+ {model:"pastryCase",x:-7.7,z:1.8,rotation:Math.PI/2},
+ {model:"breadRack",x:8.7,z:1.2,rotation:-Math.PI/2},
+ {model:"menuBoard",x:-5.8,z:14.25,rotation:0}
+].forEach(({model,x,z,rotation=0})=>{
+ const decoration=new THREE.Group();decoration.position.set(x,0,z);decoration.rotation.y=rotation;
+ decoration.userData.decorType=model;BAKERY_DECOR_MODELS[model](decoration);bakeryDecorGroup.add(decoration);
+});
 // Keep a five-tile approach lane between the cashier station and kitchen door.
 box(5,1.3,1.2,0xb96f4e,2.7,.7,.5);box(1,.8,.7,0x555555,3.8,1.65,.5);box(.7,.25,.5,0x9ff0b0,3.8,2.05,.5);
 box(3,.2,.6,0x8c553e,-4.5,2.7,-5);for(let i=0;i<4;i++)box(.5,.4,.4,[0xff8fb1,0xffd36e,0x9fe3c1,0xa9c8ff][i],-5.5+i*.75,3,-4.9);
