@@ -1182,10 +1182,30 @@ function buildWearables(parent){
  w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(1.08,.18,.67),0x28b9cf,0,1.24,.02));
  wearableMesh(w.group,new THREE.TorusGeometry(.73,.13,7,18),0xffcf42,0,1.05,0).rotation.x=Math.PI/2;
  wearableMesh(w.group,new THREE.CylinderGeometry(.54,.54,.08,12),0xf2d36b,0,2.73,0);
+ w=look("Astronaut");
+ w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(1.12,1.12,.72),0xe8edf4,0,1.25,0));
+ w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(.34,.98,.40),0xe8edf4,-.72,1.3,0));
+ w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(.34,.98,.40),0xe8edf4,.72,1.3,0));
+ w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(.48,.43,.60),0xe8edf4,-.25,.24,.04));
+ w.colorMeshes.push(wearableMesh(w.group,new THREE.BoxGeometry(.48,.43,.60),0xe8edf4,.25,.24,.04));
+ wearableMesh(w.group,new THREE.BoxGeometry(.74,.82,.28),0x9aa8b8,0,1.34,-.48);
+ wearableMesh(w.group,new THREE.BoxGeometry(.46,.24,.05),0x28384f,0,1.37,.39);
+ [-.14,0,.14].forEach((x,index)=>wearableMesh(w.group,new THREE.BoxGeometry(.08,.08,.06),[0x66d6ff,0xffd34f,0xff6b79][index],x,1.37,.44));
  return looks;
 }
 const playerWearables=buildWearables(P);
 const previewWearables=buildWearables(previewAvatar);
+function buildAstronautHelmet(parent){
+ const group=new THREE.Group();parent.add(group);
+ const shell=wearableMesh(group,new THREE.SphereGeometry(.62,14,10),0xe8edf4,0,2.25,0);shell.scale.set(1,1.03,.92);
+ shell.material.transparent=true;shell.material.opacity=.28;shell.material.roughness=.3;
+ const visor=wearableMesh(group,new THREE.SphereGeometry(.53,14,9),0x79c8e8,0,2.24,.10);
+ visor.material.transparent=true;visor.material.opacity=.35;visor.material.roughness=.2;visor.scale.set(.88,.72,.92);
+ const collar=wearableMesh(group,new THREE.TorusGeometry(.56,.07,6,18),0x9aa8b8,0,1.88,0);collar.rotation.x=Math.PI/2;
+ group.visible=false;return group;
+}
+const playerAstronautHelmet=buildAstronautHelmet(P);
+const previewAstronautHelmet=buildAstronautHelmet(previewAvatar);
 const pvPuffPieces=[];
 function addPreviewPuff(x,y,z,s){
  let m=previewBox(.34*s,.34*s,.34*s,0x6b3c35,x,y,z);
@@ -1251,13 +1271,14 @@ colorButtons("startHairColor",[0x2b1a12,0x6b3c35,0xc9873c,0xf2d36b,0x222222,0xff
 colorButtons("startSkin",[0xf2bb91,0xd99568,0xb97850,0x7b4932,0x4b2b20],c=>{materialColor(playerHead,c);materialColor(playerLeftArm,c);materialColor(playerRightArm,c);saved.skin=c;materialColor(pvHead,c);materialColor(pvArm1,c);materialColor(pvArm2,c)},saved.skin??0xf2bb91);
 colorButtons("startShirt",[0xb77cff,0xff73aa,0x55c985,0x5b9cff,0xffc83d],c=>{materialColor(playerShirt,c);materialColor(pvShirt,c);saved.shirt=c},Number(saved.shirt??0xb77cff));
 colorButtons("startPants",[0x5870c8,0x292b35,0xd95b91,0x397b55,0xf1f1f1],c=>{materialColor(playerLeftLeg,c);materialColor(playerRightLeg,c);saved.pants=c;materialColor(pvLeg1,c);materialColor(pvLeg2,c)},saved.pants??0x5870c8);
-const OUTFIT_NAMES=["Everyday","Princess","Wizard","Explorer","Beach Star"];
+const OUTFIT_NAMES=["Everyday","Princess","Wizard","Explorer","Beach Star","Astronaut"];
 function normalizedCharacterType(value){
  const key=String(value||"").toLowerCase().replace(/[^a-z]/g,"");
  if(key.includes("princess"))return "Princess";
  if(key.includes("wizard"))return "Wizard";
  if(key.includes("explorer"))return "Explorer";
  if(key.includes("beach"))return "Beach Star";
+ if(key.includes("astronaut")||key.includes("space"))return "Astronaut";
  return "Everyday";
 }
 function setOutfit(name,{persist=true}={}){
@@ -1275,7 +1296,7 @@ function setOutfitColor(color,{persist=true}={}){
  Object.values(previewWearables).forEach(value=>value.colorMeshes.forEach(mesh=>materialColor(mesh,color)));
  if(persist){saved.outfitColor=color;saveWorld()}
 }
-const outfitIcons={Everyday:"👕",Princess:"👑",Wizard:"🪄",Explorer:"🧭","Beach Star":"🏖️"};
+const outfitIcons={Everyday:"👕",Princess:"👑",Wizard:"🪄",Explorer:"🧭","Beach Star":"🏖️",Astronaut:"🚀"};
 OUTFIT_NAMES.forEach(name=>{
  const button=document.createElement("button");button.className="option";button.dataset.outfit=name;
  button.textContent=`${outfitIcons[name]} ${name}`;button.onclick=()=>setOutfit(name);
@@ -1285,6 +1306,16 @@ const initialOutfit=saved.outfit||normalizedCharacterType(saved.characterType);
 setOutfitColor(Number(saved.outfitColor??0xb65bd4),{persist:false});
 setOutfit(initialOutfit,{persist:false});
 colorButtons("startOutfitColor",[0xb65bd4,0xff76ad,0x36b9c7,0x4f72cf,0x45a568,0xd69642],c=>setOutfitColor(c),Number(saved.outfitColor??0xb65bd4));
+const astronautHelmetButton=document.getElementById("startAstronautHelmet");
+function setAstronautHelmet(enabled,{persist=true}={}){
+ enabled=!!enabled;playerAstronautHelmet.visible=enabled;previewAstronautHelmet.visible=enabled;
+ astronautHelmetButton.classList.toggle("selected",enabled);
+ astronautHelmetButton.setAttribute("aria-pressed",String(enabled));
+ astronautHelmetButton.textContent=(enabled?"✓ ":"")+"🪖 Astronaut helmet";
+ if(persist){saved.astronautHelmet=enabled;saveWorld()}
+}
+astronautHelmetButton.addEventListener("click",()=>setAstronautHelmet(!playerAstronautHelmet.visible));
+setAstronautHelmet(saved.astronautHelmet===true,{persist:false});
 // The preceding character-type screen can call this without rebuilding the avatar.
 window.applyCharacterTypeDefault=type=>{
  saved.characterType=type;
