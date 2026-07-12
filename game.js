@@ -124,6 +124,67 @@ ROOM_LAYOUTS.forEach(room=>{
   roomWorldGroup.add(entrance);
  }
 });
+// Exterior scenery is deliberately separate from the ASCII collision map: the
+// entrance stays solid, while the street-side setting remains visible through
+// and around the bakery doors. Repeated tree parts are instanced to keep the
+// scene inexpensive on tablets.
+const bakeryExteriorGroup=new THREE.Group();
+bakeryExteriorGroup.name="bakery-exterior-scenery";
+roomWorldGroup.add(bakeryExteriorGroup);
+const exteriorGrass=new THREE.Mesh(
+ new THREE.BoxGeometry(34,.16,14),
+ new THREE.MeshStandardMaterial({color:0x79b95a,roughness:1})
+);
+exteriorGrass.position.set(0,-.03,23);
+exteriorGrass.receiveShadow=true;
+bakeryExteriorGroup.add(exteriorGrass);
+const exteriorSidewalk=new THREE.Mesh(
+ new THREE.BoxGeometry(25,.12,3.2),
+ new THREE.MeshStandardMaterial({color:0xc9c3b8,roughness:1})
+);
+exteriorSidewalk.position.set(0,.09,17.35);
+exteriorSidewalk.receiveShadow=true;
+bakeryExteriorGroup.add(exteriorSidewalk);
+// Narrow inset seams suggest paving slabs without layering coplanar surfaces.
+const sidewalkSeamMaterial=new THREE.MeshStandardMaterial({color:0xaaa59c,roughness:1});
+const sidewalkSeams=new THREE.InstancedMesh(new THREE.BoxGeometry(.035,.025,3.05),sidewalkSeamMaterial,12);
+for(let index=0;index<12;index++){
+ roomMatrix.makeTranslation(-11+index*2,.165,17.35);
+ sidewalkSeams.setMatrixAt(index,roomMatrix);
+}
+sidewalkSeams.receiveShadow=true;
+bakeryExteriorGroup.add(sidewalkSeams);
+const EXTERIOR_TREES=[
+ {x:-13,z:21,scale:1.05},{x:-9.5,z:24.5,scale:.85},{x:-5.5,z:21.8,scale:.95},
+ {x:6,z:22.2,scale:.9},{x:10,z:25,scale:1.08},{x:14,z:21.2,scale:.92}
+];
+const treeTrunks=new THREE.InstancedMesh(
+ new THREE.CylinderGeometry(.28,.42,2.5,6),
+ new THREE.MeshStandardMaterial({color:0x795038,roughness:1}),
+ EXTERIOR_TREES.length
+);
+const treeCrowns=new THREE.InstancedMesh(
+ new THREE.ConeGeometry(1.65,3.4,7),
+ new THREE.MeshStandardMaterial({color:0x3f8f4e,roughness:1}),
+ EXTERIOR_TREES.length
+);
+EXTERIOR_TREES.forEach(({x,z,scale},index)=>{
+ roomMatrix.compose(
+  new THREE.Vector3(x,1.3*scale,z),
+  new THREE.Quaternion(),
+  new THREE.Vector3(scale,scale,scale)
+ );
+ treeTrunks.setMatrixAt(index,roomMatrix);
+ roomMatrix.compose(
+  new THREE.Vector3(x,3.35*scale,z),
+  new THREE.Quaternion(),
+  new THREE.Vector3(scale,scale,scale)
+ );
+ treeCrowns.setMatrixAt(index,roomMatrix);
+});
+treeTrunks.castShadow=treeTrunks.receiveShadow=true;
+treeCrowns.castShadow=treeCrowns.receiveShadow=true;
+bakeryExteriorGroup.add(treeTrunks,treeCrowns);
 function tileAtWorld(x,z){
  for(const room of ROOM_LAYOUTS){
   const col=Math.round(x-room.originX),row=Math.round(room.originZ-z);
