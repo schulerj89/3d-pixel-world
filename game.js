@@ -2843,7 +2843,6 @@ setInterval(()=>{
 
   let carryingRemote=false;
   let pickedRemoteObject=null;
-  let tvTextTimer=null;
   let tvTexture=null;
   let tvPage=0;
 
@@ -2906,15 +2905,15 @@ setInterval(()=>{
     monsters:[["FOREST QUEST","#17765a","#bff5df"],["CRYSTAL CAVE","#5557bd","#d8d9ff"],["PAL PARADE","#b94787","#ffd3ed"]]
   };
   function channelPageArt(name,page=tvPage){
-    const base=svgArt[name]||svgArt.news;
     const theme=(channelPageThemes[name]||channelPageThemes.news)[page%3];
-    const accents=[
-      `<circle cx="272" cy="122" r="13" fill="${theme[2]}"/><path d="M266 122h12M272 116v12" stroke="${theme[1]}" stroke-width="3"/>`,
-      `<path d="M254 109h36v26h-36z" fill="${theme[2]}"/><path d="M258 115h28M258 122h20M258 129h24" stroke="${theme[1]}" stroke-width="3"/>`,
-      `<path d="M272 106l5 10 12 2-9 8 2 12-10-6-11 6 3-12-9-8 12-2z" fill="${theme[2]}" stroke="${theme[1]}" stroke-width="2"/>`
-    ];
-    const overlay=`<g><rect x="178" y="8" width="114" height="25" rx="12" fill="${theme[1]}"/><text x="235" y="25" text-anchor="middle" font-size="11" font-weight="bold" fill="white">${theme[0]}</text>${accents[page%3]}</g>`;
-    return base.replace("</svg>",overlay+"</svg>");
+    const palettes={
+      news:["#75cfff","#244d7b","#ef476f"],chef:["#ffe0aa","#d28350","#ffffff"],
+      island:["#76d9ff","#3cb9cb","#f3d082"],monsters:["#393262","#24573e","#ffd64d"]
+    };
+    const [sky,ground,accent]=palettes[name]||palettes.news;
+    if(page%3===0)return `<svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="150" fill="${sky}"/><rect y="106" width="300" height="44" fill="${ground}"/><rect x="18" y="18" width="112" height="68" rx="9" fill="white"/><rect x="30" y="31" width="88" height="11" fill="${theme[1]}"/><rect x="30" y="51" width="62" height="8" fill="${accent}"/><rect x="30" y="68" width="78" height="7" fill="#b8c6d8"/><circle cx="211" cy="57" r="27" fill="${name==="monsters"?accent:"#f2bb91"}"/><rect x="183" y="85" width="56" height="47" rx="9" fill="${theme[1]}"/><circle cx="203" cy="53" r="4" fill="#222"/><circle cx="219" cy="53" r="4" fill="#222"/></svg>`;
+    if(page%3===1)return `<svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="150" fill="${theme[2]}"/><circle cx="54" cy="38" r="23" fill="${accent}"/><path d="M0 116 Q52 62 103 114 T205 105 T300 112 V150 H0Z" fill="${ground}"/><path d="M18 118L76 57l46 61 55-82 62 82 34-48 27 48" fill="none" stroke="${theme[1]}" stroke-width="13" stroke-linejoin="round"/><g fill="white"><ellipse cx="145" cy="32" rx="35" ry="13"/><ellipse cx="220" cy="57" rx="43" ry="16"/></g><g fill="${accent}"><circle cx="124" cy="94" r="15"/><rect x="112" y="107" width="24" height="31" rx="7"/><circle cx="244" cy="99" r="15"/><rect x="232" y="112" width="24" height="27" rx="7"/></g></svg>`;
+    return `<svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x2="0" y2="1"><stop stop-color="${theme[1]}"/><stop offset="1" stop-color="${sky}"/></linearGradient></defs><rect width="300" height="150" fill="url(#g)"/><path d="M0 122 Q60 82 120 122 T240 122 T300 122 V150 H0Z" fill="${ground}"/><g fill="${accent}"><circle cx="55" cy="59" r="24"/><circle cx="150" cy="43" r="29"/><circle cx="245" cy="66" r="22"/></g><g fill="#222"><circle cx="48" cy="56" r="3"/><circle cx="62" cy="56" r="3"/><circle cx="141" cy="39" r="4"/><circle cx="159" cy="39" r="4"/><circle cx="239" cy="63" r="3"/><circle cx="251" cy="63" r="3"/></g><g fill="${theme[2]}"><rect x="40" y="83" width="30" height="43" rx="9"/><rect x="132" y="76" width="36" height="55" rx="10"/><rect x="231" y="87" width="28" height="40" rx="8"/></g><circle cx="104" cy="24" r="4" fill="white"/><circle cx="204" cy="31" r="5" fill="white"/><circle cx="274" cy="21" r="3" fill="white"/></svg>`;
   }
   function updateRemotePageLabel(){document.getElementById("handRemotePage").textContent=(tvPage+1)+" / 3"}
 
@@ -2959,15 +2958,6 @@ setInterval(()=>{
   function positionTVScreen(){
     // Channel artwork is rendered on the 3D screen, never as a floating panel.
     tvScreenEl.style.display="none";
-  }
-
-  function showTVTextBriefly(){
-    clearTimeout(tvTextTimer);
-    const message=document.getElementById("msg");
-    message.textContent=shows[currentChannel][0]+" — "+shows[currentChannel][1];
-    tvTextTimer=setTimeout(()=>{
-      if(message.textContent.includes(shows[currentChannel][0]))message.textContent="";
-    },3000);
   }
 
   function paintTVScreen(name){
@@ -3088,8 +3078,8 @@ setInterval(()=>{
     }
     tvIsOn=!tvIsOn;
     tvScreenEl.style.display="none";
-    if(tvIsOn){showTVChannel(currentChannel);showTVTextBriefly()}
-    else{clearTimeout(tvTextTimer);paintTVScreen(currentChannel)}
+    if(tvIsOn)showTVChannel(currentChannel);
+    else paintTVScreen(currentChannel);
   }
 
   document.getElementById("handRemotePower").addEventListener("pointerdown",e=>{
@@ -3112,7 +3102,7 @@ setInterval(()=>{
   function changeTVPage(direction){
     if(!carryingRemote)return;
     if(!tvIsOn){document.getElementById("msg").textContent="Press Power on the remote first. 📺";return}
-    tvPage=(tvPage+direction+3)%3;updateRemotePageLabel();paintTVScreen(currentChannel);showTVTextBriefly();
+    tvPage=(tvPage+direction+3)%3;updateRemotePageLabel();paintTVScreen(currentChannel);
   }
   document.getElementById("handRemotePrevious").addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();changeTVPage(-1)});
   document.getElementById("handRemoteNext").addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();changeTVPage(1)});
@@ -3123,7 +3113,6 @@ setInterval(()=>{
   showTVChannel=function(name){
     oldShowTVChannel(name);
     paintTVScreen(name);
-    showTVTextBriefly();
     channelArt.style.display="none";
     channelArt.replaceChildren();
 
