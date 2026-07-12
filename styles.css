@@ -95,6 +95,37 @@ body:not(.house-mode) #checkHouse{display:none!important}
 body:not(.house-mode) #housePanel{display:none!important}
 body:not(.house-mode) #furnitureMover{display:none!important}
 body.house-mode #hudDrawer #roomTeleport{display:none!important}
+#housePanelToggle{display:none;position:fixed;left:12px;top:62px;z-index:315;width:auto;height:auto;padding:10px 14px;border:3px solid #d8c9ff;border-radius:14px;background:#fffdf4;font-size:15px;font-weight:bold;box-shadow:0 4px 12px #0003}
+body.house-mode #housePanelToggle{display:block}
+#housePanelToggle[aria-expanded="true"]{border-color:#6c3cff;background:#eee7ff}
+#housePanel{display:none!important;position:fixed;left:12px;top:112px;bottom:auto;transform:none;z-index:320;width:min(390px,calc(100vw - 24px));max-height:calc(100vh - 128px);box-sizing:border-box;padding:12px;overflow:auto;border:3px solid #d8c9ff;border-radius:18px;background:#fffdf4f5;text-align:left;box-shadow:0 8px 26px #0004}
+#housePanel.open{display:block!important}
+.housePanelHeader{display:flex;align-items:center;justify-content:space-between;font-size:18px}
+.housePanelHeader #closeHousePanel{min-width:40px;width:40px;height:40px;margin:0;padding:0;border:0;border-radius:12px;background:#eee7ff;font-size:25px}
+.houseTabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}
+.houseTabs button{margin:0!important;padding:9px!important;border:2px solid #d8c9ff;border-radius:11px;background:white;font-weight:bold}
+.houseTabs button.active{border-color:#6c3cff;background:#eee7ff;color:#37285c}
+.houseTab{display:none}.houseTab.active{display:block}
+#buildMessage{margin:7px 2px 11px;color:#55486d;font-size:13px;line-height:1.35}
+.houseQuickActions,.buildModeRow{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.houseQuickActions button,.buildModeRow button{margin:0!important;min-height:42px}
+#buildingTools{display:none}.house-building #buildingTools.enabled{display:grid;grid-template-columns:1.35fr 1fr;gap:10px;margin-top:10px}
+.furnitureCatalog{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start}
+.furnitureCatalog button{min-width:0!important;margin:0!important;padding:8px 4px!important}
+.furnitureEditor{padding:8px;border-radius:13px;background:#f3edff;text-align:center}
+#selectedFurniture{min-height:32px;margin:0 0 6px;font-size:13px;font-weight:bold}
+#selectFurniture,#deleteFurniture{width:100%!important;margin:3px 0!important;min-width:0!important}
+.moveGrid{display:grid;grid-template-columns:repeat(3,44px);justify-content:center;gap:4px;margin:5px 0}
+.moveGrid button{min-width:0!important;width:44px!important;height:40px!important;margin:0!important;padding:0!important;font-size:21px!important}
+.danger{border-color:#e98b94!important;background:#ffe3e5!important;color:#7f202b}
+#saveHouse[hidden],#buildHouse[hidden]{display:none!important}
+body.house-building #pad,body.house-building #lookPad{opacity:.45}
+body.house-building #houseAction{display:none!important}
+@media (orientation:landscape) and (max-height:820px){
+ #housePanel{top:64px;max-height:calc(100vh - 76px)}
+ #housePanelToggle{top:12px;left:78px}
+ .housePanelHeader{font-size:16px}.houseTabs{margin:6px 0}
+}
 #top{display:none!important}
 #roomName{top:12px!important}
 #money{top:12px!important}

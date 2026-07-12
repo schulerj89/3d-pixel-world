@@ -1112,7 +1112,7 @@ function showBakery(){P.visible=true;
  setBakeryVisible(true);
  page5Group.visible=true;
  house.visible=false;
- housePanel.style.display="none";furnitureMover.style.display="none";
+ setHousePanel(false);setBuildingMode(false);
  P.position.set(-1,0,2);
  C.position.set(10,11,15);
  C.lookAt(0,1,0);
@@ -1125,9 +1125,9 @@ function showHouse(){P.visible=true;
  startPage.style.display="none";
  setBakeryVisible(false);
  house.visible=true;
- housePanel.style.display="block";
+ setHousePanel(false);
  document.getElementById("roomTeleport").style.display="none";
- setBuildingMode(furniture.length===0);
+ setBuildingMode(false);
  P.position.set(0,0,2);
  C.position.set(8,8,11);
  C.lookAt(0,1,0);
@@ -1215,30 +1215,45 @@ document.querySelectorAll("#remotePanel [data-channel]").forEach(b=>b.onclick=()
 });
 document.getElementById("closeRemote").onclick=()=>remotePanelEl.style.display="none";
 setInterval(refreshHouseButtons,150);
-let buildingMode=true;
+let buildingMode=false;
 const buildingTools=document.getElementById("buildingTools");
 const saveHouseButton=document.getElementById("saveHouse");
 const buildHouseButton=document.getElementById("buildHouse");
 const buildMessage=document.getElementById("buildMessage");
+const housePanelToggle=document.getElementById("housePanelToggle");
+const closeHousePanel=document.getElementById("closeHousePanel");
+const HOUSE_BOUNDS={minX:-5.1,maxX:5.1,minZ:-4.1,maxZ:4.1,step:.5};
+let selectedFurnitureIndex=-1;
+
+function setHousePanel(open){
+ const show=Boolean(open&&currentPlace==="house"&&startPage.style.display==="none");
+ housePanel.classList.toggle("open",show);
+ housePanel.setAttribute("aria-hidden",String(!show));
+ housePanelToggle.setAttribute("aria-expanded",String(show));
+}
+function setHouseTab(name){
+ document.querySelectorAll("[data-house-tab]").forEach(b=>b.classList.toggle("active",b.dataset.houseTab===name));
+ document.querySelectorAll("[data-house-view]").forEach(v=>v.classList.toggle("active",v.dataset.houseView===name));
+}
+housePanelToggle.addEventListener("pointerdown",e=>{e.preventDefault();setHousePanel(!housePanel.classList.contains("open"))});
+closeHousePanel.addEventListener("pointerdown",e=>{e.preventDefault();setHousePanel(false)});
+document.querySelectorAll("[data-house-tab]").forEach(b=>b.addEventListener("pointerdown",e=>{e.preventDefault();setHouseTab(b.dataset.houseTab)}));
 
 function setBuildingMode(on){
  buildingMode=on;
  const movePad=document.getElementById("pad");
  const cameraPad=document.getElementById("lookPad");
  const cameraLabel=document.getElementById("lookLabel");
- if(on){
-  if(movePad)movePad.style.bottom="195px";
-  if(cameraPad)cameraPad.style.bottom="195px";
-  if(cameraLabel)cameraLabel.style.bottom="320px";
- }else{
-  if(movePad)movePad.style.bottom="22px";
-  if(cameraPad)cameraPad.style.bottom="105px";
-  if(cameraLabel)cameraLabel.style.bottom="230px";
- }
- buildingTools.style.display=on?"block":"none";furnitureMover.style.display=(on&&currentPlace==='house')?'block':'none';
- saveHouseButton.style.display=on?"block":"none";
- buildHouseButton.style.display=on?"none":"block";
- buildMessage.textContent=on?"Building Mode: ON 🔨":"House Saved! Building Mode: OFF 💾";
+ if(movePad)movePad.classList.toggle("build-mode",on);
+ if(cameraPad)cameraPad.classList.toggle("build-mode",on);
+ if(cameraLabel)cameraLabel.classList.toggle("build-mode",on);
+ buildingTools.classList.toggle("enabled",on);
+ saveHouseButton.hidden=!on;
+ buildHouseButton.hidden=on;
+ buildMessage.textContent=on?"Build mode · select an item, then move or rotate it.":"Play mode · walk up to furniture to use it.";
+ document.body.classList.toggle("house-building",on&&currentPlace==="house");
+ if(on)setHouseTab("build");
+ updateFurnitureLabel();
 }
 
 saveHouseButton.addEventListener("pointerdown",e=>{
@@ -1254,15 +1269,14 @@ buildHouseButton.addEventListener("pointerdown",e=>{
  document.getElementById("msg").textContent="Building mode is on! You can decorate again. 🔨";
 });
 
-document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>addFurniture(b.dataset.f));
-let selectedFurnitureIndex=-1;
+document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{addFurniture(b.dataset.f);selectedFurnitureIndex=furniture.length-1;updateFurnitureLabel()});
 function selectedFurniture(){
- return selectedFurnitureIndex>=0 ? furniture[selectedFurnitureIndex] : null;
+ return selectedFurnitureIndex>=0&&selectedFurnitureIndex<furniture.length ? furniture[selectedFurnitureIndex] : null;
 }
 function updateFurnitureLabel(){
  const item=selectedFurniture();
- document.getElementById("selectedFurniture").textContent=
-  item ? "Selected: "+item.userData.kind+" ✨" : "Selected: None";
+ document.getElementById("selectedFurniture").textContent=item?"Selected: "+item.userData.kind.replace(/^./,c=>c.toUpperCase())+" · "+(selectedFurnitureIndex+1)+" of "+furniture.length:"No furniture selected";
+ furniture.forEach((f,i)=>f.traverse(child=>{if(child.isMesh){if(!child.userData.baseEmissive)child.userData.baseEmissive=child.material.emissive.getHex();child.material.emissive.setHex(i===selectedFurnitureIndex&&buildingMode?0x24104a:child.userData.baseEmissive)} }));
 }
 document.getElementById("selectFurniture").onclick=()=>{
  if(!furniture.length){
@@ -1275,9 +1289,17 @@ document.getElementById("selectFurniture").onclick=()=>{
 function moveSelected(dx,dz){
  const item=selectedFurniture();
  if(!item)return;
- item.position.x=Math.max(-5.1,Math.min(5.1,item.position.x+dx));
- item.position.z=Math.max(-4.1,Math.min(4.1,item.position.z+dz));
+ item.position.x+=dx;item.position.z+=dz;
+ constrainFurniture(item);
  saveWorld();
+}
+function constrainFurniture(item){
+ item.updateWorldMatrix(true,true);
+ const box=new THREE.Box3().setFromObject(item);
+ if(box.min.x<HOUSE_BOUNDS.minX)item.position.x+=HOUSE_BOUNDS.minX-box.min.x;
+ if(box.max.x>HOUSE_BOUNDS.maxX)item.position.x-=box.max.x-HOUSE_BOUNDS.maxX;
+ if(box.min.z<HOUSE_BOUNDS.minZ)item.position.z+=HOUSE_BOUNDS.minZ-box.min.z;
+ if(box.max.z>HOUSE_BOUNDS.maxZ)item.position.z-=box.max.z-HOUSE_BOUNDS.maxZ;
 }
 document.getElementById("moveFUp").onclick=()=>moveSelected(0,-.5);
 document.getElementById("moveFDown").onclick=()=>moveSelected(0,.5);
@@ -1287,11 +1309,12 @@ document.getElementById("rotateF").onclick=()=>{
  const item=selectedFurniture();
  if(!item)return;
  item.rotation.y+=Math.PI/4;
+ constrainFurniture(item);
  saveWorld();
 };
 
-clearFurniture.onclick=()=>{furniture.forEach(x=>house.remove(x));furniture=[];selectedFurnitureIndex=-1;updateFurnitureLabel();saveWorld()};
-backPlaces.onclick=()=>{startPage.style.display="block";housePanel.style.display="none";house.visible=false;setBakeryVisible(false)};
+document.getElementById("deleteFurniture").onclick=()=>{const item=selectedFurniture();if(!item)return;house.remove(item);furniture.splice(selectedFurnitureIndex,1);selectedFurnitureIndex=Math.min(selectedFurnitureIndex,furniture.length-1);updateFurnitureLabel();saveWorld()};
+backPlaces.onclick=()=>{startPage.style.display="block";setHousePanel(false);setBuildingMode(false);house.visible=false;setBakeryVisible(false)};
 
 
 function restoreGameButtons(){
@@ -1332,87 +1355,8 @@ document.getElementById("goHouse").addEventListener("click",restoreGameButtons);
 document.getElementById("firstPageButton").addEventListener("pointerdown",function(event){
   event.preventDefault();
   document.getElementById("startPage").style.display="block";
-document.getElementById("housePanel").style.display="none";house.visible=false;setBakeryVisible(false);
+setHousePanel(false);setBuildingMode(false);house.visible=false;setBakeryVisible(false);
 });
-
-// Reliable furniture selector and page visibility fix
-(function(){
- const mover=document.getElementById("furnitureMover");
- const selectBtn=document.getElementById("selectFurniture2");
- const label=document.getElementById("selectedFurniture2");
-
- function refreshMover(){
-   const shouldShow=(currentPlace==="house" && buildingMode===true && startPage.style.display==="none");
-   mover.style.display=shouldShow?"block":"none";
- }
- function selectNext(){
-   if(!furniture || furniture.length===0){
-     selectedFurnitureIndex=-1;
-     label.textContent="Add furniture first!";
-     return;
-   }
-   selectedFurnitureIndex++;
-   if(selectedFurnitureIndex>=furniture.length)selectedFurnitureIndex=0;
-   const item=furniture[selectedFurnitureIndex];
-   label.textContent="Selected: "+item.userData.kind+" ✨";
-   const oldLabel=document.getElementById("selectedFurniture");
-   if(oldLabel)oldLabel.textContent="Selected: "+item.userData.kind+" ✨";
- }
- // Replace the old click action so it cannot run twice.
- if(selectBtn){
-   const fresh=selectBtn.cloneNode(true);
-   selectBtn.parentNode.replaceChild(fresh,selectBtn);
-   fresh.addEventListener("pointerdown",function(e){e.preventDefault();e.stopPropagation();selectNext()});
-   fresh.addEventListener("click",function(e){e.preventDefault();e.stopPropagation()});
- }
- // Hide on every page except House + Build Mode.
- setInterval(refreshMover,100);
- document.getElementById("goBakery").addEventListener("pointerdown",()=>mover.style.display="none");
- document.getElementById("backPlaces").addEventListener("pointerdown",()=>mover.style.display="none");
- document.getElementById("firstPageButton").addEventListener("pointerdown",()=>mover.style.display="none");
- document.getElementById("saveHouse").addEventListener("pointerdown",()=>mover.style.display="none");
-})();
-
-
-// FINAL FURNITURE MOVEMENT REPAIR
-(function(){
- function getSelectedItem(){
-   if(!Array.isArray(furniture)||furniture.length===0)return null;
-   if(selectedFurnitureIndex<0||selectedFurnitureIndex>=furniture.length)selectedFurnitureIndex=0;
-   return furniture[selectedFurnitureIndex];
- }
- function moveItem(dx,dz){
-   const item=getSelectedItem();
-   if(!item){document.getElementById("selectedFurniture2").textContent="Add furniture first!";return}
-   item.position.x=Math.max(-5.1,Math.min(5.1,item.position.x+dx));
-   item.position.z=Math.max(-4.1,Math.min(4.1,item.position.z+dz));
-   document.getElementById("selectedFurniture2").textContent="Selected: "+item.userData.kind+" ✨";
-   saveWorld();
- }
- function replaceButton(id,action){
-   const old=document.getElementById(id);
-   if(!old)return;
-   const fresh=old.cloneNode(true);
-   old.parentNode.replaceChild(fresh,old);
-   fresh.addEventListener("pointerdown",function(e){e.preventDefault();e.stopPropagation();action()});
- }
- replaceButton("moveFUp2",()=>moveItem(0,-.5));
- replaceButton("moveFDown2",()=>moveItem(0,.5));
- replaceButton("moveFLeft2",()=>moveItem(-.5,0));
- replaceButton("moveFRight2",()=>moveItem(.5,0));
- replaceButton("rotateF2",()=>{
-   const item=getSelectedItem();
-   if(item){item.rotation.y+=Math.PI/4;saveWorld()}
- });
- // Keep the widget only in the house while Build Mode is on.
- setInterval(()=>{
-   const mover=document.getElementById("furnitureMover");
-   const first=document.getElementById("startPage");
-   const show=currentPlace==="house"&&buildingMode===true&&first.style.display==="none";
-   mover.style.display=show?"block":"none";
- },100);
-})();
-
 
 // Blender interaction
 const blenderBtn=document.getElementById("blenderButton");

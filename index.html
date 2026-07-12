@@ -46,14 +46,6 @@
 <button id="addStraw" style="display:none">🥤 Add Red & White Straw</button>
 <div id="shakeResult" style="margin-top:6px;font-weight:bold"></div>
 </div><button id="blenderButton">🥤 USE BLENDER</button><div id="smoothieMessage">🍓 Strawberry-Banana Smoothie!</div><button id="openTVRemote">📱 TV REMOTE</button>
-<div id="furnitureMover">
-<b>✋ Move Furniture</b>
-<div id="selectedFurniture2" style="margin:5px">Selected: None</div>
-<button id="selectFurniture2">🔄 Select Next Furniture</button><br>
-<span style="display:inline-block;width:52px"></span><button id="moveFUp2">⬆️</button><span style="display:inline-block;width:52px"></span><br>
-<button id="moveFLeft2">⬅️</button><button id="rotateF2">🔄</button><button id="moveFRight2">➡️</button><br>
-<span style="display:inline-block;width:52px"></span><button id="moveFDown2">⬇️</button>
-</div>
 <button id="houseAction">🪑 SIT</button>
 <div id="tvScreen"><h2 id="tvTitle">📺 TV</h2>
 <div id="tvStage" style="position:relative;height:150px;overflow:hidden;border-radius:10px;background:#8ed6ff"><div id="channelArt"></div>
@@ -78,23 +70,29 @@
 <button class="place" id="goBakery">🧁<br>Bakery</button>
 <button class="place" id="goHouse">🏠<br>My House</button>
 </div></div>
-<div id="housePanel"><b>🛋️ Decorate House</b> <button id="openHouseShop" style="background:#e6c7ff;font-weight:bold">🛍️ HOUSE SHOP</button>
-<button id="saveHouse" style="background:#a9efb5;font-weight:bold">💾 SAVE HOUSE</button>
-<button id="buildHouse" style="display:none;background:#ffd66b;font-weight:bold">🔨 BUILD</button>
-<div id="buildMessage" style="margin:6px;font-weight:bold">Building Mode: ON</div>
-<div id="buildingTools">
-<button data-f="sofa">🛋️ Add Sofa</button><button data-f="table">🪵 Add Table</button>
-<button data-f="bed">🛏️ Add Bed</button><button data-f="lamp">💡 Add Lamp</button>
-<button data-f="chair">🪑 Add Chair</button><button data-f="fridge">🧊 Add Fridge</button><button data-f="tv">📺 Add TV</button><button data-f="remote">📱 Add Remote</button><hr><b>✋ Move Furniture</b>
-<div id="selectedFurniture" style="margin:6px">Selected: None</div>
-<button id="selectFurniture">🔄 Select Next Furniture</button>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:6px">
-<span></span><button id="moveFUp">⬆️</button><span></span>
-<button id="moveFLeft">⬅️</button><button id="rotateF">🔄</button><button id="moveFRight">➡️</button>
-<span></span><button id="moveFDown">⬇️</button><span></span>
+<button id="housePanelToggle" aria-expanded="false" aria-controls="housePanel">🏠 House</button>
+<div id="housePanel" aria-hidden="true">
+ <div class="housePanelHeader"><b>🏠 My House</b><button id="closeHousePanel" aria-label="Close house menu">×</button></div>
+ <div class="houseTabs" role="tablist"><button class="active" data-house-tab="home">Home</button><button data-house-tab="build">Build</button></div>
+ <section class="houseTab active" data-house-view="home">
+  <p id="buildMessage">Play mode · walk up to furniture to use it.</p>
+  <div class="houseQuickActions"><button id="openHouseShop">🛍️ Furniture Shop</button><button id="backPlaces">⬅️ Places</button></div>
+ </section>
+ <section class="houseTab" data-house-view="build">
+  <div class="buildModeRow"><button id="buildHouse">🔨 Start building</button><button id="saveHouse">✓ Done & save</button></div>
+  <div id="buildingTools">
+   <div class="furnitureCatalog" aria-label="Add furniture">
+    <button data-f="sofa">🛋️ Sofa</button><button data-f="table">🪵 Table</button><button data-f="bed">🛏️ Bed</button><button data-f="lamp">💡 Lamp</button><button data-f="chair">🪑 Chair</button><button data-f="fridge">🧊 Fridge</button><button data-f="tv">📺 TV</button><button data-f="remote">📱 Remote</button>
+   </div>
+   <div class="furnitureEditor">
+    <div id="selectedFurniture">No furniture selected</div>
+    <button id="selectFurniture">Select next</button>
+    <div class="moveGrid"><span></span><button id="moveFUp" aria-label="Move forward">↑</button><span></span><button id="moveFLeft" aria-label="Move left">←</button><button id="rotateF" aria-label="Rotate">↻</button><button id="moveFRight" aria-label="Move right">→</button><span></span><button id="moveFDown" aria-label="Move backward">↓</button><span></span></div>
+    <button id="deleteFurniture" class="danger">Delete selected</button>
+   </div>
+  </div>
+ </section>
 </div>
-<button id="clearFurniture">🗑️ Clear Furniture</button>
-</div><button id="backPlaces">⬅️ Places</button></div>
 <div id="top">🧁 Busy Voxel Bakery</div>
 <button id="firstPageButton">✨ Customize</button>
 <button id="avatarButton">👕 Avatar Shop</button>
