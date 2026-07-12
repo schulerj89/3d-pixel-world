@@ -626,6 +626,7 @@ document.querySelectorAll("#roomTeleport [data-room]").forEach(button=>button.ad
 const hudMenuButton=document.getElementById("hudMenuButton"),hudDrawer=document.getElementById("hudDrawer");
 [document.getElementById("firstPageButton"),document.getElementById("avatarButton"),document.getElementById("roomTeleport")].forEach(element=>hudDrawer.appendChild(element));
 const musicToggle=document.getElementById("musicToggle");
+const menuGoSpace=document.createElement("button");menuGoSpace.id="menuGoSpace";menuGoSpace.type="button";menuGoSpace.textContent="🚀 Go to Space";hudDrawer.insertBefore(menuGoSpace,musicToggle);
 const bakeryMusicTracks=[document.getElementById("bakeryMusic"),document.getElementById("sprinkleMusic")];
 const beachMusicTracks=[document.getElementById("beachMusic")];
 const musicTracks=[...bakeryMusicTracks,...beachMusicTracks];
@@ -681,6 +682,7 @@ hudDrawer.addEventListener("pointerdown",event=>{if(event.target.closest("button
 document.getElementById("menuGoHouse").addEventListener("pointerdown",event=>{event.preventDefault();showHouse()});
 document.getElementById("menuGoBakery").addEventListener("pointerdown",event=>{event.preventDefault();showBakery()});
 document.getElementById("menuGoBeach").addEventListener("pointerdown",event=>{event.preventDefault();showBeach()});
+menuGoSpace.addEventListener("pointerdown",event=>{event.preventDefault();showSpace()});
 document.getElementById("teleportBeach").addEventListener("pointerdown",event=>{event.preventDefault();showBeach()});
 const kitchenPanelIds=["recipePanel","orders","inventoryBox"];
 function closeKitchenPanels(){
@@ -979,7 +981,8 @@ if(Math.hypot(worldX,worldZ)>.08){
 // the home boundary so the avatar cannot walk beyond the enlarged floor.
 const canMove=currentPlace==="bakery"?canWalkAt(nextX,nextZ):
  currentPlace==="house"?canWalkInHouse(nextX,nextZ):
- currentPlace==="beach"?canWalkOnBeach(nextX,nextZ):true;
+ currentPlace==="beach"?canWalkOnBeach(nextX,nextZ):
+ currentPlace==="space"?(()=>{const b=ensureSpaceWorld().bounds;return nextX>=b.minX&&nextX<=b.maxX&&nextZ>=b.minZ&&nextZ<=b.maxZ})():true;
 if(canMove){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
 syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);
 updateCamera();updateHeldItem();updateIngredientGrab();updateStoveButton();customers.forEach((q,i)=>{let u=q.userData,targetX,targetZ;
@@ -1285,6 +1288,18 @@ function saveWorld(){saved.furniture=furniture.map(x=>({
 // Keep the bakery and house as two separate places.
 const bakeryObjects=S.children.filter(obj=>obj!==P && obj!==C && !obj.isLight);
 const house=new THREE.Group();house.visible=false;S.add(house);
+let spaceWorld=null;
+function ensureSpaceWorld(){
+ if(!spaceWorld){
+  const factory=window.worldFactories&&window.worldFactories.space;
+  if(!factory)throw new Error("Space world factory is unavailable");
+  spaceWorld=factory(THREE);spaceWorld.group.visible=false;S.add(spaceWorld.group);
+ }
+ return spaceWorld;
+}
+function hideSpaceWorld(){if(spaceWorld)spaceWorld.group.visible=false}
+function destroySpaceWorld(){if(spaceWorld){spaceWorld.dispose();spaceWorld=null}}
+window.destroySpaceWorld=destroySpaceWorld;
 // Beach is a separate, deterministic destination. Repeated palms use instancing,
 // the water is intentionally unlit, and distant/repeated scenery does not cast
 // shadows so the iPad render budget stays focused on the player.
@@ -1447,13 +1462,14 @@ function setBakeryVisible(show){
 }
 function showBakery(){P.visible=true;
  currentPlace="bakery";
- document.body.classList.add("bakery-mode");document.body.classList.remove("house-mode","beach-mode");
+ document.body.classList.add("bakery-mode");document.body.classList.remove("house-mode","beach-mode","space-mode");
  S.background.set(0xffd7e6);
  startPage.style.display="none";
  setBakeryVisible(true);
  page5Group.visible=true;
  house.visible=false;
  beach.visible=false;
+ hideSpaceWorld();
  setHousePanel(false);setBuildingMode(false);
  P.position.set(-1,0,2);
  C.position.set(10,11,15);
@@ -1464,13 +1480,14 @@ function showBakery(){P.visible=true;
 }
 function showHouse(){P.visible=true;
  currentPlace="house";
- document.body.classList.add("house-mode");document.body.classList.remove("bakery-mode","beach-mode");
+ document.body.classList.add("house-mode");document.body.classList.remove("bakery-mode","beach-mode","space-mode");
  S.background.set(0xffd7e6);
  document.body.classList.remove("kitchen-clean","storage-mode");
  startPage.style.display="none";
  setBakeryVisible(false);
  house.visible=true;
  beach.visible=false;
+ hideSpaceWorld();
  setHousePanel(false);
  setHudMenu(false);closeKitchenPanels();
  document.getElementById("roomTeleport").style.display="none";
@@ -1489,9 +1506,10 @@ function showHouse(){P.visible=true;
 }
 function showBeach(){
  currentPlace="beach";P.visible=true;
- document.body.classList.add("beach-mode");document.body.classList.remove("bakery-mode","house-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
+ document.body.classList.add("beach-mode");document.body.classList.remove("bakery-mode","house-mode","space-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(0x9edfff);startPage.style.display="none";
  setBakeryVisible(false);house.visible=false;beach.visible=true;
+ hideSpaceWorld();
  inKitchen=false;inStorage=false;page5Group.visible=false;
  setHousePanel(false);setBuildingMode(false);setHudMenu(false);closeKitchenPanels();
  document.getElementById("orders").style.display="none";
@@ -1503,7 +1521,20 @@ function showBeach(){
  updateCamera();
  if(window.switchWorldMusic)window.switchWorldMusic("beach");
 }
-goBakery.onclick=showBakery;goHouse.onclick=showHouse;document.getElementById("goBeach").onclick=showBeach;
+function showSpace(){
+ const world=ensureSpaceWorld();currentPlace="space";P.visible=true;
+ document.body.classList.add("space-mode");document.body.classList.remove("bakery-mode","house-mode","beach-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
+ S.background.set(world.background);startPage.style.display="none";
+ setBakeryVisible(false);house.visible=false;beach.visible=false;world.group.visible=true;
+ inKitchen=false;inStorage=false;page5Group.visible=false;
+ setHousePanel(false);setBuildingMode(false);setHudMenu(false);closeKitchenPanels();
+ document.getElementById("orders").style.display="none";document.getElementById("recipePanel").style.display="none";document.getElementById("roomTeleport").style.display="none";
+ roomName.style.display="block";roomName.textContent=world.name;
+ P.position.set(world.spawn.x,0,world.spawn.z);P.rotation.y=Math.PI;
+ cameraAngle=world.camera.angle;cameraHeight=world.camera.height;cameraDistance=world.camera.distance;updateCamera();
+ if(window.switchWorldMusic)window.switchWorldMusic("space");
+}
+goBakery.onclick=showBakery;goHouse.onclick=showHouse;document.getElementById("goBeach").onclick=showBeach;document.getElementById("goSpace").onclick=showSpace;
 
 
 let sitting=false,tvIsOn=false,currentChannel="news";
@@ -1684,7 +1715,7 @@ document.getElementById("rotateF").onclick=()=>{
 };
 
 document.getElementById("deleteFurniture").onclick=()=>{const item=selectedFurniture();if(!item)return;house.remove(item);furniture.splice(selectedFurnitureIndex,1);selectedFurnitureIndex=Math.min(selectedFurnitureIndex,furniture.length-1);updateFurnitureLabel();saveWorld()};
-backPlaces.onclick=()=>{startPage.style.display="block";setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;setBakeryVisible(false)};
+backPlaces.onclick=()=>{startPage.style.display="block";setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;hideSpaceWorld();setBakeryVisible(false)};
 
 
 function restoreGameButtons(){
@@ -1721,6 +1752,8 @@ const lookPad=document.getElementById("lookPad");
 }
 document.getElementById("goBakery").addEventListener("click",restoreGameButtons);
 document.getElementById("goHouse").addEventListener("click",restoreGameButtons);
+document.getElementById("goBeach").addEventListener("click",restoreGameButtons);
+document.getElementById("goSpace").addEventListener("click",restoreGameButtons);
 
 document.getElementById("firstPageButton").addEventListener("pointerdown",function(event){
   event.preventDefault();
@@ -1728,6 +1761,7 @@ document.getElementById("firstPageButton").addEventListener("pointerdown",functi
 showCharacterTypeChooser();
 setHousePanel(false);setBuildingMode(false);house.visible=false;setBakeryVisible(false);
 beach.visible=false;
+hideSpaceWorld();
 });
 
 // Blender interaction
