@@ -366,6 +366,8 @@ const playerLeftLeg=playerMeshes[4];
 const playerRightLeg=playerMeshes[5];
 const playerHairTop=playerMeshes[6];
 const playerHairSide=playerMeshes[7];
+// The message area is reserved for useful, contextual feedback during play.
+document.getElementById("msg").textContent="";
 // Extra pieces used to make the puffy style fuller and rounder.
 const playerPuffPieces=[];
 function addPlayerPuff(x,y,z,s){
@@ -773,7 +775,20 @@ let perfFrames=0,perfSampleStart=performance.now();
 window.getGamePerformance=()=>({...perfState});
 const perfOverlay=new URLSearchParams(location.search).has("perf")?Object.assign(document.createElement("div"),{textContent:"Measuring…"}):null;
 if(perfOverlay){perfOverlay.style.cssText="position:fixed;right:8px;bottom:8px;z-index:9999;padding:5px 8px;border-radius:6px;background:#000b;color:#fff;font:12px monospace;pointer-events:none";document.body.appendChild(perfOverlay)}
-let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);moveCameraControl(dt);if(Math.abs(vx)+Math.abs(vz)>.08){
+let walkStrength=0;
+function updatePlayerWalkAnimation(isMoving,dt){
+ const easing=1-Math.exp(-dt*14);
+ walkStrength=THREE.MathUtils.lerp(walkStrength,isMoving?1:0,easing);
+ if(isMoving)walk+=dt*12;
+ const swing=Math.sin(walk)*.55*walkStrength;
+ playerLeftArm.rotation.x=THREE.MathUtils.lerp(playerLeftArm.rotation.x,swing,easing);
+ playerRightArm.rotation.x=THREE.MathUtils.lerp(playerRightArm.rotation.x,-swing,easing);
+ playerLeftLeg.rotation.x=THREE.MathUtils.lerp(playerLeftLeg.rotation.x,-swing,easing);
+ playerRightLeg.rotation.x=THREE.MathUtils.lerp(playerRightLeg.rotation.x,swing,easing);
+ P.rotation.z=THREE.MathUtils.lerp(P.rotation.z,Math.sin(walk)*.035*walkStrength,easing);
+ P.position.y=THREE.MathUtils.lerp(P.position.y,Math.abs(Math.sin(walk))*.06*walkStrength,easing);
+}
+let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);moveCameraControl(dt);let playerMoved=false;if(Math.abs(vx)+Math.abs(vz)>.08){
 // Movement is relative to the camera direction.
 const forwardX=-Math.sin(cameraAngle);
 const forwardZ=-Math.cos(cameraAngle);
@@ -788,8 +803,8 @@ if(Math.hypot(worldX,worldZ)>.08){
   P.rotation.y=playerTurn;
 }
 // The ASCII map is the single collision source for every connected bakery room.
-if(currentPlace!=="bakery"||canWalkAt(nextX,nextZ)){P.position.x=nextX;P.position.z=nextZ}
-syncBakeryRoomState();walk+=dt*12;P.rotation.z=Math.sin(walk)*.035;P.position.y=Math.abs(Math.sin(walk))*.06}else{P.rotation.z*=.8;P.position.y*=.8;syncBakeryRoomState()}
+if(currentPlace!=="bakery"||canWalkAt(nextX,nextZ)){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
+syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);
 updateCamera();updateHeldItem();updateIngredientGrab();updateStoveButton();customers.forEach((q,i)=>{let u=q.userData,targetX,targetZ;
 // Everyone stands in one straight line at the same x position
 if(u.stage===0){targetX=3.8;targetZ=-1.8+i*1.15}
