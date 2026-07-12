@@ -566,14 +566,15 @@ window.runWorldTransition=(label,place,build)=>{
  worldLoadingTitle.textContent=label;
  worldLoading.classList.add("open");worldLoading.setAttribute("aria-hidden","false");
  return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(()=>{
+  if(window.releaseLargeWorlds)window.releaseLargeWorlds(place);
   window.unloadDisposableWorlds(place);
-  const result=build();
-  worldLoading.classList.remove("open");worldLoading.setAttribute("aria-hidden","true");
+  let result;
+  try{result=build()}finally{worldLoading.classList.remove("open");worldLoading.setAttribute("aria-hidden","true")}
   resolve(result);
  },40))));
 };
 window.getGameDebug=()=>({
- sceneId:currentPlace,loadedWorlds:[...disposableWorlds.keys()],
+ sceneId:currentPlace,loadedWorlds:[...disposableWorlds.keys(),...(spaceWorld?["space"]:[]),...(forestWorld?["forest"]:[]),...(castle?["castle"]:[])],
  player:{x:+P.position.x.toFixed(2),y:+P.position.y.toFixed(2),z:+P.position.z.toFixed(2)},
  render:{calls:R.info.render.calls,triangles:R.info.render.triangles},
  memory:{geometries:R.info.memory.geometries,textures:R.info.memory.textures}
@@ -632,9 +633,10 @@ const forestMenuButton=document.createElement("button");forestMenuButton.id="men
 const forestTeleportButton=document.createElement("button");forestTeleportButton.id="teleportForest";forestTeleportButton.type="button";forestTeleportButton.textContent="🌲 Forest";document.getElementById("roomTeleport").appendChild(forestTeleportButton);
 const bakeryMusicTracks=[document.getElementById("bakeryMusic"),document.getElementById("sprinkleMusic")];
 const beachMusicTracks=[document.getElementById("beachMusic")];
-const musicTracks=[...bakeryMusicTracks,...beachMusicTracks];
+const destinationMusicTracks={space:[document.getElementById("spaceMusic")],forest:[document.getElementById("forestMusic")],castle:[document.getElementById("castleMusic")]};
+const musicTracks=[...bakeryMusicTracks,...beachMusicTracks,...Object.values(destinationMusicTracks).flat()];
 let musicTrackIndex=0,musicStarted=false,musicMuted=localStorage.getItem("bakeryMusicMuted")==="true";
-function activeMusicTracks(){return currentPlace==="beach"?beachMusicTracks:bakeryMusicTracks}
+function activeMusicTracks(){return destinationMusicTracks[currentPlace]||(currentPlace==="beach"?beachMusicTracks:bakeryMusicTracks)}
 musicTracks.forEach(track=>{
  track.volume=.34;
  track.addEventListener("ended",()=>{
@@ -685,11 +687,11 @@ hudDrawer.addEventListener("pointerdown",event=>{if(event.target.closest("button
 document.getElementById("menuGoHouse").addEventListener("pointerdown",event=>{event.preventDefault();showHouse()});
 document.getElementById("menuGoBakery").addEventListener("pointerdown",event=>{event.preventDefault();showBakery()});
 document.getElementById("menuGoBeach").addEventListener("pointerdown",event=>{event.preventDefault();showBeach()});
-menuGoSpace.addEventListener("pointerdown",event=>{event.preventDefault();showSpace()});
-document.getElementById("menuGoCastle").addEventListener("pointerdown",event=>{event.preventDefault();showCastle()});
+menuGoSpace.addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Launching Space…","space",showSpace)});
+document.getElementById("menuGoCastle").addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Raising the castle gates…","castle",showCastle)});
 document.getElementById("teleportBeach").addEventListener("pointerdown",event=>{event.preventDefault();showBeach()});
-forestMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();showForest()});
-forestTeleportButton.addEventListener("pointerdown",event=>{event.preventDefault();showForest()});
+forestMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Growing the forest…","forest",showForest)});
+forestTeleportButton.addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Growing the forest…","forest",showForest)});
 const kitchenPanelIds=["recipePanel","orders","inventoryBox"];
 function closeKitchenPanels(){
  kitchenPanelIds.forEach(id=>document.getElementById(id).classList.remove("hud-open"));
@@ -1436,6 +1438,11 @@ function destroyCastleWorld(){
 }
 window.worldFactories=window.worldFactories||{};
 window.worldFactories.castle={create:createCastleWorld,destroy:destroyCastleWorld,metadata:{destination:"castle",size:"30x30",spawnOutside:true,lazy:true}};
+window.releaseLargeWorlds=except=>{
+ if(except!=="space")destroySpaceWorld();
+ if(except!=="forest")destroyForestWorld();
+ if(except!=="castle")destroyCastleWorld();
+};
 function canWalkInCastle(x,z){
  const inset=.55;if(x<-15+inset||x>15-inset||z<-15+inset||z>15-inset)return false;
  // Outer keep walls block the player, while the 4.2-unit gate remains open.
@@ -1555,7 +1562,7 @@ function setBakeryVisible(show){
  P.visible=true;
 }
 function showBakery(){P.visible=true;
- destroyForestWorld();
+ window.releaseLargeWorlds("bakery");
  currentPlace="bakery";
  document.body.classList.add("bakery-mode");document.body.classList.remove("house-mode","beach-mode","space-mode","forest-mode","castle-mode");
  S.background.set(0xffd7e6);
@@ -1575,7 +1582,7 @@ function showBakery(){P.visible=true;
  if(window.switchWorldMusic)window.switchWorldMusic("bakery");
 }
 function showHouse(){P.visible=true;
- destroyForestWorld();
+ window.releaseLargeWorlds("house");
  currentPlace="house";
  document.body.classList.add("house-mode");document.body.classList.remove("bakery-mode","beach-mode","space-mode","forest-mode","castle-mode");
  S.background.set(0xffd7e6);
@@ -1603,7 +1610,7 @@ function showHouse(){P.visible=true;
  if(window.switchWorldMusic)window.switchWorldMusic("house");
 }
 function showBeach(){
- destroyForestWorld();
+ window.releaseLargeWorlds("beach");
  currentPlace="beach";P.visible=true;
  document.body.classList.add("beach-mode");document.body.classList.remove("bakery-mode","house-mode","space-mode","forest-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(0x9edfff);startPage.style.display="none";
@@ -1625,7 +1632,7 @@ function showSpace(){
  destroyForestWorld();
  if(castle)castle.visible=false;
  const world=ensureSpaceWorld();currentPlace="space";P.visible=true;
- document.body.classList.add("space-mode");document.body.classList.remove("bakery-mode","house-mode","beach-mode","forest-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
+ document.body.classList.add("space-mode");document.body.classList.remove("bakery-mode","house-mode","beach-mode","forest-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(world.background);startPage.style.display="none";
  setBakeryVisible(false);house.visible=false;beach.visible=false;world.group.visible=true;
  inKitchen=false;inStorage=false;page5Group.visible=false;
@@ -1641,7 +1648,7 @@ function showForest(){
  if(castle)castle.visible=false;
  const world=ensureForestWorld(),config=world.config;
  currentPlace="forest";P.visible=true;
- document.body.classList.add("forest-mode");document.body.classList.remove("bakery-mode","house-mode","beach-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
+ document.body.classList.add("forest-mode");document.body.classList.remove("bakery-mode","house-mode","beach-mode","space-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(0xa9dcbd);startPage.style.display="none";
  setBakeryVisible(false);house.visible=false;beach.visible=false;world.root.visible=true;
  inKitchen=false;inStorage=false;page5Group.visible=false;
@@ -1666,7 +1673,10 @@ function showCastle(){
  cameraAngle=CASTLE_CONFIG.camera.angle;cameraHeight=CASTLE_CONFIG.camera.height;cameraDistance=CASTLE_CONFIG.camera.distance;updateCamera();
  if(window.switchWorldMusic)window.switchWorldMusic("castle");
 }
-goBakery.onclick=showBakery;goHouse.onclick=showHouse;document.getElementById("goBeach").onclick=showBeach;document.getElementById("goSpace").onclick=showSpace;document.getElementById("goForest").onclick=showForest;document.getElementById("goCastle").onclick=showCastle;
+goBakery.onclick=showBakery;goHouse.onclick=showHouse;document.getElementById("goBeach").onclick=showBeach;
+document.getElementById("goSpace").onclick=()=>window.runWorldTransition("Launching Space…","space",showSpace);
+document.getElementById("goForest").onclick=()=>window.runWorldTransition("Growing the forest…","forest",showForest);
+document.getElementById("goCastle").onclick=()=>window.runWorldTransition("Raising the castle gates…","castle",showCastle);
 
 
 let sitting=false,tvIsOn=false,currentChannel="news";
