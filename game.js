@@ -2732,7 +2732,7 @@ setInterval(()=>{
 
     setRemoteVisible(pickupBtn,true,"pickup");
     pickupBtn.style.left=((p.x*.5+.5)*innerWidth-pickupBtn.offsetWidth/2)+"px";
-    pickupBtn.style.top=((-p.y*.5+.5)*innerHeight-pickupBtn.offsetHeight-8)+"px";
+    pickupBtn.style.top=((-p.y*.5+.5)*innerHeight-pickupBtn.offsetHeight/2)+"px";
   }
 
   pickupBtn.addEventListener("pointerdown",e=>{
