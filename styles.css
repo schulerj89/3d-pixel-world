@@ -68,6 +68,11 @@ canvas{z-index:1 !important}
   box-shadow:0 2px 8px #0003;
 }
 
+#roomTeleport{position:fixed;left:12px;top:105px;z-index:260;display:flex;align-items:center;gap:5px;padding:7px 9px;border:3px solid #d8c9ff;border-radius:15px;background:#fffdf4ee;box-shadow:0 4px 12px #0003}
+#roomTeleport button{width:auto;height:auto;padding:7px 9px;border:2px solid #cdb9ff;border-radius:10px;background:#f5efff;font-weight:bold}
+#roomTeleport button:hover,#roomTeleport button:focus-visible{border-color:#6c3cff;background:#e9ddff}
+#page5Button,#kitchenBack,#firstPageButton{display:none!important}
+
 #makeChoices{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px}
 #makeChoices button{height:auto;padding:7px 5px;font-size:12px;border:0;border-radius:9px;background:#ffe6f1;font-weight:bold}
 #makeChoices button.activeChoice{outline:3px solid #ff70ad;background:#fff}
