@@ -1289,7 +1289,7 @@ function setBuildingMode(on){
  buildingTools.classList.toggle("enabled",on);
  saveHouseButton.hidden=!on;
  buildHouseButton.hidden=on;
- buildMessage.textContent=on?"Build mode · select an item, then move or rotate it.":"Play mode · walk up to furniture to use it.";
+ buildMessage.textContent="";
  document.body.classList.toggle("house-building",on&&currentPlace==="house");
  if(on)setHouseTab("build");
  updateFurnitureLabel();
@@ -1305,7 +1305,7 @@ saveHouseButton.addEventListener("pointerdown",e=>{
 buildHouseButton.addEventListener("pointerdown",e=>{
  e.preventDefault();
  setBuildingMode(true);
- document.getElementById("msg").textContent="Building mode is on! You can decorate again. 🔨";
+ document.getElementById("msg").textContent="";
 });
 
 document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{addFurniture(b.dataset.f);selectedFurnitureIndex=furniture.length-1;updateFurnitureLabel()});
@@ -2271,7 +2271,7 @@ setInterval(()=>{
       updateFurnitureLabel();
 
       message.textContent="You bought a "+names[kind]+"! It was added to your house. 🎉";
-      document.getElementById("msg").textContent="New furniture added! Turn on Build Mode to move it. 🏠✨";
+      document.getElementById("msg").textContent="New furniture added! 🏠✨";
     });
   });
 

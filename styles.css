@@ -107,6 +107,7 @@ body.house-mode #housePanelToggle{display:block}
 .houseTabs button.active{border-color:#6c3cff;background:#eee7ff;color:#37285c}
 .houseTab{display:none}.houseTab.active{display:block}
 #buildMessage{margin:7px 2px 11px;color:#55486d;font-size:13px;line-height:1.35}
+#buildMessage:empty{display:none}
 .houseQuickActions,.buildModeRow{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .houseQuickActions button,.buildModeRow button{margin:0!important;min-height:42px}
 #buildingTools{display:none}.house-building #buildingTools.enabled{display:grid;grid-template-columns:1.35fr 1fr;gap:10px;margin-top:10px}
