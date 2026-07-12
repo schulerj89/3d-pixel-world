@@ -162,6 +162,7 @@ body.kitchen-clean #lookPad{opacity:.82}
   box-shadow:0 6px #538db2;touch-action:manipulation;
 }
 #blenderAccessoryGrab:active{transform:translateX(-50%) translateY(4px);box-shadow:0 2px #538db2}
+.legacy-grab-control{display:none!important}
 
 #finishOrders{
   position:absolute;right:10px;top:10px;z-index:2;

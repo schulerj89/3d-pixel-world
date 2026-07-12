@@ -870,8 +870,10 @@ const rightX=Math.cos(cameraAngle);
 const rightZ=-Math.sin(cameraAngle);
 const worldX=rightX*vx+forwardX*(-vz);
 const worldZ=rightZ*vx+forwardZ*(-vz);
-let nextX=P.position.x+worldX*3.2*dt;
-let nextZ=P.position.z+worldZ*3.2*dt;
+// 4.48 units/second is exactly 40% faster than the previous 3.2.
+const playerMoveSpeed=4.48;
+let nextX=P.position.x+worldX*playerMoveSpeed*dt;
+let nextZ=P.position.z+worldZ*playerMoveSpeed*dt;
 if(Math.hypot(worldX,worldZ)>.08){
   playerTurn=Math.atan2(worldX,worldZ);
   P.rotation.y=playerTurn;
