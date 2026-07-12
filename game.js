@@ -26,7 +26,7 @@ const ROOM_LAYOUTS=[
 #....................#
 #....................#
 ###########...########`},
- {id:"kitchen",name:"Bakery Kitchen",originX:-6.5,originZ:-5.5,floor:0xd9a47d,wall:0xffe7d2,map:`
+ {id:"kitchen",name:"Bakery Kitchen",originX:-6.5,originZ:-5.5,floor:0xd9a47d,wall:0xffd8e5,map:`
 ########...######
 #...............#
 #................
@@ -44,7 +44,7 @@ const ROOM_LAYOUTS=[
 #...............#
 #...............#
 #################`},
- {id:"corridor",name:"Kitchen Corridor",originX:9.5,originZ:-7.5,floor:0xd9a47d,wall:0xffe7d2,map:`
+ {id:"corridor",name:"Kitchen Corridor",originX:9.5,originZ:-7.5,floor:0xd9a47d,wall:0xffd8e5,map:`
 ....
 ....
 ....`},
@@ -69,15 +69,31 @@ const ROOM_LAYOUTS=[
 ].map(room=>({...room,rows:room.map.trim().split("\n").map(row=>row.trim())}));
 const roomWorldGroup=new THREE.Group();S.add(roomWorldGroup);
 const roomMatrix=new THREE.Matrix4();
+// Rooms can share doorway coordinates. Keep the first floor tile at each world
+// position so two materials never occupy the same plane and flicker as the
+// camera moves. ROOM_LAYOUTS is ordered from the public bakery inward, making
+// the bakery finish authoritative at its threshold.
+const claimedFloorTiles=new Set();
 ROOM_LAYOUTS.forEach(room=>{
  const floorTiles=[],wallTiles=[];
  room.rows.forEach((row,rowIndex)=>[...row].forEach((tile,colIndex)=>{
   const position={x:room.originX+colIndex,z:room.originZ-rowIndex};
-  if(tile==="#")wallTiles.push(position);else if(tile===".")floorTiles.push(position);
+  if(tile==="#")wallTiles.push(position);
+  else if(tile==="."){
+   const floorKey=`${position.x.toFixed(3)},${position.z.toFixed(3)}`;
+   if(!claimedFloorTiles.has(floorKey)){
+    claimedFloorTiles.add(floorKey);
+    floorTiles.push(position);
+   }
+  }
  }));
- const floorMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.18,1),new THREE.MeshStandardMaterial({color:room.floor}),floorTiles.length);
+ const floorMaterial=new THREE.MeshStandardMaterial({color:room.floor,roughness:1,metalness:0});
+ const floorMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.18,1),floorMaterial,floorTiles.length);
  floorTiles.forEach((tile,index)=>{roomMatrix.makeTranslation(tile.x,0,tile.z);floorMesh.setMatrixAt(index,roomMatrix)});
- floorMesh.receiveShadow=true;roomWorldGroup.add(floorMesh);
+ floorMesh.castShadow=false;
+ floorMesh.receiveShadow=true;
+ floorMesh.frustumCulled=false;
+ roomWorldGroup.add(floorMesh);
  if(wallTiles.length){
   const wallMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,5,1),new THREE.MeshStandardMaterial({color:room.wall}),wallTiles.length);
   wallTiles.forEach((tile,index)=>{roomMatrix.makeTranslation(tile.x,2.5,tile.z);wallMesh.setMatrixAt(index,roomMatrix)});
@@ -101,7 +117,8 @@ function roomAtWorld(x,z){
  if(x>=-6&&x<=9&&z<=-5&&z>=-21)return ROOM_LAYOUTS.find(room=>room.id==="kitchen");
  return ROOM_LAYOUTS.find(room=>room.id==="bakery");
 }
-box(5,1.3,1.2,0xb96f4e,2.7,.7,-3.5);box(1,.8,.7,0x555555,3.8,1.65,-3.5);box(.7,.25,.5,0x9ff0b0,3.8,2.05,-3.5);
+// Keep a five-tile approach lane between the cashier station and kitchen door.
+box(5,1.3,1.2,0xb96f4e,2.7,.7,.5);box(1,.8,.7,0x555555,3.8,1.65,.5);box(.7,.25,.5,0x9ff0b0,3.8,2.05,.5);
 box(3,.2,.6,0x8c553e,-4.5,2.7,-5);for(let i=0;i<4;i++)box(.5,.4,.4,[0xff8fb1,0xffd36e,0x9fe3c1,0xa9c8ff][i],-5.5+i*.75,3,-4.9);
 // Doorway frame between the main bakery and kitchen.
 box(.35,4,.35,0x8b5a3c,1.0,2,-5.35);
@@ -309,7 +326,7 @@ function addPlayerShortCurl(x,y,z,s){
 [-.28,2.42,.36,.62],[.05,2.50,.39,.58],[.34,2.38,.36,.58]
 ].forEach(a=>addPlayerShortCurl(...a));
 
-let cashier=person(0xff7fa8);cashier.position.set(2.7,0,-4.3);
+let cashier=person(0xff7fa8);cashier.position.set(2.7,0,-.3);
 let vx=0,vz=0,walk=0;const customers=[]; // No customers in this version.function spawn(){if(customers.length>5)return;let q=person(Math.random()*0xffffff);q.position.set(6.5,0,4.5);q.userData={stage:0,wait:180+Math.random()*180};customers.push(q)}// Customers removed.
 const pad=document.getElementById('pad'),stick=document.getElementById('stick');let active=false;
 function joy(e){let r=pad.getBoundingClientRect(),p=e.touches?e.touches[0]:e,dx=p.clientX-(r.left+72.5),dy=p.clientY-(r.top+72.5),d=Math.hypot(dx,dy),max=43;if(d>max){dx*=max/d;dy*=max/d}stick.style.transform=`translate(${dx}px,${dy}px)`;vx=dx/max;vz=dy/max}
