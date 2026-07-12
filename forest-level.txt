@@ -1,0 +1,22 @@
+# Whimsy Forest level template v1
+# One character is one 8x8 world-unit chunk. Coordinates are zero-based col,row.
+# The 10x10 map therefore describes the complete 80x80 destination.
+# F forest | P walkable path | C animal clearing | L lake (collision)
+# G enchanted glen | R rock garden. Spawn is on the south path at col 4,row 8.
+name: Whimsy Forest
+size: 80x80
+cell: 8
+seed: 73421
+spawn: 4,8
+legend: F=forest P=path C=clearing L=lake G=glen R=rock-garden
+map:
+FFFFPFFFFF
+FFCFPFFGFF
+FFFFPFFFFF
+FPPPPPPPFF
+FPFFPFFPFF
+FPFCCCFRFF
+FPFCPCFFFF
+FPPPPPPPLF
+FFFFPFFFFF
+FFFFPFFFFF
