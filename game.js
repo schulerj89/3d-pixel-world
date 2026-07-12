@@ -1386,7 +1386,23 @@ function makeBeachNpc({x,z,sitting=false,skin=0,wear=0,turn=0}){
  {x:18,z:8,sitting:false,skin:0,wear:1,turn:-.8},{x:-8,z:16,sitting:true,skin:1,wear:2,turn:2.2},
  {x:4,z:-10,sitting:false,skin:2,wear:3,turn:.2},{x:-15,z:-8,sitting:false,skin:1,wear:0,turn:2.8}
 ].forEach(makeBeachNpc);
-function canWalkOnBeach(x,z){return x>=-BEACH_CONFIG.halfWidth+.55&&x<=BEACH_CONFIG.halfWidth-.55&&z<=BEACH_CONFIG.nearZ-.55&&z>=BEACH_CONFIG.farZ+.55}
+const beachStructureColliders=[];
+function addBeachStructure(factoryName,x,z){
+ const factory=window.beachStructureFactories&&window.beachStructureFactories[factoryName];
+ if(!factory)return;
+ const structure=factory(THREE);structure.group.position.set(x,0,z);beach.add(structure.group);
+ structure.collisionBoxes.forEach(box=>{
+  if("minX" in box)beachStructureColliders.push({minX:x+box.minX,maxX:x+box.maxX,minZ:z+box.minZ,maxZ:z+box.maxZ});
+  else beachStructureColliders.push({minX:x+box.x-box.width/2,maxX:x+box.x+box.width/2,minZ:z+box.z-box.depth/2,maxZ:z+box.z+box.depth/2});
+ });
+}
+addBeachStructure("cafe",-14,12);
+addBeachStructure("surfShop",14,12);
+function canWalkOnBeach(x,z){
+ if(x<-BEACH_CONFIG.halfWidth+.55||x>BEACH_CONFIG.halfWidth-.55||z>BEACH_CONFIG.nearZ-.55||z<BEACH_CONFIG.farZ+.55)return false;
+ const radius=.3;
+ return !beachStructureColliders.some(box=>x>box.minX-radius&&x<box.maxX+radius&&z>box.minZ-radius&&z<box.maxZ+radius);
+}
 
 // The castle is intentionally lazy: its meshes do not consume GPU resources
 // until the destination is visited, and the shared world loader can dispose it.
