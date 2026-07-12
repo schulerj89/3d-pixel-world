@@ -887,8 +887,11 @@ if(Math.hypot(worldX,worldZ)>.08){
   playerTurn=Math.atan2(worldX,worldZ);
   P.rotation.y=playerTurn;
 }
-// The ASCII map is the single collision source for every connected bakery room.
-if(currentPlace!=="bakery"||canWalkAt(nextX,nextZ)){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
+// The ASCII map owns bakery collision; the centralized house dimensions own
+// the home boundary so the avatar cannot walk beyond the enlarged floor.
+const canMove=currentPlace==="bakery"?canWalkAt(nextX,nextZ):
+ currentPlace==="house"?canWalkInHouse(nextX,nextZ):true;
+if(canMove){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
 syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);
 updateCamera();updateHeldItem();updateIngredientGrab();updateStoveButton();customers.forEach((q,i)=>{let u=q.userData,targetX,targetZ;
 // Everyone stands in one straight line at the same x position
@@ -1037,10 +1040,40 @@ function saveWorld(){saved.furniture=furniture.map(x=>({
 // Keep the bakery and house as two separate places.
 const bakeryObjects=S.children.filter(obj=>obj!==P && obj!==C && !obj.isLight);
 const house=new THREE.Group();house.visible=false;S.add(house);
+// The house shell, camera, spawn, and furniture limits all derive from this
+// one definition so future room-size changes cannot leave build bounds behind.
+const HOUSE_CONFIG={
+ width:15,
+ depth:15,
+ wallHeight:5,
+ wallThickness:.2,
+ playerInset:.45,
+ furnitureInset:.65,
+ furnitureStep:.5,
+ spawn:{x:0,z:2.5},
+ camera:{angle:.35,height:8,distance:11}
+};
+const HOUSE_HALF_WIDTH=HOUSE_CONFIG.width/2;
+const HOUSE_HALF_DEPTH=HOUSE_CONFIG.depth/2;
+const HOUSE_BOUNDS={
+ minX:-HOUSE_HALF_WIDTH+HOUSE_CONFIG.furnitureInset,
+ maxX:HOUSE_HALF_WIDTH-HOUSE_CONFIG.furnitureInset,
+ minZ:-HOUSE_HALF_DEPTH+HOUSE_CONFIG.furnitureInset,
+ maxZ:HOUSE_HALF_DEPTH-HOUSE_CONFIG.furnitureInset,
+ step:HOUSE_CONFIG.furnitureStep
+};
+function canWalkInHouse(x,z){
+ return x>=-HOUSE_HALF_WIDTH+HOUSE_CONFIG.playerInset &&
+  x<=HOUSE_HALF_WIDTH-HOUSE_CONFIG.playerInset &&
+  z>=-HOUSE_HALF_DEPTH+HOUSE_CONFIG.playerInset &&
+  z<=HOUSE_HALF_DEPTH-HOUSE_CONFIG.playerInset;
+}
 function hbox(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;house.add(m);return m}
-hbox(12,.25,10,0xd7b08b,0,.03,0);hbox(12,5,.2,0xddefff,0,2.5,-4.9);hbox(.2,5,10,0xffe5ef,-5.9,2.5,0);
+hbox(HOUSE_CONFIG.width,.25,HOUSE_CONFIG.depth,0xd7b08b,0,.03,0);
+hbox(HOUSE_CONFIG.width,HOUSE_CONFIG.wallHeight,HOUSE_CONFIG.wallThickness,0xddefff,0,HOUSE_CONFIG.wallHeight/2,-HOUSE_HALF_DEPTH+HOUSE_CONFIG.wallThickness/2);
+hbox(HOUSE_CONFIG.wallThickness,HOUSE_CONFIG.wallHeight,HOUSE_CONFIG.depth,0xffe5ef,-HOUSE_HALF_WIDTH+HOUSE_CONFIG.wallThickness/2,HOUSE_CONFIG.wallHeight/2,0);
 function addFurniture(kind,loading=false,savedItem=null){
- let g=new THREE.Group(),n=furniture.length,x=-3+(n%4)*2,z=-2+Math.floor(n/4)*2;
+ let g=new THREE.Group(),n=furniture.length,x=-5+(n%6)*2,z=-4+Math.floor(n/6)*2;
  function q(w,h,d,c,px,py,pz){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(px,py,pz);m.castShadow=true;g.add(m)}
  if(kind==="sofa"){q(2,.7,.8,0xe889ad,0,.55,0);q(2,.8,.25,0xd96f9a,0,1,-.3);q(.25,.7,.8,0xd96f9a,-1,.65,0);q(.25,.7,.8,0xd96f9a,1,.65,0)}
  if(kind==="table"){q(1.7,.18,1.1,0x9b6645,0,1,0);for(let a of[-.65,.65])for(let b of[-.35,.35])q(.14,1,.14,0x74472f,a,.5,b)}
@@ -1095,7 +1128,7 @@ function addFurniture(kind,loading=false,savedItem=null){
 
  g.position.set(savedItem?.x ?? x,0,savedItem?.z ?? z);
 g.rotation.y=savedItem?.rotation ?? 0;
-g.userData.kind=kind;house.add(g);furniture.push(g);if(!loading)saveWorld()
+g.userData.kind=kind;house.add(g);furniture.push(g);constrainFurniture(g);if(!loading)saveWorld()
 }
 (saved.furniture||[]).forEach(item=>{
  if(typeof item==="string")addFurniture(item,true);
@@ -1128,8 +1161,15 @@ function showHouse(){P.visible=true;
  setHousePanel(false);
  document.getElementById("roomTeleport").style.display="none";
  setBuildingMode(false);
- P.position.set(0,0,2);
- C.position.set(8,8,11);
+ P.position.set(HOUSE_CONFIG.spawn.x,0,HOUSE_CONFIG.spawn.z);
+ cameraAngle=HOUSE_CONFIG.camera.angle;
+ cameraHeight=HOUSE_CONFIG.camera.height;
+ cameraDistance=HOUSE_CONFIG.camera.distance;
+ C.position.set(
+  P.position.x+Math.sin(cameraAngle)*cameraDistance,
+  cameraHeight,
+  P.position.z+Math.cos(cameraAngle)*cameraDistance
+ );
  C.lookAt(0,1,0);
 }
 goBakery.onclick=showBakery;goHouse.onclick=showHouse;
@@ -1222,7 +1262,6 @@ const buildHouseButton=document.getElementById("buildHouse");
 const buildMessage=document.getElementById("buildMessage");
 const housePanelToggle=document.getElementById("housePanelToggle");
 const closeHousePanel=document.getElementById("closeHousePanel");
-const HOUSE_BOUNDS={minX:-5.1,maxX:5.1,minZ:-4.1,maxZ:4.1,step:.5};
 let selectedFurnitureIndex=-1;
 
 function setHousePanel(open){
@@ -1691,9 +1730,11 @@ setInterval(()=>{
    e.stopPropagation();
    if(typeof showHouse==="function") showHouse();
    // Put the player at the open front side of the house, facing inward.
-   P.position.set(0,0,4.1);
+   P.position.set(0,0,HOUSE_HALF_DEPTH-1.25);
    P.rotation.set(0,Math.PI,0);
-   C.position.set(0,6.8,11.5);
+   cameraHeight=HOUSE_CONFIG.camera.height;
+   cameraDistance=HOUSE_CONFIG.camera.distance;
+   C.position.set(0,cameraHeight,HOUSE_HALF_DEPTH+cameraDistance*.55);
    C.lookAt(0,1.2,1.3);
    orders.style.display="none";
    document.getElementById("msg").textContent="Teleported to the front of your house! 🏠✨";
@@ -2254,11 +2295,16 @@ setInterval(()=>{
     if(typeof showHouse==="function") showHouse();
 
     // Spawn safely inside the middle of the house.
-    P.position.set(0,0,0.7);
+    P.position.set(HOUSE_CONFIG.spawn.x,0,HOUSE_CONFIG.spawn.z);
     P.rotation.set(0,Math.PI,0);
-    cameraAngle=.15;
-    cameraHeight=6.5;
-    C.position.set(3.5,6.5,7.5);
+    cameraAngle=HOUSE_CONFIG.camera.angle;
+    cameraHeight=HOUSE_CONFIG.camera.height;
+    cameraDistance=HOUSE_CONFIG.camera.distance;
+    C.position.set(
+      P.position.x+Math.sin(cameraAngle)*cameraDistance,
+      cameraHeight,
+      P.position.z+Math.cos(cameraAngle)*cameraDistance
+    );
     C.lookAt(0,1.2,0);
 
     document.getElementById("orders").style.display="none";
