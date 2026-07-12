@@ -91,7 +91,7 @@ body.storage-mode #inventoryBox.hud-open{display:block!important}
 #page5Button,#kitchenBack{display:none!important}
 #firstPageButton{position:fixed;left:130px;top:58px;z-index:260;width:auto;height:auto;padding:10px 13px;border:3px solid #d8c9ff;border-radius:14px;background:#f5efff;font-size:15px;font-weight:bold;box-shadow:0 4px 10px #0002}
 #firstPageButton:hover,#firstPageButton:focus-visible{border-color:#6c3cff;background:#e9ddff}
-body:not(.house-mode) #checkHouse{display:none!important}
+#checkHouse{display:none!important}
 body:not(.house-mode) #housePanel{display:none!important}
 body:not(.house-mode) #furnitureMover{display:none!important}
 body.house-mode #hudDrawer #roomTeleport{display:none!important}
