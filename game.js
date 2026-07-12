@@ -1121,7 +1121,9 @@ function addFurniture(kind,loading=false,savedItem=null){
  if(kind==="chair"){q(.8,.18,.8,0x8f613f,0,.8,0);q(.8,1,.18,0x8f613f,0,1.3,-.3);q(.12,.8,.12,0x68442d,-.3,.4,0);q(.12,.8,.12,0x68442d,.3,.4,0)}
  if(kind==="fridge"){q(1.25,2.4,.9,0xdcecf2,0,1.2,0);q(.08,1,.08,0x777777,.48,1.55,.48)}
  if(kind==="tv"){q(2.5,1.5,.22,0x20232b,0,1.65,0);q(2.15,1.15,.05,0x62a9d8,0,1.65,.14);q(.2,.8,.2,0x555555,0,.65,0);q(1.3,.15,.55,0x555555,0,.2,0)}
- if(kind==="remote"){q(.35,.12,.75,0x333333,0,.15,0);q(.1,.04,.1,0xff5555,0,.23,-.25)}
+ // Keep the power button clearly above the remote body. Coplanar faces here
+ // z-fight in WebGL and make the button appear to flash as the camera moves.
+ if(kind==="remote"){q(.35,.12,.75,0x333333,0,.15,0);q(.1,.04,.1,0xff5555,0,.255,-.25)}
  if(kind==="bookshelf"){
    q(1.5,2.2,.45,0x8a5a3b,0,1.1,0);
    q(1.3,.12,.5,0x6f452d,0,.42,.02);
