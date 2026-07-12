@@ -1,4 +1,4 @@
-const S=new THREE.Scene();S.background=new THREE.Color(0xffd7e6);const C=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,100);C.position.set(10,11,15);C.lookAt(0,1,-2);const R=new THREE.WebGLRenderer({antialias:true});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));R.shadowMap.enabled=true;game.appendChild(R.domElement);S.add(new THREE.HemisphereLight(0xffffff,0x805060,2.4));let sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(5,10,7);sun.castShadow=true;S.add(sun);
+const S=new THREE.Scene();S.background=new THREE.Color(0xffd7e6);const C=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,100);C.position.set(10,11,15);C.lookAt(0,1,-2);const R=new THREE.WebGLRenderer({antialias:true});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,1.5));R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;game.appendChild(R.domElement);S.add(new THREE.HemisphereLight(0xffffff,0x805060,2.4));let sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(5,10,7);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-14;sun.shadow.camera.right=14;sun.shadow.camera.top=14;sun.shadow.camera.bottom=-14;sun.shadow.camera.near=.5;sun.shadow.camera.far=40;sun.shadow.bias=-.00035;sun.shadow.normalBias=.025;sun.shadow.camera.updateProjectionMatrix();S.add(sun);S.add(sun.target);
 function box(w,h,d,c,x,y,z,parent=S){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;parent.add(m);return m}
 // Connected bakery room system. In each map, # is a wall, . is walkable floor,
 // and D is a decorative, collision-solid entrance door.
@@ -571,16 +571,30 @@ function grabOrDrop(){
 grabButton.addEventListener("pointerdown",e=>{e.preventDefault();grabOrDrop()});
 
 let followCamera=true;let cameraAngle=.65;let cameraHeight=6.8;let cameraDistance=9;
+const cameraTargetPosition=new THREE.Vector3();
+const cameraLookAtPosition=new THREE.Vector3();
+let shadowAnchorX=NaN,shadowAnchorZ=NaN;
 
 function updateCamera(){
  if(!followCamera)return;
- let targetPosition=new THREE.Vector3(
+ cameraTargetPosition.set(
    P.position.x+Math.sin(cameraAngle)*cameraDistance,
    cameraHeight,
    P.position.z+Math.cos(cameraAngle)*cameraDistance
  );
- C.position.lerp(targetPosition,.09);
- C.lookAt(new THREE.Vector3(P.position.x,1.2,P.position.z));
+ C.position.lerp(cameraTargetPosition,.09);
+ cameraLookAtPosition.set(P.position.x,1.2,P.position.z);
+ C.lookAt(cameraLookAtPosition);
+ // The connected world is much larger than DirectionalLight's default
+ // -5..5 shadow volume. Re-center a larger, still high-resolution volume as
+ // the player travels, moving it in half-tile increments to avoid shimmer.
+ const anchorX=Math.round(P.position.x*2)/2,anchorZ=Math.round(P.position.z*2)/2;
+ if(anchorX!==shadowAnchorX||anchorZ!==shadowAnchorZ){
+  shadowAnchorX=anchorX;shadowAnchorZ=anchorZ;
+  sun.position.set(anchorX+7,12,anchorZ+9);
+  sun.target.position.set(anchorX,0,anchorZ);
+  sun.target.updateMatrixWorld();
+ }
 }
 
 const ingredientGrab=document.getElementById("ingredientGrab");
@@ -754,6 +768,11 @@ avatarButton.addEventListener("pointerdown",e=>{e.preventDefault();renderShop();
 closeAvatar.addEventListener("pointerdown",e=>{e.preventDefault();avatarShop.style.display="none"});
 document.getElementById("closeAvatarTop").addEventListener("pointerdown",e=>{e.preventDefault();avatarShop.style.display="none"});
 let inStorage=false;
+const perfState={fps:0,frameMs:0,drawCalls:0,triangles:0,pixelRatio:R.getPixelRatio()};
+let perfFrames=0,perfSampleStart=performance.now();
+window.getGamePerformance=()=>({...perfState});
+const perfOverlay=new URLSearchParams(location.search).has("perf")?Object.assign(document.createElement("div"),{textContent:"Measuring…"}):null;
+if(perfOverlay){perfOverlay.style.cssText="position:fixed;right:8px;bottom:8px;z-index:9999;padding:5px 8px;border-radius:6px;background:#000b;color:#fff;font:12px monospace;pointer-events:none";document.body.appendChild(perfOverlay)}
 let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);moveCameraControl(dt);if(Math.abs(vx)+Math.abs(vz)>.08){
 // Movement is relative to the camera direction.
 const forwardX=-Math.sin(cameraAngle);
@@ -771,18 +790,18 @@ if(Math.hypot(worldX,worldZ)>.08){
 // The ASCII map is the single collision source for every connected bakery room.
 if(currentPlace!=="bakery"||canWalkAt(nextX,nextZ)){P.position.x=nextX;P.position.z=nextZ}
 syncBakeryRoomState();walk+=dt*12;P.rotation.z=Math.sin(walk)*.035;P.position.y=Math.abs(Math.sin(walk))*.06}else{P.rotation.z*=.8;P.position.y*=.8;syncBakeryRoomState()}
-updateCamera();updateHeldItem();updateIngredientGrab();updateStoveButton();customers.forEach((q,i)=>{let u=q.userData,target;
+updateCamera();updateHeldItem();updateIngredientGrab();updateStoveButton();customers.forEach((q,i)=>{let u=q.userData,targetX,targetZ;
 // Everyone stands in one straight line at the same x position
-if(u.stage===0)target=new THREE.Vector3(3.8,0,-1.8+i*1.15);
-else if(u.stage===1)target=new THREE.Vector3(3.8,0,-2.5);
-else target=new THREE.Vector3(6.8,0,4.8);
-let dx=target.x-q.position.x,dz=target.z-q.position.z,d=Math.hypot(dx,dz);
+if(u.stage===0){targetX=3.8;targetZ=-1.8+i*1.15}
+else if(u.stage===1){targetX=3.8;targetZ=-2.5}
+else{targetX=6.8;targetZ=4.8}
+let dx=targetX-q.position.x,dz=targetZ-q.position.z,d=Math.hypot(dx,dz);
 if(d>.12){q.position.x+=dx/d*.025;q.position.z+=dz/d*.025;q.rotation.z=Math.sin(Date.now()*.012+i)*.025}
 else if(u.stage===0 && i===0){u.stage=1}
 else if(u.stage===1){if(--u.wait<0){u.stage=2;document.getElementById("msg").textContent="Use the bakery order TV to finish orders and earn money! 📺"}}
 else if(u.stage===2){S.remove(q);customers.splice(i,1)}
-});R.render(S,C)}animate();
-addEventListener('resize',()=>{C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix();R.setSize(innerWidth,innerHeight)});
+});R.render(S,C);perfFrames++;const now=performance.now(),elapsed=now-perfSampleStart;if(elapsed>=500){perfState.fps=Math.round(perfFrames*1000/elapsed);perfState.frameMs=+(elapsed/perfFrames).toFixed(1);perfState.drawCalls=R.info.render.calls;perfState.triangles=R.info.render.triangles;perfFrames=0;perfSampleStart=now;if(perfOverlay)perfOverlay.textContent=`${perfState.fps} FPS · ${perfState.frameMs} ms · ${perfState.drawCalls} calls · ${perfState.triangles} tris`}}animate();
+addEventListener('resize',()=>{C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,1.5));perfState.pixelRatio=R.getPixelRatio()});
 
 // ----- First page, character colors, and house decorating -----
 const startPage=document.getElementById("startPage"),housePanel=document.getElementById("housePanel");
