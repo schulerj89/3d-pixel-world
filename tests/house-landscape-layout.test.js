@@ -34,6 +34,7 @@ assert(catalog.includes('aria-expanded')&&catalog.includes('window.setBuildCatal
 assert(catalog.includes("setDangerExpanded")&&catalog.includes('dangerActions.hidden=!expanded'),"destructive furniture controls must be grouped behind an accessible disclosure");
 assert(css.includes(".furnitureEditor.danger-open .moveGrid{display:none}"),"movement controls must yield their row while destructive actions are open");
 assert(css.includes("#buildRemoveToggle")&&css.includes("min-width:88px!important"),"the compact remove disclosure must retain a touch-sized target");
+assert(css.includes("#buildRemoveToggle{grid-column:3;grid-row:1")&&css.includes(".moveGrid{grid-column:1 / 4;grid-row:2"),"Next and Remove must share the action header while movement owns a separate full-width row");
 assert(house.includes('window.setBuildCatalogCollapsed?.(false)'),"build sessions must reopen with tools available");
 assert(styles.includes("max-height:calc(100dvh - 68px)"),"landscape house panel must stay inside the dynamic viewport");
 
