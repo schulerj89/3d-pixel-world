@@ -11,6 +11,9 @@ assert.strictEqual(level.map.length,20);assert(level.map.every(row=>row.length==
 assert.deepStrictEqual(level.rooms.map(room=>[room.id,room.width,room.depth]),[
  ["kitchen",10,8],["bedroom",11,8],["living",14,9],["dining",7,5],["entry",7,3]
 ],"sectioned rooms need explicit unit dimensions");
+assert.deepStrictEqual(level.fixtures.map(fixture=>[fixture.id,fixture.room]),[
+ ["refrigerator","kitchen"],["double-bed","bedroom"],["sofa","living"],["dining-table","dining"]
+],"the text plan must seed each main room with an appropriately zoned fixture");
 
 const boundary=[...level.map[0],...level.map.at(-1),...level.map.slice(1,-1).flatMap(row=>[row[0],row.at(-1)])];
 assert(boundary.every(symbol=>symbol==="#"||symbol==="E"),"every exterior edge must be enclosed by a wall or closed door");

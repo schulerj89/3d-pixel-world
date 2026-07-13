@@ -3,14 +3,14 @@
 ; The 24x20 shell is 2.13x wider and 1.33x deeper than the former 15x15 room.
 ; Clearance rule: 1 unit is the minimum secondary passage; 2 units is the
 ; preferred primary path and the required working aisle in front of appliances.
-; #=enclosed wall | D=closed interior doorway | E=closed exterior entrance
-; F=restaurant-sized refrigerator anchor | .=walkable floor.
+; #=enclosed wall | D=interior doorway opening | E=closed exterior entrance
+; F=restaurant-sized refrigerator | S=sofa | B=bed | T=dining table.
 ; Room records use: id,first-column,first-row,width,depth (in 1-unit cells).
 ; Fixture records use: id,symbol,room,column,row,wall-facing.
 name: My House
 size: 24x20
 cell: 1
-origin: -12,-10
+origin: -12,-12.5
 wall-thickness: 0.25
 wall-height: 5
 minimum-clearance: 1
@@ -23,11 +23,14 @@ room: living,1,10,14,9
 room: dining,16,10,7,5
 room: entry,16,16,7,3
 fixture: refrigerator,F,kitchen,2,1,north
-legend: #=wall .=floor D=interior-door E=exterior-door F=refrigerator
+fixture: double-bed,B,bedroom,17,2,free
+fixture: sofa,S,living,5,13,free
+fixture: dining-table,T,dining,19,12,free
+legend: #=wall .=floor D=interior-door E=exterior-door F=refrigerator S=sofa B=bed T=dining-table
 map:
 ########################
 #.F........#...........#
-#..........#...........#
+#..........#.....B.....#
 #..........#...........#
 #..........#...........#
 #..........#...........#
@@ -37,8 +40,8 @@ map:
 #####DD##########DD#####
 #..............#.......#
 #..............#.......#
-#..............D.......#
-#..............#.......#
+#..............D...T...#
+#....S.........#.......#
 #..............#.......#
 #..............#########
 #......................#

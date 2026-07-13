@@ -47,7 +47,7 @@
   }
   const bounds={minX:level.originX,maxX:level.originX+level.width,minZ:level.originZ,maxZ:level.originZ+level.depth};
   const cellAt=(x,z)=>({col:Math.floor((x-level.originX)/level.cell),row:Math.floor((z-level.originZ)/level.cell)});
-  const layout={source:"house-main-level.txt",version:2,gridCell:1,width:level.width,depth:level.depth,wallHeight:level.wallHeight,wallThickness:level.wallThickness,playerRadius:.45,furnitureInset:.65,furnitureStep:.5,spawn:{x:0,z:8},camera:{angle:2.8,height:11,distance:16},spacings:{tight:level.minimumClearance,doorway:level.primaryClearance,aisle:level.applianceAisle},bounds,rooms,walls,openings,fixtures:level.fixtures};
+  const layout={source:"house-main-level.txt",version:2,gridCell:1,width:level.width,depth:level.depth,wallHeight:level.wallHeight,wallThickness:level.wallThickness,playerRadius:.45,furnitureInset:.65,furnitureStep:.5,spawn:{x:0,z:bounds.maxZ-2},camera:{angle:2.8,height:11,distance:16},spacings:{tight:level.minimumClearance,doorway:level.primaryClearance,aisle:level.applianceAisle},bounds,rooms,walls,openings,fixtures:level.fixtures};
   layout.roomAt=(x,z)=>rooms.find(room=>x>=room.minX&&x<room.maxX&&z>=room.minZ&&z<room.maxZ)?.id||(layout.canWalk(x,z,0)?"circulation":null);
   layout.canWalk=(x,z,radius=layout.playerRadius)=>{
    if(x<bounds.minX+radius||x>bounds.maxX-radius||z<bounds.minZ+radius||z>bounds.maxZ-radius)return false;

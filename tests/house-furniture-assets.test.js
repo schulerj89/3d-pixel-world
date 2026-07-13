@@ -36,9 +36,11 @@ for(const [kind,file] of Object.entries({...replacements,...additions})){
   assert.strictEqual(gltf.images[0].uri,"furniturebits_texture.png",`${file} must share the atlas texture`);
 }
 
-for(const primitive of ["tv","fridge","desk","vanity","bookshelf"]){
+for(const primitive of ["tv","desk","vanity","bookshelf"]){
   assert(!new RegExp(`\\b${primitive}:\\{file:`).test(assetsScript),`${primitive} must remain project-authored`);
 }
+assert(assetsScript.includes('fridge:{file:"fridge_A_decorated",url:"assets/models/restaurant/kaykit-restaurant-kit.glb",sourceScene:"fridge_A_decorated",scale:1.4'),"house fridge must reuse the restaurant scene at restaurant scale");
+assert(fs.existsSync(path.join(root,"assets","models","restaurant","kaykit-restaurant-kit.glb")),"restaurant fridge kit must be checked in");
 for(const kind of Object.keys(additions)){
   assert(html.includes(`data-f="${kind}"`),`${kind} must be available in the build catalog`);
 }

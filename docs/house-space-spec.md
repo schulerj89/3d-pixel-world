@@ -8,7 +8,9 @@ clearances are world units—not approximate visual proportions.
 
 The enclosed shell is **24 × 20 units**, compared with the former 15 × 15
 single room. Exterior perimeter cells are walls except for the four-unit closed
-front entrance. Interior `D` cells are closed doorway modules in section walls.
+front entrance. Interior `D` cells are doorway modules in section walls. The
+shell expands toward the rear, keeping the front facade at Z=7.5 so the porch,
+sidewalk, and city road retain their safe spacing.
 
 | Room | Usable grid | Purpose |
 | --- | ---: | --- |

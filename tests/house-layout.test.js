@@ -9,7 +9,7 @@ const source=`
 name: My House
 size: 24x20
 cell: 1
-origin: -12,-10
+origin: -12,-12.5
 wall-thickness: 0.25
 wall-height: 5
 minimum-clearance: 1
@@ -56,18 +56,18 @@ assert(layout.openings.some(opening=>opening.symbol==="D"&&opening.width===1),"m
 assert(layout.openings.some(opening=>opening.symbol==="E"&&opening.width===4),"map must expose the enclosed four-unit exterior entrance");
 
 for(const sample of[
- {x:-6,z:-4,room:"kitchen"},{x:6,z:-4,room:"bedroom"},{x:-5,z:5,room:"living"},
- {x:7,z:2,room:"dining"},{x:7,z:7,room:"entry"},{x:0,z:8,room:"living"}
+ {x:-6,z:-6.5,room:"kitchen"},{x:6,z:-6.5,room:"bedroom"},{x:-5,z:2.5,room:"living"},
+ {x:7,z:-.5,room:"dining"},{x:7,z:4.5,room:"entry"},{x:0,z:5.5,room:"living"}
 ]){
  assert.strictEqual(layout.roomAt(sample.x,sample.z),sample.room,`${sample.room} sample must resolve to its section`);
  assert(layout.canWalk(sample.x,sample.z,0.28),`${sample.room} sample must be walkable`);
 }
-assert(!layout.canWalk(-11.5,-9.5,0.28),"solid perimeter cell must block walking");
-assert(!layout.canWalk(-11.5,-0.5,0.28),"solid room divider must block walking");
-assert(layout.canWalk(-6.5,-0.5,0.28),"two-unit D opening must be walkable");
-assert(layout.canWalk(3.5,2.5,0.28),"one-unit D opening must remain passable by the player rig");
-assert(layout.canWalk(0,9.5,0.28),"exterior E entrance approach must be walkable");
-assert(!layout.canWalk(0,9.8,0.28),"bounds must keep the player inside until the entrance action runs");
+assert(!layout.canWalk(-11.5,-12,0.28),"solid perimeter cell must block walking");
+assert(!layout.canWalk(-11.5,-3,0.28),"solid room divider must block walking");
+assert(layout.canWalk(-6.5,-3,0.28),"two-unit D opening must be walkable");
+assert(layout.canWalk(3.5,0,0.28),"one-unit D opening must remain passable by the player rig");
+assert(layout.canWalk(0,7,0.28),"exterior E entrance approach must be walkable");
+assert(!layout.canWalk(0,7.3,0.28),"bounds must keep the player inside until the entrance action runs");
 
 assert.throws(()=>parse(source.replace("cell: 1","cell: 2")),/one-unit grid/,"non-unit grids must be rejected");
 assert.throws(()=>parse(source.replace("minimum-clearance: 1","minimum-clearance: 2")),/1-unit and 2-unit/,"spacing contract changes must be rejected");

@@ -4,38 +4,47 @@
 const HOUSE_CONFIG={
  width:24,
  depth:20,
+ origin:{x:-12,z:-12.5},
  wallHeight:5,
  wallThickness:.24,
  playerInset:.45,
  furnitureInset:.65,
  furnitureStep:.5,
- spawn:{x:0,z:8},
+ spawn:{x:0,z:5.5},
  camera:{angle:2.8,height:11,distance:16}
 };
 const HOUSE_BOUNDS={
- minX:-HOUSE_CONFIG.width/2+HOUSE_CONFIG.furnitureInset,
- maxX:HOUSE_CONFIG.width/2-HOUSE_CONFIG.furnitureInset,
- minZ:-HOUSE_CONFIG.depth/2+HOUSE_CONFIG.furnitureInset,
- maxZ:HOUSE_CONFIG.depth/2-HOUSE_CONFIG.furnitureInset,
+ minX:HOUSE_CONFIG.origin.x+HOUSE_CONFIG.furnitureInset,
+ maxX:HOUSE_CONFIG.origin.x+HOUSE_CONFIG.width-HOUSE_CONFIG.furnitureInset,
+ minZ:HOUSE_CONFIG.origin.z+HOUSE_CONFIG.furnitureInset,
+ maxZ:HOUSE_CONFIG.origin.z+HOUSE_CONFIG.depth-HOUSE_CONFIG.furnitureInset,
  step:HOUSE_CONFIG.furnitureStep
 };
+const HOUSE_DEBUG_VIEWS=Object.freeze({
+ overview:{name:"house-overview",target:{x:0,z:-2.5},camera:{angle:2.8,height:15,distance:20},hidePlayer:true},
+ kitchen:{name:"house-kitchen-2u-aisle",target:{x:-6,z:-7.2},camera:{angle:0,height:9.5,distance:10},hidePlayer:true},
+ bedroom:{name:"house-bedroom",target:{x:6,z:-7},camera:{angle:0,height:9.5,distance:10},hidePlayer:true},
+ living:{name:"house-living-1u-passage",target:{x:-5,z:2},camera:{angle:0,height:12,distance:8},hidePlayer:true},
+ enclosure:{name:"house-enclosed-corners",target:{x:0,z:-2.5},camera:{angle:.72,height:14,distance:21},hidePlayer:true},
+ exterior:{name:"house-exterior-cladding",area:"exterior",target:{x:0,z:9.5},camera:{angle:0,height:8,distance:15},hidePlayer:true}
+});
 let houseArea="interior",houseCity=null,activeHouseLayout=null,houseLayoutStatus="loading",houseLayoutError=null;
 function canWalkInHouse(x,z){
  if(houseArea==="exterior")return houseCity?.canWalk?houseCity.canWalk(x,z):x>=-18&&x<=18&&z>=7.9&&z<=35;
  if(activeHouseLayout)return activeHouseLayout.canWalk(x,z,HOUSE_CONFIG.playerInset);
- return x>=-HOUSE_CONFIG.width/2+HOUSE_CONFIG.playerInset &&
-  x<=HOUSE_CONFIG.width/2-HOUSE_CONFIG.playerInset &&
-  z>=-HOUSE_CONFIG.depth/2+HOUSE_CONFIG.playerInset &&
-  z<=HOUSE_CONFIG.depth/2-HOUSE_CONFIG.playerInset;
+ return x>=HOUSE_CONFIG.origin.x+HOUSE_CONFIG.playerInset &&
+  x<=HOUSE_CONFIG.origin.x+HOUSE_CONFIG.width-HOUSE_CONFIG.playerInset &&
+  z>=HOUSE_CONFIG.origin.z+HOUSE_CONFIG.playerInset &&
+  z<=HOUSE_CONFIG.origin.z+HOUSE_CONFIG.depth-HOUSE_CONFIG.playerInset;
 }
-function hbox(w,h,d,c,x,y,z,parent=house){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;parent.add(m);return m}
+function hbox(w,h,d,c,x,y,z,parent=house){let material=c?.isMaterial?c:new THREE.MeshStandardMaterial({color:c});let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;parent.add(m);return m}
 const houseLayoutShell=new THREE.Group();houseLayoutShell.name="house-layout-shell";house.add(houseLayoutShell);
 function applyHouseLayout(layout){
  activeHouseLayout=layout;houseLayoutStatus="ready";houseLayoutError=null;
- Object.assign(HOUSE_CONFIG,{width:layout.width,depth:layout.depth,wallHeight:layout.wallHeight,wallThickness:layout.wallThickness,playerInset:layout.playerRadius,furnitureInset:layout.furnitureInset,furnitureStep:layout.furnitureStep,spawn:{...layout.spawn},camera:{...layout.camera}});
+ Object.assign(HOUSE_CONFIG,{width:layout.width,depth:layout.depth,origin:{x:layout.bounds.minX,z:layout.bounds.minZ},wallHeight:layout.wallHeight,wallThickness:layout.wallThickness,playerInset:layout.playerRadius,furnitureInset:layout.furnitureInset,furnitureStep:layout.furnitureStep,spawn:{...layout.spawn},camera:{...layout.camera}});
  Object.assign(HOUSE_BOUNDS,{minX:layout.bounds.minX+layout.furnitureInset,maxX:layout.bounds.maxX-layout.furnitureInset,minZ:layout.bounds.minZ+layout.furnitureInset,maxZ:layout.bounds.maxZ-layout.furnitureInset,step:layout.furnitureStep});
  houseLayoutShell.clear();
- const floor=hbox(layout.width,.25,layout.depth,0xd7b08b,0,.03,0,houseLayoutShell);floor.name="house-floor";
+ const floor=hbox(layout.width,.25,layout.depth,0xd7b08b,(layout.bounds.minX+layout.bounds.maxX)/2,.03,(layout.bounds.minZ+layout.bounds.maxZ)/2,houseLayoutShell);floor.name="house-floor";
  for(const room of layout.rooms){
   const colors={living:0xe0bd98,kitchen:0xd6c19f,bedroom:0xddb7aa,entry_hall:0xd9c4a5,flex_room:0xd1bd9c};
   const panel=hbox(room.maxX-room.minX,.03,room.maxZ-room.minZ,colors[room.id]||0xd7b08b,(room.minX+room.maxX)/2,.17,(room.minZ+room.maxZ)/2,houseLayoutShell);
@@ -43,15 +52,27 @@ function applyHouseLayout(layout){
  }
  for(const wall of layout.walls){
   const length=wall.end-wall.start;
+  const wallWidth=wall.type==="cell"?wall.width:(wall.orientation==="H"?length:layout.wallThickness);
+  const interiorMaterial=window.HouseWallMaterials?.create("interior",{width:wallWidth,height:layout.wallHeight,renderer:R})||0xf2e8dc;
   const mesh=wall.type==="cell"
-   ?hbox(wall.width,layout.wallHeight,wall.depth,0xf2e8dc,wall.x,layout.wallHeight/2,wall.z,houseLayoutShell)
+   ?hbox(wall.width,layout.wallHeight,wall.depth,interiorMaterial,wall.x,layout.wallHeight/2,wall.z,houseLayoutShell)
    :wall.orientation==="H"
-    ?hbox(length,layout.wallHeight,layout.wallThickness,0xf2e8dc,(wall.start+wall.end)/2,layout.wallHeight/2,wall.fixed,houseLayoutShell)
-    :hbox(layout.wallThickness,layout.wallHeight,length,0xf2e8dc,wall.fixed,layout.wallHeight/2,(wall.start+wall.end)/2,houseLayoutShell);
+    ?hbox(length,layout.wallHeight,layout.wallThickness,interiorMaterial,(wall.start+wall.end)/2,layout.wallHeight/2,wall.fixed,houseLayoutShell)
+    :hbox(layout.wallThickness,layout.wallHeight,length,interiorMaterial,wall.fixed,layout.wallHeight/2,(wall.start+wall.end)/2,houseLayoutShell);
   mesh.name=`house-wall-${wall.id}`;mesh.userData.wallId=wall.id;
  }
  document.body.dataset.houseLayoutStatus="ready";
  document.body.dataset.houseGridCell=String(layout.gridCell);
+ queueMicrotask(()=>{
+  const seedStarterSet=furniture.length===0,spec=window.HouseSpaceSpec?.REFRIGERATOR;
+  for(const fixture of layout.fixtures){
+   const kind={refrigerator:"fridge","double-bed":"bed",sofa:"sofa","dining-table":"diningTable"}[fixture.id];
+   if(!kind||furniture.some(item=>item.userData.kind===kind)||(!seedStarterSet&&kind!=="fridge"))continue;
+   const x=layout.bounds.minX+(fixture.col+.5)*layout.gridCell;
+   const z=kind==="fridge"&&spec?layout.bounds.minZ+layout.wallThickness/2+spec.collision[1]:layout.bounds.minZ+(fixture.row+.5)*layout.gridCell;
+   addFurniture(kind,true,{x,z,rotation:0});
+  }
+ });
 }
 window.HouseLayout?.load("house-main-level.txt").then(applyHouseLayout).catch(error=>{
  houseLayoutStatus="error";houseLayoutError=error.message;document.body.dataset.houseLayoutStatus="error";
@@ -78,7 +99,7 @@ function setHouseArea(area){
  houseArea=area==="exterior"?"exterior":"interior";
  houseCity?.setActive?.(houseArea==="exterior");
  if(buildingMode&&houseArea!=="interior")setBuildingMode(false);
- const spawn=houseArea==="exterior"?(houseCity?.exteriorSpawn||houseExterior?.exteriorSpawn||{x:0,z:12.6}):(activeHouseLayout?.spawn||houseExterior?.interiorSpawn||HOUSE_CONFIG.spawn);
+ const spawn=houseArea==="exterior"?(houseCity?.exteriorSpawn||houseExterior?.exteriorSpawn||{x:0,z:9.5}):(activeHouseLayout?.spawn||houseExterior?.interiorSpawn||HOUSE_CONFIG.spawn);
  P.position.set(spawn.x,0,spawn.z);P.rotation.y=houseArea==="exterior"?0:Math.PI;
  cameraHeight=houseArea==="exterior"?10:HOUSE_CONFIG.camera.height;
  cameraDistance=houseArea==="exterior"?14:HOUSE_CONFIG.camera.distance;
@@ -116,7 +137,7 @@ function addFurniture(kind,loading=false,savedItem=null){
    g.userData.exitAnchor={x:0,y:0,z:1.05};
    g.userData.actionAnchor={x:0,y:2.05,z:0};
  }
- if(kind==="fridge"){q(1.25,2.4,.9,0xdcecf2,0,1.2,0);q(.08,1,.08,0x777777,.48,1.55,.48)}
+ if(kind==="fridge"){q(2.8,3.5,3.136,0xdcecf2,0,1.75,0);q(.1,1.15,.1,0x667781,1.02,2.05,1.59)}
  if(kind==="tv"){q(2.5,1.5,.22,0x20232b,0,1.65,0);g.userData.tvScreen=q(2.15,1.15,.05,0x151923,0,1.65,.14);q(.2,.8,.2,0x555555,0,.65,0);q(1.3,.15,.55,0x555555,0,.2,0)}
  if(kind==="bookshelf"){
    q(1.5,2.2,.45,0x8a5a3b,0,1.1,0);
@@ -259,16 +280,19 @@ function showHouse(){P.visible=true;
  setHudMenu(false);closeKitchenPanels();
  document.getElementById("roomTeleport").style.display="none";
  setBuildingMode(false);
- setHouseArea("interior");
- cameraAngle=HOUSE_CONFIG.camera.angle;
- cameraHeight=HOUSE_CONFIG.camera.height;
- cameraDistance=HOUSE_CONFIG.camera.distance;
+ const debugView=HOUSE_DEBUG_VIEWS[new URLSearchParams(location.search).get("houseView")];
+ setHouseArea(debugView?.area||"interior");
+ if(debugView?.target)P.position.set(debugView.target.x,0,debugView.target.z);
+ P.visible=debugView?.hidePlayer!==true;
+ cameraAngle=debugView?.camera.angle??HOUSE_CONFIG.camera.angle;
+ cameraHeight=debugView?.camera.height??HOUSE_CONFIG.camera.height;
+ cameraDistance=debugView?.camera.distance??HOUSE_CONFIG.camera.distance;
  C.position.set(
   P.position.x+Math.sin(cameraAngle)*cameraDistance,
   cameraHeight,
   P.position.z+Math.cos(cameraAngle)*cameraDistance
  );
- C.lookAt(0,1,0);
+ C.lookAt(P.position.x,1,P.position.z);
  if(window.switchWorldMusic)window.switchWorldMusic("house");
 }
 function showBeach(){
@@ -623,6 +647,7 @@ const furnitureGrid=new THREE.GridHelper(
  0x6c3cff,0xb9a7e8
 );
 furnitureGrid.position.y=.17;
+furnitureGrid.position.z=-2.5;
 furnitureGrid.material.transparent=true;
 furnitureGrid.material.opacity=.58;
 furnitureGrid.material.depthWrite=false;
@@ -782,6 +807,10 @@ window.getHouseLayoutDebug=()=>({
  player:{x:+P.position.x.toFixed(2),z:+P.position.z.toFixed(2),room:activeHouseLayout?.roomAt(P.position.x,P.position.z)||null},
  walkable:activeHouseLayout?activeHouseLayout.canWalk(P.position.x,P.position.z,HOUSE_CONFIG.playerInset):null,
  furnitureBounds:{...HOUSE_BOUNDS},
+ spacing:{gridUnit:1,secondary:1,primary:2,playerDiameter:window.HouseSpaceSpec?.PLAYER?.diameter||.56,secondarySlack:window.HouseSpaceSpec?.playerSlack?.(1),primarySlack:window.HouseSpaceSpec?.playerSlack?.(2)},
+ wallTextures:window.HouseWallMaterials?.debug?.()||null,
+ refrigerator:window.HouseSpaceSpec?.REFRIGERATOR||null,
+ debugViews:Object.fromEntries(Object.entries(HOUSE_DEBUG_VIEWS).map(([id,view])=>[id,view.name])),
  layout:activeHouseLayout?.debug?.()||null,
  shell:{walls:houseLayoutShell.children.filter(child=>child.userData.wallId).length,rooms:houseLayoutShell.children.filter(child=>child.userData.roomId).length}
 });

@@ -14,27 +14,34 @@
     diningTable:{file:"table_medium_long"},
     sideTable:{file:"table_small"},
     tableLamp:{file:"lamp_table"},
-    smallCactus:{file:"cactus_small_A"}
+    smallCactus:{file:"cactus_small_A"},
+    // Keep the house appliance identical to the proven restaurant fixture.
+    fridge:{file:"fridge_A_decorated",url:"assets/models/restaurant/kaykit-restaurant-kit.glb",sourceScene:"fridge_A_decorated",scale:1.4,collision:[1.4,1.568],size:[2.8,3.5,3.136]}
   });
   const prototypePromises=new Map();
   const requestedIds=new Set();
   const loadedIds=new Set();
   const errors=[];
 
-  function assetId(spec){return `kaykit-furniture-bits/${spec.file}`}
+  function assetId(spec){return spec.sourceScene?`restaurant.kitchen.fridge`:`kaykit-furniture-bits/${spec.file}`}
   function loadPrototype(spec){
-    if(prototypePromises.has(spec.file))return prototypePromises.get(spec.file);
+    const key=spec.url||spec.file;
+    if(prototypePromises.has(key))return prototypePromises.get(key);
     const promise=new Promise((resolve,reject)=>{
       const Loader=window.ThreeGLTFLoader?.GLTFLoader||window.THREE?.GLTFLoader;
       if(!Loader){reject(new Error("GLTFLoader is unavailable"));return}
       new Loader().load(
-        `${ROOT}/${spec.file}.gltf?v=__BUILD_VERSION__`,
-        gltf=>resolve(gltf.scene),
+        `${spec.url||`${ROOT}/${spec.file}.gltf`}?v=__BUILD_VERSION__`,
+        gltf=>{
+          const prototype=spec.sourceScene?(gltf.scenes?.find(scene=>scene.children?.[0]?.name===spec.sourceScene)||gltf.scene.getObjectByName(spec.sourceScene)):gltf.scene;
+          if(!prototype){reject(new Error(`Missing source scene: ${spec.sourceScene}`));return}
+          resolve(prototype);
+        },
         undefined,
         reject
       );
     });
-    prototypePromises.set(spec.file,promise);
+    prototypePromises.set(key,promise);
     return promise;
   }
 
@@ -54,6 +61,7 @@
       const model=prototype.clone(true);
       model.name=id;
       model.userData.assetId=id;
+      if(spec.scale)model.scale.setScalar(spec.scale);
       model.traverse(object=>{
         if(!object.isMesh)return;
         object.material=cloneMaterial(object.material);
@@ -63,6 +71,8 @@
       group.add(model);
       if(group.userData.fallbackRoot)group.userData.fallbackRoot.visible=false;
       if(spec.seatAnchor)group.userData.seatAnchor={...spec.seatAnchor};
+      if(spec.collision)group.userData.collision=[...spec.collision];
+      if(spec.size)group.userData.assetSize=[...spec.size];
       group.userData.assetRoot=model;
       group.userData.assetStatus="ready";
       loadedIds.add(id);
