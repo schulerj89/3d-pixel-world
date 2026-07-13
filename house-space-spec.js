@@ -80,5 +80,12 @@
   const room=roomBounds(level,roomOrId),frontEdge=placement.yaw===0?placement.bounds.maxZ:placement.bounds.minZ;
   return placement.yaw===0?room.maxZ-frontEdge:frontEdge-room.minZ;
  }
- return {LEVEL_FILE,PLAYER,CLEARANCE,REFRIGERATOR,parseLevel,validateLevel,roomBounds,fixturePlacement,playerSlack,supportsPassage,frontAisle};
+ function planValidator(){
+  if(typeof globalThis!=="undefined"&&globalThis.HouseLayoutValidator)return globalThis.HouseLayoutValidator;
+  if(typeof require==="function")return require("./house-layout-validator.js");
+  throw new Error("HouseLayoutValidator must load before programmatic house plan QA");
+ }
+ function auditPlan(level,options){return planValidator().audit(level,options)}
+ function validatePlan(level,options){return planValidator().validate(level,options)}
+ return {LEVEL_FILE,PLAYER,CLEARANCE,REFRIGERATOR,parseLevel,validateLevel,auditPlan,validatePlan,roomBounds,fixturePlacement,playerSlack,supportsPassage,frontAisle};
 });
