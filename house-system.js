@@ -328,9 +328,9 @@ const furnitureGrid=new THREE.GridHelper(
  Math.round((Math.min(HOUSE_CONFIG.width,HOUSE_CONFIG.depth)-HOUSE_CONFIG.furnitureInset*2)/HOUSE_BOUNDS.step),
  0x6c3cff,0xb9a7e8
 );
-furnitureGrid.position.y=.145;
+furnitureGrid.position.y=.17;
 furnitureGrid.material.transparent=true;
-furnitureGrid.material.opacity=.42;
+furnitureGrid.material.opacity=.58;
 furnitureGrid.material.depthWrite=false;
 furnitureGrid.renderOrder=5;
 furnitureGrid.visible=false;
@@ -385,6 +385,7 @@ document.querySelectorAll("[data-house-tab]").forEach(b=>b.addEventListener("poi
 
 function setBuildingMode(on){
  buildingMode=on;
+ if(on&&furniture.length&&selectedFurnitureIndex<0)selectedFurnitureIndex=furniture.length-1;
  const movePad=document.getElementById("pad");
  const cameraPad=document.getElementById("lookPad");
  const cameraLabel=document.getElementById("lookLabel");
@@ -396,7 +397,7 @@ function setBuildingMode(on){
  buildHouseButton.hidden=on;
  buildMessage.textContent="";
  document.body.classList.toggle("house-building",on&&currentPlace==="house");
- if(on)setHouseTab("build");
+ if(on){setHouseTab("build");setHousePanel(false)}
  updateFurnitureLabel();
  updateFurnitureGuides();
 }
