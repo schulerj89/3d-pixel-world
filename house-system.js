@@ -524,13 +524,13 @@ function ensureSpaceInteractionRuntime(world){
  const view=window.createConversationDOMView({root:document.body}),camera=createSpaceConversationCamera();
  const quest=window.CoinQuestSystem.createCoinQuestSystem({
   THREE,scene:world.group,loader:new window.ThreeGLTFLoader.GLTFLoader(),getPlayerPosition:()=>P.position,
-  onReward:value=>window.gameEconomy.add(value,"space-coin-sprint"),
+  onReward:value=>window.gameEconomy.add(value,"space-coin-sprint"),showRetryButton:false,
   getRenderInfo:()=>({calls:R.info.render.calls,triangles:R.info.render.triangles,geometries:R.info.memory.geometries,textures:R.info.memory.textures}),
   config:{id:"space-coin-sprint",title:"Cosmic Coin Sprint",count:6,timeLimitSeconds:30,reward:10,positions:SPACE_COIN_POSITIONS}
  });
  let pendingQuestStart=null;
  const conversation=window.createConversationSystem({
-  view,camera,
+  view,camera,scratchPosition:new THREE.Vector3(),
   runAction:action=>{
    if(action.action==="start-coin-task"){pendingQuestStart="start";return {end:true}}
    if(action.action==="retry-coin-task"){pendingQuestStart="retry";return {end:true}}

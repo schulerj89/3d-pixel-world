@@ -15,6 +15,8 @@ assert(html.indexOf("coin-quest-system.js")<html.indexOf("house-system.js"),"que
 
 assert.match(house,/count:6,timeLimitSeconds:30,reward:10/,"Nova configures six coins, thirty seconds, and a $10 reward");
 assert.match(house,/speaker:"Nova"/);assert.match(house,/action:"start-coin-task"/);assert.match(house,/action:"retry-coin-task"/);
+assert.match(house,/showRetryButton:false/,"failed missions must route retry through Nova rather than bypassing the NPC");
+assert.match(house,/scratchPosition:new THREE\.Vector3\(\)/,"conversation proximity checks must reuse a scratch vector without mutating targets");
 assert.match(house,/world\.findObject\("space\.cargo\.stack-a"\)/,"portable conversations are also attached to a world object");
 assert.match(house,/pendingQuestStart="start"/,"the timer waits until the conversation camera has restored");
 assert.match(house,/event\.detail\?\.phase==="complete"/,"quest start is synchronized to the completed conversation exit");

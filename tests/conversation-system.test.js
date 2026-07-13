@@ -46,6 +46,14 @@ function makeView(){
  assert.equal(system.state,STATES.IDLE);
  assert.deepEqual(actionCalls.map(call=>call[0]),["yes","accept"]);
 
+ const localPosition={x:1,y:0,z:2,clone(){return {x:this.x,y:this.y,z:this.z}}};
+ const nestedTarget={position:localPosition,userData:{},getWorldPosition(out){out.x=11;out.y=0;out.z=12;return out}};
+ const portable=createConversationSystem({view:makeView()});
+ const nestedEntry=portable.register(nestedTarget,{id:"nested",range:30,nodes:{hello:{text:"Hi"}}});
+ assert.equal(portable.updateInteraction({x:10,z:10}),nestedEntry,"proximity uses the target's world position");
+ assert.deepEqual({x:localPosition.x,y:localPosition.y,z:localPosition.z},{x:1,y:0,z:2},"world-position queries must not corrupt the target's local transform");
+ portable.destroy();
+
  const instantView=makeView(),events=[];
  const instant=createConversationSystem({view:instantView,camera:{capture:()=>({exact:true}),focus:()=>{},restore:()=>{}},onEvent:event=>events.push(event.type)});
  const consoleObject={position:{x:0,z:0},userData:{}};

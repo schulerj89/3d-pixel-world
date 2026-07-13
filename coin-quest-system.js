@@ -151,7 +151,7 @@
    hud.hidden=state.phase==="idle";
    titleNode.textContent=config.title;timerNode.textContent=`${seconds.toFixed(seconds<10?1:0)}s`;
    progressNode.textContent=`${state.collectedCount} / ${state.count} coins`;
-   hud.dataset.phase=state.phase;retryButton.hidden=state.phase!=="failed";
+   hud.dataset.phase=state.phase;retryButton.hidden=state.phase!=="failed"||options.showRetryButton===false;
    statusNode.textContent=state.phase==="success"?`Mission complete  +$${config.reward}`:state.phase==="failed"?"Time expired":"";
   }
   function syncCoinVisibility(){for(const coin of coins){coin.collected=controller.collected[coin.index];coin.visual.visible=controller.phase==="active"&&!coin.collected}}
@@ -195,7 +195,7 @@
      prototype=normalizePrototype(loadedScene.clone(true));
      for(const coin of coins)placeVisual(coin,prototype.clone(true));
      assetStatus="ready";loadedAssetIds.push("quaternius-platformer-coin");syncCoinVisibility();resolve({status:"ready",url:assetUrl});
-    }catch(error){assetStatus="fallback";resolve({status:"fallback",error});}
+    }catch(error){disposeObjectResources(loadedScene);assetStatus="fallback";resolve({status:"fallback",error});}
    },undefined,error=>{assetStatus="fallback";resolve({status:"fallback",error});}));
   }
   const assetReady=loadAsset();renderHud();

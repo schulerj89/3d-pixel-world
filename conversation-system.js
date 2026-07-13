@@ -34,7 +34,13 @@
   const camera=settings.camera||{capture:()=>null,focus:()=>resolved(),restore:()=>resolved()};
   const runAction=typeof settings.runAction==="function"?settings.runAction:async(action,context)=>typeof action.run==="function"?action.run(context):undefined;
   const getTargetPosition=settings.getTargetPosition||((target,out)=>{
-   if(target&&typeof target.getWorldPosition==="function")return target.getWorldPosition(out||target.position);
+   if(target&&typeof target.getWorldPosition==="function"){
+    // Never use target.position as the output: getWorldPosition mutates its
+    // destination, which would corrupt a target's local transform under a
+    // translated parent. Integrations should provide a reusable scratch vector.
+    const destination=out||(target.position&&typeof target.position.clone==="function"?target.position.clone():null);
+    return destination?target.getWorldPosition(destination):target.position;
+   }
    return target&&target.position;
   });
   const entries=[];

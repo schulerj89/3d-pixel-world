@@ -30,6 +30,8 @@ assert.match(source,/controller\.phase==="active"&&!coin\.collected/,"coins stay
 assert.match(source,/hud\.hidden=state\.phase==="idle"/,"the timer HUD stays hidden before the NPC starts the quest");
 assert.match(source,/getRenderInfo/,"browser render metrics can be exposed in debug state");
 assert.match(source,/disposeObjectResources\(prototype\)/,"loaded GLTF resources are disposed with the quest system");
+assert.match(source,/showRetryButton===false/,"portable integrations can route retries through their quest giver");
+assert.match(source,/catch\(error\)\{disposeObjectResources\(loadedScene\)/,"failed GLTF normalization releases loaded resources");
 const assetPath=path.join(__dirname,"..","assets","models","quaternius-platformer-coin","Coin.gltf");
 const sourcePath=path.join(path.dirname(assetPath),"SOURCE.md");
 assert.ok(fs.existsSync(assetPath));assert.ok(fs.statSync(assetPath).size<100*1024,"coin asset stays below 100 KB");
