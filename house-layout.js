@@ -37,14 +37,46 @@
   });
   return segments;
  }
+ function lineWalls(level){
+  const walls=[],thickness=level.wallThickness;
+  const add=(id,orientation,fixed,start,end,kind="interior")=>walls.push({id,type:"line",orientation,fixed,start,end,thickness,kind});
+  const runs=(values,predicate)=>{const found=[];let start=-1;for(let index=0;index<=values.length;index++){if(predicate(values[index])&&start<0)start=index;if(!predicate(values[index])&&start>=0){found.push([start,index]);start=-1}}return found};
+  // Perimeter walls sit just inside the authored bounds. Exterior cladding is
+  // placed just outside the same boundary, so the two surfaces meet without
+  // occupying the same volume or competing for a depth-buffer plane.
+  for(const [start,end] of runs([...level.map[0]],symbol=>symbol==="#"))add(`perimeter-north-${start}`,"H",level.originZ+thickness/2,level.originX+start,level.originX+end,"perimeter");
+  for(const [start,end] of runs([...level.map[level.depth-1]],symbol=>symbol==="#"))add(`perimeter-south-${start}`,"H",level.originZ+level.depth-thickness/2,level.originX+start,level.originX+end,"perimeter");
+  add("perimeter-west","V",level.originX+thickness/2,level.originZ+thickness,level.originZ+level.depth-thickness,"perimeter");
+  add("perimeter-east","V",level.originX+level.width-thickness/2,level.originZ+thickness,level.originZ+level.depth-thickness,"perimeter");
+  // Interior walls use thin center lines. Horizontal and vertical runs are
+  // emitted independently so T/cross junctions close cleanly without stacks
+  // of coplanar one-cell boxes.
+  for(let row=1;row<level.depth-1;row++){
+   const values=[...level.map[row]].slice(1,-1);
+   for(const [localStart,localEnd] of runs(values,symbol=>symbol==="#"))if(localEnd-localStart>=2){const start=localStart+1,end=localEnd+1;add(`interior-h-${row}-${start}`,"H",level.originZ+row+.5,level.originX+start,level.originX+end)}
+  }
+  for(let col=1;col<level.width-1;col++){
+   const values=level.map.slice(1,-1).map(row=>row[col]);
+   for(const [localStart,localEnd] of runs(values,symbol=>symbol==="#"))if(localEnd-localStart>=2){const start=localStart+1,end=localEnd+1;add(`interior-v-${col}-${start}`,"V",level.originX+col+.5,level.originZ+start,level.originZ+end)}
+  }
+  return walls;
+ }
+ function connectedOpenings(level){
+  const openings=[],seen=new Set(),key=(row,col)=>`${row}:${col}`;
+  for(let row=0;row<level.depth;row++)for(let col=0;col<level.width;col++){
+   const symbol=level.map[row][col];if((symbol!=="D"&&symbol!=="E")||seen.has(key(row,col)))continue;
+   const cells=[],queue=[[row,col]];seen.add(key(row,col));
+   while(queue.length){const [currentRow,currentCol]=queue.shift();cells.push([currentRow,currentCol]);for(const [nextRow,nextCol] of [[currentRow-1,currentCol],[currentRow+1,currentCol],[currentRow,currentCol-1],[currentRow,currentCol+1]])if(level.map[nextRow]?.[nextCol]===symbol&&!seen.has(key(nextRow,nextCol))){seen.add(key(nextRow,nextCol));queue.push([nextRow,nextCol])}}
+   const rows=cells.map(cell=>cell[0]),cols=cells.map(cell=>cell[1]),minRow=Math.min(...rows),maxRow=Math.max(...rows),minCol=Math.min(...cols),maxCol=Math.max(...cols),orientation=maxCol-minCol>=maxRow-minRow?"H":"V";
+   openings.push({id:`${symbol==="E"?"exterior":"interior"}-${minRow}-${minCol}`,symbol,orientation,fixed:orientation==="H"?level.originZ+minRow+.5:level.originX+minCol+.5,start:orientation==="H"?level.originX+minCol:level.originZ+minRow,end:orientation==="H"?level.originX+maxCol+1:level.originZ+maxRow+1,width:cells.length});
+  }
+  return openings;
+ }
  function adaptLevel(level){
   validateLevel(level);
-  const walls=segmentsFor(level,"#").map(segment=>({id:`run-${segment.row}-${segment.start}`,type:"cell",x:level.originX+(segment.start+segment.end)/2,z:level.originZ+segment.row+.5,width:segment.end-segment.start,depth:level.cell}));
+  const walls=lineWalls(level);
   const rooms=level.rooms.map(room=>({id:room.id,minX:level.originX+room.col,maxX:level.originX+room.col+room.width,minZ:level.originZ+room.row,maxZ:level.originZ+room.row+room.depth}));
-  const openings=[];
-  for(const symbol of["D","E"]){
-   for(const segment of segmentsFor(level,symbol))openings.push({id:`${symbol==="E"?"exterior":"interior"}-${segment.row}-${segment.start}`,symbol,orientation:"H",fixed:level.originZ+segment.row+.5,start:level.originX+segment.start,end:level.originX+segment.end,width:segment.end-segment.start});
-  }
+  const openings=connectedOpenings(level);
   const bounds={minX:level.originX,maxX:level.originX+level.width,minZ:level.originZ,maxZ:level.originZ+level.depth};
   const cellAt=(x,z)=>({col:Math.floor((x-level.originX)/level.cell),row:Math.floor((z-level.originZ)/level.cell)});
   const layout={source:"house-main-level.txt",version:2,gridCell:1,width:level.width,depth:level.depth,wallHeight:level.wallHeight,wallThickness:level.wallThickness,playerRadius:.45,furnitureInset:.65,furnitureStep:.5,spawn:{x:0,z:bounds.maxZ-2},camera:{angle:2.8,height:11,distance:16},spacings:{tight:level.minimumClearance,doorway:level.primaryClearance,aisle:level.applianceAisle},bounds,rooms,walls,openings,fixtures:level.fixtures};

@@ -52,13 +52,13 @@ function applyHouseLayout(layout){
  }
  for(const wall of layout.walls){
   const length=wall.end-wall.start;
-  const wallWidth=wall.type==="cell"?wall.width:(wall.orientation==="H"?length:layout.wallThickness);
+  const wallWidth=wall.type==="cell"?wall.width:length;
   const interiorMaterial=window.HouseWallMaterials?.create("interior",{width:wallWidth,height:layout.wallHeight,renderer:R})||0xf2e8dc;
   const mesh=wall.type==="cell"
    ?hbox(wall.width,layout.wallHeight,wall.depth,interiorMaterial,wall.x,layout.wallHeight/2,wall.z,houseLayoutShell)
    :wall.orientation==="H"
-    ?hbox(length,layout.wallHeight,layout.wallThickness,interiorMaterial,(wall.start+wall.end)/2,layout.wallHeight/2,wall.fixed,houseLayoutShell)
-    :hbox(layout.wallThickness,layout.wallHeight,length,interiorMaterial,wall.fixed,layout.wallHeight/2,(wall.start+wall.end)/2,houseLayoutShell);
+    ?hbox(length,layout.wallHeight,wall.thickness||layout.wallThickness,interiorMaterial,(wall.start+wall.end)/2,layout.wallHeight/2,wall.fixed,houseLayoutShell)
+    :hbox(wall.thickness||layout.wallThickness,layout.wallHeight,length,interiorMaterial,wall.fixed,layout.wallHeight/2,(wall.start+wall.end)/2,houseLayoutShell);
   mesh.name=`house-wall-${wall.id}`;mesh.userData.wallId=wall.id;
  }
  document.body.dataset.houseLayoutStatus="ready";

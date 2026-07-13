@@ -1,8 +1,9 @@
 ; My House sectioned interior v2
 ; Units are world units: one map character is one 1x1 floor cell.
 ; The 24x20 shell is 2.13x wider and 1.33x deeper than the former 15x15 room.
-; Clearance rule: 1 unit is the minimum secondary passage; 2 units is the
-; preferred primary path and the required working aisle in front of appliances.
+; Clearance rule: 1 unit is the minimum furniture-side passage; 2 units is the
+; required working aisle in front of appliances. Interior entries are 3-4
+; units wide and the main exterior entry reserves a four-unit door module.
 ; #=enclosed wall | D=interior doorway opening | E=closed exterior entrance
 ; F=restaurant-sized refrigerator | S=sofa | B=bed | T=dining table.
 ; Room records use: id,first-column,first-row,width,depth (in 1-unit cells).
@@ -37,11 +38,11 @@ map:
 #..........#...........#
 #..........#...........#
 #..........#...........#
-#####DD##########DD#####
+####DDDD########DDDD####
 #..............#.......#
-#..............#.......#
+#..............D.......#
 #..............D...T...#
-#....S.........#.......#
+#....S.........D.......#
 #..............#.......#
 #..............#########
 #......................#

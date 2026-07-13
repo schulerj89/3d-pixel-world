@@ -32,11 +32,11 @@ map:
 #..........#...........#
 #..........#...........#
 #..........#...........#
-#####DD##########DD#####
-#..............#.......#
+####DDDD########DDDD####
 #..............#.......#
 #..............D.......#
-#..............#.......#
+#..............D.......#
+#..............D.......#
 #..............#.......#
 #..............#########
 #......................#
@@ -51,9 +51,10 @@ assert.deepStrictEqual(layout.spacings,{tight:1,doorway:2,aisle:2},"layout must 
 assert.deepStrictEqual([layout.width,layout.depth],[24,20],"revamped house must be 24x20 units");
 for(const required of["living","kitchen","bedroom","dining","entry"])assert(layout.rooms.some(room=>room.id===required),`missing sectioned room: ${required}`);
 
-assert(layout.openings.some(opening=>opening.symbol==="D"&&opening.width===2),"map must expose two-unit interior doorways");
-assert(layout.openings.some(opening=>opening.symbol==="D"&&opening.width===1),"map must expose the validated one-unit secondary passage");
+assert.deepStrictEqual(layout.openings.filter(opening=>opening.symbol==="D").map(opening=>opening.width).sort(),[3,4,4],"interior entries must reserve three or four units");
+assert(layout.openings.some(opening=>opening.symbol==="D"&&opening.orientation==="V"&&opening.width===3),"vertical room entry must preserve its authored orientation");
 assert(layout.openings.some(opening=>opening.symbol==="E"&&opening.width===4),"map must expose the enclosed four-unit exterior entrance");
+assert(layout.walls.every(wall=>wall.type==="line"&&wall.thickness===.25),"walls must render as thin line segments instead of overlapping one-unit boxes");
 
 for(const sample of[
  {x:-6,z:-6.5,room:"kitchen"},{x:6,z:-6.5,room:"bedroom"},{x:-5,z:2.5,room:"living"},
@@ -64,8 +65,8 @@ for(const sample of[
 }
 assert(!layout.canWalk(-11.5,-12,0.28),"solid perimeter cell must block walking");
 assert(!layout.canWalk(-11.5,-3,0.28),"solid room divider must block walking");
-assert(layout.canWalk(-6.5,-3,0.28),"two-unit D opening must be walkable");
-assert(layout.canWalk(3.5,0,0.28),"one-unit D opening must remain passable by the player rig");
+assert(layout.canWalk(-6.5,-3,0.28),"four-unit kitchen entry must be walkable");
+assert(layout.canWalk(3.5,0,0.28),"three-unit living/dining entry must be walkable");
 assert(layout.canWalk(0,7,0.28),"exterior E entrance approach must be walkable");
 assert(!layout.canWalk(0,7.3,0.28),"bounds must keep the player inside until the entrance action runs");
 
@@ -80,4 +81,4 @@ assert(system.includes('HouseLayout?.load("house-main-level.txt")'),"runtime mus
 assert(system.includes("activeHouseLayout.canWalk"),"house movement must use map-cell-aware collision");
 assert(system.includes("window.getHouseLayoutDebug"),"browser QA must expose layout, spacing, room, shell, and walkability metadata");
 
-console.log("house layout adapter: 24x20 one-unit map, five sections, 1/2-unit passages, enclosure, collision, and QA metadata validated");
+console.log("house layout adapter: 24x20 one-unit map, five sections, 3/4-unit entries, enclosure, collision, and QA metadata validated");
