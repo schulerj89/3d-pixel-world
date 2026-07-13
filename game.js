@@ -604,7 +604,7 @@ let inKitchen=false;
 let money=100;
 let servedCount=0;
 const foods=["🧁 Cupcake","🍪 Cookies","🎂 Cake","🥐 Croissant","🍞 Sweet Bread","🍓 Strawberry Milkshake","🍫 Chocolate Milkshake"];
-function updateMoney(){document.getElementById("money").textContent="💵 $"+money}
+function updateMoney(){document.getElementById("moneyValue").textContent="$"+money}
 updateMoney();
 function newOrders(){
  if(window.BakeryOrderTracker){window.BakeryOrderTracker.refresh();return}
@@ -650,7 +650,7 @@ const hudMenuButton=document.getElementById("hudMenuButton"),hudDrawer=document.
 [document.getElementById("firstPageButton"),document.getElementById("avatarButton"),document.getElementById("roomTeleport"),document.getElementById("menuGoCastle")].forEach(element=>hudDrawer.appendChild(element));
 document.getElementById("menuGoCastle").hidden=false;
 const musicToggle=document.getElementById("musicToggle");
-const menuGoSpace=document.createElement("button");menuGoSpace.id="menuGoSpace";menuGoSpace.type="button";menuGoSpace.textContent="🚀 Go to Space";hudDrawer.insertBefore(menuGoSpace,musicToggle);
+const menuGoSpace=document.createElement("button");menuGoSpace.id="menuGoSpace";menuGoSpace.type="button";menuGoSpace.innerHTML='<img class="gameIcon" src="assets/ui/gvesster/rocket.png?v=__BUILD_VERSION__" alt=""> Go to Space';hudDrawer.insertBefore(menuGoSpace,musicToggle);
 const forestMenuButton=document.createElement("button");forestMenuButton.id="menuGoForest";forestMenuButton.type="button";forestMenuButton.textContent="🌲 Go to Forest";hudDrawer.insertBefore(forestMenuButton,musicToggle);
 document.getElementById("teleportBeach")?.remove();
 const bakeryMusicTracks=[document.getElementById("bakeryMusic"),document.getElementById("sprinkleMusic")];

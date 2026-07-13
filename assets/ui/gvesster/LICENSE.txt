@@ -1,0 +1,19 @@
+Free Icon Pack v3.1 (Basic) by gvesster
+
+You Can:
+- Use the assets (icons) in commercial projects.
+- Use the assets (icons) in client work, such as commissions or orders.
+- Edit the assets (icons) in personal projects.
+- Use the assets (icons) in non-commercial or personal projects.
+- Credit @gvesster; credit is optional but appreciated.
+
+You Can't:
+- Claim the assets (icons) as your own or use them to create an asset pack.
+- Edit and resell the assets (icons) in any form.
+- Resell the assets (icons).
+- Use the assets (icons) for AI training.
+
+Source: https://gvesster.itch.io/free-icon-pack
+Creator: https://linktr.ee/gvesster
+
+This repository includes selected, unmodified PNG icons from the Basic pack.
