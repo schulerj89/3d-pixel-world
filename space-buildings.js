@@ -54,17 +54,20 @@
       building.name = place.id;
       building.position.set(place.x, 0, place.z);
       group.add(building);
-      const floor = mesh(building, box, mats.floor, 0, .06, 0, 20, .12, 20);
+      // Keep the interior slab above the moon terrain and start walls above the
+      // slab. The old shared y=0 faces flickered as the camera moved.
+      const floor = mesh(building, box, mats.floor, 0, .08, 0, 19.72, .12, 19.72);
       floor.receiveShadow = true;
 
       // Open roof, 5-unit doorway centered on the south/front wall.
-      mesh(building, box, mats.wall, 0, 2.2, -9.8, 20, 4.4, .4);
-      mesh(building, box, mats.wall, -9.8, 2.2, 0, .4, 4.4, 20);
-      mesh(building, box, mats.wall, 9.8, 2.2, 0, .4, 4.4, 20);
-      mesh(building, box, mats.wall, -6.25, 2.2, 9.8, 7.5, 4.4, .4);
-      mesh(building, box, mats.wall, 6.25, 2.2, 9.8, 7.5, 4.4, .4);
-      mesh(building, box, place.accent, 0, 4.05, 9.8, 5, .7, .48);
-      [-8.7, 8.7].forEach(x => mesh(building, box, mats.glass, x, 2.25, 9.55, 1.25, 1.45, .12));
+      mesh(building, box, mats.wall, 0, 2.26, -9.8, 20, 4.28, .4);
+      mesh(building, box, mats.wall, -9.8, 2.26, 0, .4, 4.28, 20);
+      mesh(building, box, mats.wall, 9.8, 2.26, 0, .4, 4.28, 20);
+      mesh(building, box, mats.wall, -6.25, 2.26, 9.8, 7.5, 4.28, .4);
+      mesh(building, box, mats.wall, 6.25, 2.26, 9.8, 7.5, 4.28, .4);
+      mesh(building, box, place.accent, 0, 4.05, 10.06, 5, .7, .12);
+      // Windows sit clearly in front of the exterior wall instead of inside it.
+      [-8.7, 8.7].forEach(x => mesh(building, box, mats.glass, x, 2.25, 10.025, 1.25, 1.45, .08));
       addCollision(place, -10, 10, -10, -9.55, "wall");
       addCollision(place, -10, -9.55, -10, 10, "wall");
       addCollision(place, 9.55, 10, -10, 10, "wall");

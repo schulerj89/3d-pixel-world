@@ -567,6 +567,9 @@ window.unloadDisposableWorlds=except=>{
  for(const [id,root] of disposableWorlds)if(id!==except){disposeWorldRoot(root);disposableWorlds.delete(id)}
 };
 window.runWorldTransition=(label,place,build)=>{
+ // Select destination audio while the originating tap still carries browser
+ // media permission; the scene build itself is intentionally delayed.
+ window.switchWorldMusic?.(place);
  worldLoadingTitle.textContent=label;
  worldLoading.classList.add("open");worldLoading.setAttribute("aria-hidden","false");
  return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(()=>{
@@ -643,16 +646,23 @@ const bakeryMusicTracks=[document.getElementById("bakeryMusic"),document.getElem
 const beachMusicTracks=[document.getElementById("beachMusic")];
 const destinationMusicTracks={space:[document.getElementById("spaceMusic")],forest:[document.getElementById("forestMusic")],castle:[document.getElementById("castleMusic")]};
 const musicTracks=[...bakeryMusicTracks,...beachMusicTracks,...Object.values(destinationMusicTracks).flat()];
-let musicTrackIndex=0,musicStarted=false,musicMuted=localStorage.getItem("bakeryMusicMuted")==="true";
-function activeMusicTracks(){return destinationMusicTracks[currentPlace]||(currentPlace==="beach"?beachMusicTracks:bakeryMusicTracks)}
+let musicTrackIndex=0,musicStarted=false,currentMusicWorld="bakery",currentMusicTrack=null,lastMusicError="",musicMuted=localStorage.getItem("bakeryMusicMuted")==="true";
+function tracksForWorld(world){return destinationMusicTracks[world]||(world==="beach"?beachMusicTracks:bakeryMusicTracks)}
+function activeMusicTracks(){return tracksForWorld(currentMusicWorld)}
+function pauseAllMusic(){musicTracks.forEach(track=>{track.pause();track.currentTime=0})}
+function playCurrentMusic(){
+ if(musicMuted||musicToggle.disabled)return;
+ const active=activeMusicTracks();musicTrackIndex%=active.length;currentMusicTrack=active[musicTrackIndex];musicStarted=true;
+ currentMusicTrack.currentTime=0;currentMusicTrack.play().then(()=>{lastMusicError=""}).catch(error=>{lastMusicError=error?.name||"playback-error";if(currentMusicTrack===active[musicTrackIndex])musicStarted=false});
+}
+window.getMusicDebug=()=>({world:currentMusicWorld,track:currentMusicTrack?.id||null,started:musicStarted,muted:musicMuted,paused:currentMusicTrack?.paused??true,currentTime:currentMusicTrack?.currentTime||0,lastError:lastMusicError});
 musicTracks.forEach(track=>{
  track.volume=.34;
  track.addEventListener("ended",()=>{
   const active=activeMusicTracks();
-  if(track!==active[musicTrackIndex]||musicMuted)return;
+  if(track!==currentMusicTrack||musicMuted)return;
   musicTrackIndex=(musicTrackIndex+1)%active.length;
-  active[musicTrackIndex].currentTime=0;
-  active[musicTrackIndex].play().catch(handleMusicFailure);
+  playCurrentMusic();
  });
  track.addEventListener("error",handleMusicFailure,{once:true});
 });
@@ -661,28 +671,27 @@ function updateMusicToggle(){
  musicToggle.setAttribute("aria-pressed",String(musicMuted));
 }
 function handleMusicFailure(){
- musicTracks.forEach(track=>track.pause());
+ pauseAllMusic();musicStarted=false;currentMusicTrack=null;
  musicToggle.textContent="Music unavailable";
  musicToggle.disabled=true;
 }
 function startMusic(){
  if(musicMuted||musicStarted||musicToggle.disabled)return;
- musicStarted=true;
- activeMusicTracks()[musicTrackIndex].play().catch(()=>{musicStarted=false});
+ playCurrentMusic();
 }
-window.switchWorldMusic=()=>{
+window.switchWorldMusic=world=>{
+ const nextWorld=world||currentPlace;
+ if(nextWorld===currentMusicWorld&&musicStarted&&currentMusicTrack&&!currentMusicTrack.paused)return;
  const wasStarted=musicStarted;
- musicTracks.forEach(track=>{track.pause();track.currentTime=0});
- musicTrackIndex=0;
- musicStarted=false;
- if(wasStarted&&!musicMuted)startMusic();
+ pauseAllMusic();musicTrackIndex=0;musicStarted=false;currentMusicTrack=null;currentMusicWorld=nextWorld;
+ if(wasStarted&&!musicMuted)playCurrentMusic();
 };
 musicToggle.addEventListener("pointerdown",event=>event.stopPropagation());
 musicToggle.addEventListener("click",()=>{
  musicMuted=!musicMuted;
  localStorage.setItem("bakeryMusicMuted",String(musicMuted));
  updateMusicToggle();
- if(musicMuted)musicTracks.forEach(track=>track.pause());
+ if(musicMuted){pauseAllMusic();musicStarted=false;currentMusicTrack=null}
  else{musicStarted=false;startMusic()}
 });
 document.addEventListener("pointerdown",event=>{
