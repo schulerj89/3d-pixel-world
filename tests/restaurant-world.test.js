@@ -80,6 +80,16 @@ assert.strictEqual(runtime.group.children.filter(child=>child.userData.placehold
 assert(runtime.group.children.every(child=>!child.userData.bakeryCustomerId),"restaurant runtime must not create bakery NPCs");
 assert(runtime.canWalk(runtime.spawn.x,runtime.spawn.z));
 
+let geometryDisposals=0,materialDisposals=0,textureDisposals=0;
+const sharedGeometry={dispose:()=>geometryDisposals++};
+const sharedTexture={isTexture:true,dispose:()=>textureDisposals++};
+const sharedMaterial={map:sharedTexture,dispose:()=>materialDisposals++};
+const disposableRoot=new Group();
+disposableRoot.add(Object.assign(new Node3D(),{geometry:sharedGeometry,material:sharedMaterial}));
+disposableRoot.add(Object.assign(new Node3D(),{geometry:sharedGeometry,material:sharedMaterial}));
+assert.deepStrictEqual(Restaurant.disposeRuntimeResources(disposableRoot),{geometries:1,materials:1,textures:1},"shared GLB resources must be deduplicated during disposal");
+assert.deepStrictEqual([geometryDisposals,materialDisposals,textureDisposals],[1,1,1],"Restaurant unload must explicitly dispose shared geometry, material, and texture resources once");
+
 (async()=>{
  const requests=[];
  const fakeFetch=async url=>{requests.push(url);const file=String(url).split("?")[0];return {ok:true,text:async()=>read(file)}};

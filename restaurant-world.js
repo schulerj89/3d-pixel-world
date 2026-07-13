@@ -131,6 +131,16 @@
   if(runtime)return runtime;if(loading)return loading;
   loading=Promise.all([loadRooms(fetchImpl),loadKit().then(kit=>({kit,error:""})).catch(error=>({kit:null,error:String(error?.message||error) }))]).then(([rooms,asset])=>runtime=buildRuntime(THREE,scene,rooms,asset.kit,asset.error)).finally(()=>loading=null);return loading;
  }
- function destroy(){if(!runtime)return;const root=runtime.group;root.traverse(object=>{object.geometry?.dispose?.();const list=Array.isArray(object.material)?object.material:[object.material];list.filter(Boolean).forEach(material=>material.dispose?.())});root.parent?.remove(root);runtime=null}
- return {KIT_URL,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,doorwayCells,validateConnection,sourceScene,assetTransform,buildRuntime,loadRooms,loadKit,ensure,destroy,get current(){return runtime}};
+ function disposeRuntimeResources(root){
+  const geometries=new Set(),materials=new Set(),textures=new Set();
+  root?.traverse(object=>{
+   if(object.geometry)geometries.add(object.geometry);
+   const list=Array.isArray(object.material)?object.material:[object.material];
+   list.filter(Boolean).forEach(material=>{materials.add(material);Object.values(material).forEach(value=>{if(value?.isTexture)textures.add(value)})});
+  });
+  textures.forEach(texture=>texture.dispose?.());materials.forEach(material=>material.dispose?.());geometries.forEach(geometry=>geometry.dispose?.());
+  return {geometries:geometries.size,materials:materials.size,textures:textures.size};
+ }
+ function destroy(){if(!runtime)return;const root=runtime.group;disposeRuntimeResources(root);root.parent?.remove(root);runtime=null}
+ return {KIT_URL,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,doorwayCells,validateConnection,sourceScene,assetTransform,buildRuntime,loadRooms,loadKit,disposeRuntimeResources,ensure,destroy,get current(){return runtime}};
 });
