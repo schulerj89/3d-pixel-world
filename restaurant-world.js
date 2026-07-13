@@ -7,7 +7,7 @@
  "use strict";
  const BUILD_VERSION="__BUILD_VERSION__";
  const KIT_URL=`assets/models/restaurant/kaykit-restaurant-kit.glb?v=${BUILD_VERSION}`;
- const KIT_BYTES=573880;
+ const KIT_BYTES=628692;
  const BACKGROUND_COLOR=0x87ceeb;
  const EXTRA_ASSETS=Object.freeze({
   cashRegister:Object.freeze({assetId:"restaurant.front.cash-register",kind:"prop",url:`assets/models/restaurant-extras/cash-register.glb?v=${BUILD_VERSION}`,bytes:323928,position:Object.freeze({x:0,y:1.03,z:15.08}),scale:1.15,yaw:Math.PI}),
@@ -16,16 +16,30 @@
  const CASH_DESK=Object.freeze({assetId:"restaurant.front.cash-desk",sourceScene:"kitchencounter_straight_A_backsplash",position:Object.freeze({x:0,y:0,z:15.5}),scale:1,yaw:Math.PI,collision:Object.freeze([1,1.03])});
  const FRONT_ENTRANCE=Object.freeze({assetId:"restaurant.front.entrance",frameAssetId:"restaurant.front.entrance-frame",frameScene:"wall_doorway",doorAssetId:"restaurant.front.door",doorScene:"door_A",position:Object.freeze({x:0,y:0,z:20}),doorOffsetX:-.8,yaw:0,collision:Object.freeze([2,.25])});
  const INITIAL_CUSTOMER_ORDERS=Object.freeze([
-  Object.freeze({id:"restaurant-order-0001",customerId:"restaurant-guest-001",customerName:"Ari",productId:"strawberry-plate"}),
+  Object.freeze({id:"restaurant-order-0001",customerId:"restaurant-guest-001",customerName:"Ari",productId:"garden-plate"}),
   Object.freeze({id:"restaurant-order-0002",customerId:"restaurant-guest-002",customerName:"Bea",productId:"burger-meal"}),
-  Object.freeze({id:"restaurant-order-0003",customerId:"restaurant-guest-003",customerName:"Cal",productId:"dinner-plate"}),
-  Object.freeze({id:"restaurant-order-0004",customerId:"restaurant-guest-004",customerName:"Dee",productId:"sweet-treat"})
+  Object.freeze({id:"restaurant-order-0003",customerId:"restaurant-guest-003",customerName:"Cal",productId:"steak-dinner"}),
+  Object.freeze({id:"restaurant-order-0004",customerId:"restaurant-guest-004",customerName:"Dee",productId:"ham-cheese"})
  ]);
  const KITCHEN_FOOD_COUNTER=Object.freeze({
   assetId:"restaurant.kitchen.food-counter",sourceScene:"kitchentable_A_large",position:Object.freeze({x:-11,y:0,z:-34.5}),yaw:Math.PI/2,collision:Object.freeze([1,1.5]),
   food:Object.freeze([Object.freeze({assetId:"restaurant.kitchen.food.burger",sourceScene:"food_burger",x:-.6,y:1.04,z:0,scale:.55}),Object.freeze({assetId:"restaurant.kitchen.food.dinner",sourceScene:"food_dinner",x:.6,y:1.04,z:0,scale:.55})]),
   marker:Object.freeze({id:"restaurant.kitchen.food-counter-nearby",icon:"🍔",range:3.4,x:0,y:2.15,z:0,action:null})
  });
+ const KITCHEN_INGREDIENT_COUNTER=Object.freeze({
+  assetId:"restaurant.kitchen.ingredient-counter",sourceScene:"kitchentable_A_large",position:Object.freeze({x:8.5,y:0,z:-34.5}),yaw:-Math.PI/2,collision:Object.freeze([1,1.5]),range:3.4,
+  ingredients:Object.freeze([
+   Object.freeze({id:"tomato",name:"Tomato",emoji:"\u{1F345}",sourceScene:"food_ingredient_tomato",x:-1.02,z:-.38,scale:.42}),
+   Object.freeze({id:"carrot",name:"Carrot",emoji:"\u{1F955}",sourceScene:"food_ingredient_carrot",x:-.34,z:-.38,scale:.42}),
+   Object.freeze({id:"bun",name:"Bun",emoji:"\u{1F35E}",sourceScene:"food_ingredient_bun",x:.34,z:-.38,scale:.42}),
+   Object.freeze({id:"patty",name:"Patty",emoji:"\u{1F969}",sourceScene:"food_ingredient_burger_uncooked",x:1.02,z:-.38,scale:.42}),
+   Object.freeze({id:"steak",name:"Steak",emoji:"\u{1F969}",sourceScene:"food_ingredient_steak",x:-1.02,z:.38,scale:.42}),
+   Object.freeze({id:"potato",name:"Potato",emoji:"\u{1F954}",sourceScene:"food_ingredient_potato",x:-.34,z:.38,scale:.42}),
+   Object.freeze({id:"ham",name:"Ham",emoji:"\u{1F356}",sourceScene:"food_ingredient_ham",x:.34,z:.38,scale:.42}),
+   Object.freeze({id:"cheese",name:"Cheese",emoji:"\u{1F9C0}",sourceScene:"food_ingredient_cheese",x:1.02,z:.38,scale:.42})
+  ])
+ });
+ const KITCHEN_COOKING_STOVE=Object.freeze({assetId:"restaurant.kitchen.cooking-stove",position:Object.freeze({x:5.5,y:0,z:-43.5}),surfaceY:1.18,range:3.2});
  const DINING_TABLE_FOOD=Object.freeze([
   Object.freeze({assetId:"restaurant.dining.table-food.northwest-produce",position:Object.freeze({x:-11.5,z:-11.5}),items:Object.freeze([
    Object.freeze({assetId:"restaurant.dining.food.northwest-tomatoes",sourceScene:"food_ingredient_tomato",scale:.42,copies:Object.freeze([Object.freeze({x:-.22,z:-.12}),Object.freeze({x:.22,z:-.12}),Object.freeze({x:0,z:.18})])})
@@ -49,7 +63,7 @@
   "kitchen-doorway":Object.freeze({room:"kitchen",position:Object.freeze({x:.5,z:-23.5}),camera:Object.freeze({angle:.35,height:6.5,distance:8})}),
   "kitchen-north-wall":Object.freeze({room:"kitchen",position:Object.freeze({x:0,z:-39}),camera:Object.freeze({angle:0,height:6.5,distance:10})}),
   "kitchen-west-wall":Object.freeze({room:"kitchen",position:Object.freeze({x:-8.5,z:-34}),camera:Object.freeze({angle:Math.PI/2,height:6.5,distance:10})}),
-  "kitchen-east-wall":Object.freeze({room:"kitchen",position:Object.freeze({x:8.5,z:-34}),camera:Object.freeze({angle:-Math.PI/2,height:6.5,distance:10})}),
+  "kitchen-east-wall":Object.freeze({room:"kitchen",position:Object.freeze({x:8.5,z:-30.5}),camera:Object.freeze({angle:-Math.PI/2,height:6.5,distance:10})}),
   "kitchen-plain-stoves":Object.freeze({room:"kitchen",position:Object.freeze({x:3,z:-41.5}),camera:Object.freeze({angle:0,height:4.8,distance:6.5}),hidePlayer:true}),
   "restaurant-wall-north-doorway":Object.freeze({room:"dining",position:Object.freeze({x:0,z:-16}),camera:Object.freeze({angle:0,height:6.5,distance:8})}),
   "restaurant-wall-southwest":Object.freeze({room:"dining",position:Object.freeze({x:-14,z:16}),camera:Object.freeze({angle:2.35,height:7,distance:8})}),
@@ -62,6 +76,8 @@
   "restaurant-sky-overview":Object.freeze({room:"dining",position:Object.freeze({x:0,z:5}),camera:Object.freeze({angle:.35,height:9,distance:11})}),
   "restaurant-food-tables":Object.freeze({room:"dining",position:Object.freeze({x:.5,z:-9.5}),camera:Object.freeze({angle:0,height:7.5,distance:12}),hidePlayer:true}),
   "kitchen-food-counter":Object.freeze({room:"kitchen",position:Object.freeze({x:-8.6,z:-34.5}),camera:Object.freeze({angle:Math.PI/2,height:5.8,distance:7}),hidePlayer:true}),
+  "kitchen-ingredient-counter":Object.freeze({room:"kitchen",position:Object.freeze({x:8.5,z:-31.4}),camera:Object.freeze({angle:-Math.PI/2,height:5.8,distance:7})}),
+  "kitchen-cooking-stove":Object.freeze({room:"kitchen",position:Object.freeze({x:5.5,z:-39.9}),camera:Object.freeze({angle:0,height:5.2,distance:6.5})}),
   "kitchen-wall-northwest":Object.freeze({room:"kitchen",position:Object.freeze({x:-8,z:-41}),camera:Object.freeze({angle:.8,height:6.5,distance:7})}),
   "kitchen-wall-northeast":Object.freeze({room:"kitchen",position:Object.freeze({x:9,z:-41}),camera:Object.freeze({angle:-.8,height:6.5,distance:7})})
  });
@@ -119,6 +135,7 @@
   if(room.room==="dining"&&Math.abs(x-CASH_DESK.position.x)<CASH_DESK.collision[0]+PLAYER_RADIUS&&Math.abs(z-CASH_DESK.position.z)<CASH_DESK.collision[1]+PLAYER_RADIUS)return false;
   if(room.room==="dining"&&Math.abs(x-FRONT_ENTRANCE.position.x)<FRONT_ENTRANCE.collision[0]+PLAYER_RADIUS&&Math.abs(z-FRONT_ENTRANCE.position.z)<FRONT_ENTRANCE.collision[1]+PLAYER_RADIUS)return false;
   if(room.room==="kitchen"&&Math.abs(x-KITCHEN_FOOD_COUNTER.position.x)<KITCHEN_FOOD_COUNTER.collision[0]+PLAYER_RADIUS&&Math.abs(z-KITCHEN_FOOD_COUNTER.position.z)<KITCHEN_FOOD_COUNTER.collision[1]+PLAYER_RADIUS)return false;
+  if(room.room==="kitchen"&&Math.abs(x-KITCHEN_INGREDIENT_COUNTER.position.x)<KITCHEN_INGREDIENT_COUNTER.collision[0]+PLAYER_RADIUS&&Math.abs(z-KITCHEN_INGREDIENT_COUNTER.position.z)<KITCHEN_INGREDIENT_COUNTER.collision[1]+PLAYER_RADIUS)return false;
   return true;
  }
  function wallCellCollision(room,col,row,center){
@@ -283,6 +300,46 @@
   KITCHEN_FOOD_COUNTER.food.forEach((spec,index)=>{const prototype=sourceScene(kit,spec.sourceScene);if(prototype){const food=prototype.clone(true);food.position.set(spec.x,spec.y,spec.z);food.scale.setScalar(spec.scale);food.userData={assetId:spec.assetId,sourceScene:spec.sourceScene,placeholder:false};food.traverse(object=>{if(object.isMesh){object.castShadow=object.receiveShadow=true}});display.add(food);loadedAssetIds.push(spec.assetId)}else{const food=new THREE.Mesh(new THREE.BoxGeometry(.55,.45,.5),new THREE.MeshStandardMaterial({color:index?0xf0c978:0xb87955,roughness:.82}));food.position.set(spec.x,spec.y+.22,spec.z);food.userData={assetId:spec.assetId,placeholder:true};display.add(food)}});
   const marker=createProximityIcon(THREE,KITCHEN_FOOD_COUNTER.marker);display.add(marker);display.userData={assetId:KITCHEN_FOOD_COUNTER.assetId,sourceScene:KITCHEN_FOOD_COUNTER.sourceScene,food:KITCHEN_FOOD_COUNTER.food.map(spec=>spec.assetId),marker:marker.userData,collision:KITCHEN_FOOD_COUNTER.collision};group.add(display);return {display,marker};
  }
+ function ingredientArt(THREE,kit,spec,placeholderMaterial){
+  const prototype=sourceScene(kit,spec.sourceScene);let art;
+  if(prototype){art=prototype.clone(true);art.traverse(object=>{if(object.isMesh){object.castShadow=object.receiveShadow=true}})}
+  else art=new THREE.Mesh(new THREE.BoxGeometry(.34,.22,.34),placeholderMaterial);
+  art.name=`restaurant.kitchen.ingredient.${spec.id}`;art.scale.setScalar?.(spec.scale||.42);art.userData={assetId:art.name,ingredientId:spec.id,ingredientName:spec.name,sourceScene:spec.sourceScene,placeholder:!prototype};return art;
+ }
+ function addKitchenIngredientCounter(THREE,group,kit,loadedAssetIds){
+  const display=new THREE.Group();display.name=KITCHEN_INGREDIENT_COUNTER.assetId;display.position.set(KITCHEN_INGREDIENT_COUNTER.position.x,KITCHEN_INGREDIENT_COUNTER.position.y,KITCHEN_INGREDIENT_COUNTER.position.z);display.rotation.y=KITCHEN_INGREDIENT_COUNTER.yaw;
+  const counterPrototype=sourceScene(kit,KITCHEN_INGREDIENT_COUNTER.sourceScene),placeholderMaterial=new THREE.MeshStandardMaterial({color:0xd58555,roughness:.78});
+  if(counterPrototype){const counter=counterPrototype.clone(true);counter.userData={assetId:KITCHEN_INGREDIENT_COUNTER.assetId,sourceScene:KITCHEN_INGREDIENT_COUNTER.sourceScene,placeholder:false};counter.traverse(object=>{if(object.isMesh){object.castShadow=object.receiveShadow=true}});display.add(counter);loadedAssetIds.push(KITCHEN_INGREDIENT_COUNTER.assetId)}
+  else{const top=new THREE.Mesh(new THREE.BoxGeometry(3,.18,2),new THREE.MeshStandardMaterial({color:0x9aa4aa,roughness:.72}));top.position.set(0,.91,0);top.userData={assetId:KITCHEN_INGREDIENT_COUNTER.assetId,placeholder:true};display.add(top)}
+  const items=new Map();KITCHEN_INGREDIENT_COUNTER.ingredients.forEach(spec=>{const art=ingredientArt(THREE,kit,spec,placeholderMaterial);art.position.set(spec.x,1.04,spec.z);display.add(art);items.set(spec.id,art);if(!art.userData.placeholder)loadedAssetIds.push(art.userData.assetId)});
+  display.userData={assetId:KITCHEN_INGREDIENT_COUNTER.assetId,sourceScene:KITCHEN_INGREDIENT_COUNTER.sourceScene,ingredientIds:[...items.keys()],collision:KITCHEN_INGREDIENT_COUNTER.collision};group.add(display);return {display,items};
+ }
+ function createKitchenCookingInteraction(THREE,group,kit,ingredientCounter){
+  const stoveTarget=new THREE.Group();stoveTarget.name=KITCHEN_COOKING_STOVE.assetId;stoveTarget.position.set(KITCHEN_COOKING_STOVE.position.x,KITCHEN_COOKING_STOVE.surfaceY,KITCHEN_COOKING_STOVE.position.z);stoveTarget.userData={assetId:KITCHEN_COOKING_STOVE.assetId};group.add(stoveTarget);
+  const registrations=[],stoveArt=new Map();let heldArt=null,heldId=null,heldParent=null,actionsRegistered=false;
+  const cooking=()=>globalThis.restaurantCooking||null,message=text=>{const element=globalThis.document?.getElementById?.("msg");if(element)element.textContent=text};
+  const register=(target,config)=>{const system=globalThis.objectActions;if(system?.register)registrations.push({system,action:system.register(target,config)})};
+  const ensureActions=()=>{if(actionsRegistered||!globalThis.objectActions?.register)return false;actionsRegistered=true;
+   const nextIngredient=()=>{const state=cooking()?.snapshot?.();return state?.product?.ingredients?.find(item=>!state.stoveIngredients.includes(item.id))||null};
+   register(ingredientCounter.display,{
+    icon:()=>nextIngredient()?.emoji||"\u{1F9FA}",label:()=>`Grab ${nextIngredient()?.name||"ingredient"}`,world:"restaurant",range:KITCHEN_INGREDIENT_COUNTER.range,priority:12,anchorOffset:1.35,getAnchor:(target,out)=>target.getWorldPosition(out),
+    enabled:()=>{const state=cooking()?.snapshot?.();return Boolean(nextIngredient()&&!state?.heldIngredient&&!state?.cooked)},
+    onAction:()=>{const ingredient=nextIngredient(),result=ingredient&&cooking()?.pickUp?.(ingredient.id);message(result?.ok?`Picked up ${ingredient.name}. Take it to the stove.`:`Cannot pick up ${ingredient?.name||"that ingredient"} right now.`)}
+   });
+   register(stoveTarget,{
+    icon:()=>cooking()?.snapshot?.().readyToCook?"\u{1F525}":"\u{1F373}",label:()=>{const state=cooking()?.snapshot?.();return state?.heldIngredient?`Put ${state.heldIngredient.name} on stove`:state?.readyToCook?`Cook ${state.product.name}`:"Stove"},world:"restaurant",range:KITCHEN_COOKING_STOVE.range,priority:20,anchorOffset:.65,
+    enabled:()=>{const state=cooking()?.snapshot?.();return Boolean(state?.heldIngredient||state?.readyToCook)},
+    onAction:()=>{const runtime=cooking(),state=runtime?.snapshot?.(),result=state?.heldIngredient?runtime.putOnStove():runtime?.cook?.();message(result?.ok?(state?.heldIngredient?"Ingredient placed on stove.":`${state?.product?.name||"Order"} cooked. Serve it at the register!`):"The stove is still missing ingredients.")}
+   });return true
+  };ensureActions();
+  const remove=art=>{if(!art)return;art.parent?.remove?.(art)};
+  const update=player=>{ensureActions();
+   const state=cooking()?.snapshot?.();if(globalThis.document?.body){document.body.dataset.restaurantCookingActions=String(registrations.length);document.body.dataset.restaurantCookingReady=String(Boolean(state))}if(!state){remove(heldArt);heldArt=null;heldId=null;stoveArt.forEach(remove);stoveArt.clear();return}
+   const wantedHeld=state.heldIngredient?.id||null;if(wantedHeld!==heldId||heldParent!==player){remove(heldArt);heldArt=null;heldId=wantedHeld;heldParent=player||null;if(wantedHeld&&player?.add){const spec=KITCHEN_INGREDIENT_COUNTER.ingredients.find(item=>item.id===wantedHeld);heldArt=ingredientArt(THREE,kit,spec,new THREE.MeshStandardMaterial({color:0xd58555,roughness:.78}));heldArt.scale.setScalar?.(.52);heldArt.position.set(0,1.55,.55);player.add(heldArt)}}
+   const wanted=new Set(state.stoveIngredients||[]);stoveArt.forEach((art,id)=>{if(!wanted.has(id)){remove(art);stoveArt.delete(id)}});[...wanted].forEach((id,index)=>{if(stoveArt.has(id))return;const spec=KITCHEN_INGREDIENT_COUNTER.ingredients.find(item=>item.id===id);if(!spec)return;const art=ingredientArt(THREE,kit,spec,new THREE.MeshStandardMaterial({color:0xd58555,roughness:.78}));art.scale.setScalar?.(.48);art.position.set(KITCHEN_COOKING_STOVE.position.x+(index?-.36:.36),KITCHEN_COOKING_STOVE.surfaceY,KITCHEN_COOKING_STOVE.position.z);group.add(art);stoveArt.set(id,art)})
+  };
+  return {stoveTarget,update,debug:()=>({registeredActions:registrations.length,heldIngredient:heldId,stoveIngredients:[...stoveArt.keys()]}),dispose(){registrations.forEach(({system,action})=>system.unregister?.(action));remove(heldArt);stoveArt.forEach(remove);group.remove(stoveTarget)}};
+ }
  function addDiningTableFood(THREE,group,kit,loadedAssetIds){
   const dressing=new THREE.Group();dressing.name="restaurant-dining-table-food";let produceMaterial=null,mealMaterial=null,itemCount=0;
   DINING_TABLE_FOOD.forEach(tableSpec=>{
@@ -362,13 +419,13 @@
    placements.forEach((p,i)=>{matrix.makeTranslation(p.x,spec.height,p.z);batch.setMatrixAt(i,matrix)});batch.instanceMatrix.needsUpdate=true;batch.castShadow=batch.receiveShadow=true;
    batch.userData={assetId:spec.assetId,symbol,placeholder:true,instanceCount:placements.length};group.add(batch);
   }
-  const diningTableFood=addDiningTableFood(THREE,group,kit,loadedAssetIds),foodCounter=addKitchenFoodCounter(THREE,group,kit,loadedAssetIds);addFrontArea(THREE,group,kit,extras,loadedAssetIds,mixers);
+  const diningTableFood=addDiningTableFood(THREE,group,kit,loadedAssetIds),foodCounter=addKitchenFoodCounter(THREE,group,kit,loadedAssetIds),ingredientCounter=addKitchenIngredientCounter(THREE,group,kit,loadedAssetIds),cookingInteraction=createKitchenCookingInteraction(THREE,group,kit,ingredientCounter);addFrontArea(THREE,group,kit,extras,loadedAssetIds,mixers);
   const CustomerSystem=customerSystemApi()?.RestaurantCustomerSystem,customerSystem=CustomerSystem?new CustomerSystem({maxActive:4,waitingFaceTarget:EXTRA_ASSETS.cashRegister.position,avatarFactory:createCustomerAvatarFactory(THREE,group,extras.cashierMerchant)}):null;
   const Bridge=orderIntegrationApi()?.RestaurantOrderQueueBridge,orderBridge=Bridge&&customerSystem&&globalThis.restaurantOrders?new Bridge({orders:globalThis.restaurantOrders,customers:customerSystem,maxActive:4}):null;
   if(orderBridge)orderBridge.start();else INITIAL_CUSTOMER_ORDERS.forEach(order=>customerSystem?.enqueue(order));
   const urls=[KIT_URL,...Object.values(EXTRA_ASSETS).map(spec=>spec.url)],externalReady=Object.keys(EXTRA_ASSETS).every(key=>extras[key]?.scene),entranceReady=sourceScene(kit,FRONT_ENTRANCE.frameScene)&&sourceScene(kit,FRONT_ENTRANCE.doorScene);
   const totalAssetBytes=KIT_BYTES+Object.values(EXTRA_ASSETS).reduce((sum,spec)=>sum+(spec.bytes||0),0),proximity={markerId:KITCHEN_FOOD_COUNTER.marker.id,range:KITCHEN_FOOD_COUNTER.marker.range,active:false,action:null};
-  group.userData={destination:"restaurant",rooms:rooms.map(room=>({id:room.room,width:room.width,depth:room.depth,layoutFile:ROOM_FILES[room.room]})),assetRegistry:ASSET_REGISTRY,assets:{url:KIT_URL,urls,status:kit&&externalReady&&entranceReady?"ready":"fallback",loadedAssetIds,totalBytes:totalAssetBytes,error:assetError},floor:{kitchen:KITCHEN_FLOOR},diningFood:diningTableFood.userData,npcs:{count:1+(customerSystem?.customers?.length||0),cashier:{assetId:EXTRA_ASSETS.cashierMerchant.assetId,idleClip:EXTRA_ASSETS.cashierMerchant.idleClip,animated:mixers.length===1},customerQueue:customerSystem?.debug?.()||null},proximity,orders:{controller:orderBridge?"RestaurantOrderQueueBridge":"RestaurantCustomerSystem",completionMethod:"completeOrder(orderId)",maxActive:4,active:orderBridge?.debug?.().orders.active.length??4},hud:Boolean(orderBridge)};
+  group.userData={destination:"restaurant",rooms:rooms.map(room=>({id:room.room,width:room.width,depth:room.depth,layoutFile:ROOM_FILES[room.room]})),assetRegistry:ASSET_REGISTRY,assets:{url:KIT_URL,urls,status:kit&&externalReady&&entranceReady?"ready":"fallback",loadedAssetIds,totalBytes:totalAssetBytes,error:assetError},floor:{kitchen:KITCHEN_FLOOR},diningFood:diningTableFood.userData,ingredientCounter:ingredientCounter.display.userData,cooking:cookingInteraction.debug(),npcs:{count:1+(customerSystem?.customers?.length||0),cashier:{assetId:EXTRA_ASSETS.cashierMerchant.assetId,idleClip:EXTRA_ASSETS.cashierMerchant.idleClip,animated:mixers.length===1},customerQueue:customerSystem?.debug?.()||null},proximity,orders:{controller:orderBridge?"RestaurantOrderQueueBridge":"RestaurantCustomerSystem",completionMethod:"completeOrder(orderId)",maxActive:4,active:orderBridge?.debug?.().orders.active.length??4},hud:Boolean(orderBridge)};
   scene.add(group);
   const spawns=Object.fromEntries(rooms.map(room=>[room.room,cellCenter(room,room.spawnCol,room.spawnRow)]));
   const cameraPoses={
@@ -383,9 +440,11 @@
    restaurantCashierNpc:{sceneId:"dining",name:"restaurant-cashier-npc",target:{x:0,z:13.5},angle:Math.PI,height:4.6,distance:6},
    restaurantCustomerLine:{sceneId:"dining",name:"restaurant-customer-line",target:{x:2.5,z:17.25},angle:Math.PI,height:6,distance:8},
    restaurantFoodTables:{sceneId:"dining",name:"restaurant-food-tables",target:{x:.5,z:-9.5},angle:0,height:7.5,distance:12},
-   kitchenFoodCounter:{sceneId:"kitchen",name:"kitchen-food-counter",target:{x:-8.6,z:-34.5},angle:Math.PI/2,height:5.8,distance:7}
+   kitchenFoodCounter:{sceneId:"kitchen",name:"kitchen-food-counter",target:{x:-8.6,z:-34.5},angle:Math.PI/2,height:5.8,distance:7},
+   kitchenIngredientCounter:{sceneId:"kitchen",name:"kitchen-ingredient-counter",target:{x:8.5,z:-31.4},angle:-Math.PI/2,height:5.8,distance:7},
+   kitchenCookingStove:{sceneId:"kitchen",name:"kitchen-cooking-stove",target:{x:5.5,z:-39.9},angle:0,height:5.2,distance:6.5}
    };
-  return {group,rooms,spawns,spawn:spawns.dining,camera:{angle:.35,height:8.5,distance:8.8},cameraPoses,debugViews:DEBUG_VIEWS,floorSurfaceY:KITCHEN_FLOOR.surfaceY,customerSystem,orderBridge,enqueueOrder:order=>customerSystem?.enqueue(order)??false,completeOrder:orderId=>customerSystem?.completeOrder(orderId)??false,canWalk:(x,z)=>canWalk(rooms,x,z),update(dt,playerPosition){mixers.forEach(mixer=>mixer.update(dt));customerSystem?.update(dt);group.userData.npcs.customerQueue=customerSystem?.debug?.()||null;group.userData.npcs.count=1+(customerSystem?.customers?.length||0);if(orderBridge)group.userData.orders.active=orderBridge.debug().orders.active.length;const active=Boolean(playerPosition)&&Math.hypot(playerPosition.x-KITCHEN_FOOD_COUNTER.position.x,playerPosition.z-KITCHEN_FOOD_COUNTER.position.z)<=KITCHEN_FOOD_COUNTER.marker.range;foodCounter.marker.visible=active;proximity.active=active;if(globalThis.document?.body)document.body.dataset.restaurantProximityIcon=active?proximity.markerId:"";return active},dispose(){orderBridge?.dispose();customerSystem?.dispose()}};
+  return {group,rooms,spawns,spawn:spawns.dining,camera:{angle:.35,height:8.5,distance:8.8},cameraPoses,debugViews:DEBUG_VIEWS,floorSurfaceY:KITCHEN_FLOOR.surfaceY,customerSystem,orderBridge,enqueueOrder:order=>customerSystem?.enqueue(order)??false,completeOrder:orderId=>customerSystem?.completeOrder(orderId)??false,canWalk:(x,z)=>canWalk(rooms,x,z),update(dt,player){mixers.forEach(mixer=>mixer.update(dt));customerSystem?.update(dt);group.userData.npcs.customerQueue=customerSystem?.debug?.()||null;group.userData.npcs.count=1+(customerSystem?.customers?.length||0);if(orderBridge)group.userData.orders.active=orderBridge.debug().orders.active.length;cookingInteraction.update(player?.position?player:null);group.userData.cooking=cookingInteraction.debug();const playerPosition=player?.position||player,active=Boolean(playerPosition)&&Math.hypot(playerPosition.x-KITCHEN_FOOD_COUNTER.position.x,playerPosition.z-KITCHEN_FOOD_COUNTER.position.z)<=KITCHEN_FOOD_COUNTER.marker.range;foodCounter.marker.visible=active;proximity.active=active;if(globalThis.document?.body)document.body.dataset.restaurantProximityIcon=active?proximity.markerId:"";return active},dispose(){cookingInteraction.dispose();orderBridge?.dispose();customerSystem?.dispose()}};
  }
  async function loadRooms(fetchImpl=globalThis.fetch){
   if(typeof fetchImpl!=="function")throw new Error("Restaurant layouts require fetch");
@@ -415,5 +474,5 @@
   return {geometries:geometries.size,materials:materials.size,textures:textures.size};
  }
  function destroy(){if(!runtime)return;const root=runtime.group;runtime.dispose?.();disposeRuntimeResources(root);root.parent?.remove(root);runtime=null}
- return {KIT_URL,KIT_BYTES,BACKGROUND_COLOR,EXTRA_ASSETS,CASH_DESK,FRONT_ENTRANCE,INITIAL_CUSTOMER_ORDERS,KITCHEN_FOOD_COUNTER,DINING_TABLE_FOOD,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,WALL,KITCHEN_FLOOR,DEBUG_VIEWS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,wallCellCollision,doorwayCells,validateConnection,sourceScene,firstMesh,cloneSkinnedModel,buildKitchenFloor,wallBoundaryLines,wallSegments,buildWalls,assetTransform,buildCashierFallback,customerSystemApi,orderIntegrationApi,createCustomerAvatarFactory,createProximityIcon,addKitchenFoodCounter,addDiningTableFood,addFrontArea,buildRuntime,loadRooms,loadKit,loadExtraAssets,disposeRuntimeResources,ensure,destroy,get current(){return runtime}};
+ return {KIT_URL,KIT_BYTES,BACKGROUND_COLOR,EXTRA_ASSETS,CASH_DESK,FRONT_ENTRANCE,INITIAL_CUSTOMER_ORDERS,KITCHEN_FOOD_COUNTER,KITCHEN_INGREDIENT_COUNTER,KITCHEN_COOKING_STOVE,DINING_TABLE_FOOD,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,WALL,KITCHEN_FLOOR,DEBUG_VIEWS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,wallCellCollision,doorwayCells,validateConnection,sourceScene,firstMesh,cloneSkinnedModel,buildKitchenFloor,wallBoundaryLines,wallSegments,buildWalls,assetTransform,buildCashierFallback,customerSystemApi,orderIntegrationApi,createCustomerAvatarFactory,createProximityIcon,addKitchenFoodCounter,ingredientArt,addKitchenIngredientCounter,createKitchenCookingInteraction,addDiningTableFood,addFrontArea,buildRuntime,loadRooms,loadKit,loadExtraAssets,disposeRuntimeResources,ensure,destroy,get current(){return runtime}};
 });

@@ -1062,7 +1062,7 @@ const canMove=currentPlace==="bakery"?canWalkAt(nextX,nextZ):
 if(canMove){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
 syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);
 window.customHumanoidCharacter?.update(dt,playerMoved,Math.hypot(vx,vz));
-window.RestaurantWorld?.current?.update?.(dt,currentPlace==="restaurant"?P.position:null);
+window.RestaurantWorld?.current?.update?.(dt,currentPlace==="restaurant"?P:null);
 updateCastleFloorPresentation();
 // Sink the avatar slightly while wading and expose the state for future splash
 // effects. Deep water remains traversable but never lets the avatar leave bounds.
