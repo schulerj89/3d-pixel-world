@@ -710,18 +710,29 @@ function updateFurnitureGuides(){
 }
 
 function setHousePanel(open){
- const show=Boolean(open&&currentPlace==="house"&&houseArea==="interior"&&startPage.style.display==="none");
+ const show=Boolean(open&&!buildingMode&&currentPlace==="house"&&houseArea==="interior"&&startPage.style.display==="none");
  housePanel.classList.toggle("open",show);
  housePanel.setAttribute("aria-hidden",String(!show));
  housePanelToggle.setAttribute("aria-expanded",String(show));
 }
+window.setHousePanelOpen=setHousePanel;
 function setHouseTab(name){
- document.querySelectorAll("[data-house-tab]").forEach(b=>b.classList.toggle("active",b.dataset.houseTab===name));
- document.querySelectorAll("[data-house-view]").forEach(v=>v.classList.toggle("active",v.dataset.houseView===name));
+ document.querySelectorAll("[data-house-tab]").forEach(b=>{
+  const active=b.dataset.houseTab===name;
+  b.classList.toggle("active",active);b.setAttribute("aria-selected",String(active));b.tabIndex=active?0:-1;
+ });
+ document.querySelectorAll("[data-house-view]").forEach(v=>{const active=v.dataset.houseView===name;v.classList.toggle("active",active);v.hidden=!active});
 }
-housePanelToggle.addEventListener("pointerdown",e=>{e.preventDefault();const open=!housePanel.classList.contains("open");if(open)setHudMenu(false);setHousePanel(open)});
-closeHousePanel.addEventListener("pointerdown",e=>{e.preventDefault();setHousePanel(false)});
+housePanelToggle.addEventListener("pointerdown",e=>{e.preventDefault();if(buildingMode){setHousePanel(false);window.setBuildCatalogCollapsed?.(false);return}const open=!housePanel.classList.contains("open");if(open)setHudMenu(false);setHousePanel(open)});
+closeHousePanel.addEventListener("pointerdown",e=>{e.preventDefault();setHousePanel(false);housePanelToggle.focus()});
 document.querySelectorAll("[data-house-tab]").forEach(b=>b.addEventListener("pointerdown",e=>{e.preventDefault();setHouseTab(b.dataset.houseTab)}));
+document.querySelector(".houseTabs").addEventListener("keydown",e=>{
+ if(!["ArrowLeft","ArrowRight","Home","End"].includes(e.key))return;
+ const tabs=[...document.querySelectorAll("[data-house-tab]")],current=Math.max(0,tabs.indexOf(document.activeElement));
+ const index=e.key==="Home"?0:e.key==="End"?tabs.length-1:(current+(e.key==="ArrowRight"?1:-1)+tabs.length)%tabs.length;
+ e.preventDefault();setHouseTab(tabs[index].dataset.houseTab);tabs[index].focus();
+});
+housePanel.addEventListener("keydown",e=>{if(e.key==="Escape"){e.preventDefault();setHousePanel(false);housePanelToggle.focus()}});
 
 function setBuildingMode(on){
  if(on&&houseArea!=="interior")return;
@@ -739,6 +750,9 @@ function setBuildingMode(on){
  buildHouseButton.hidden=on;
  buildMessage.textContent="";
  document.body.classList.toggle("house-building",on&&currentPlace==="house");
+ housePanelToggle.disabled=Boolean(on);
+ housePanelToggle.setAttribute("aria-hidden",String(Boolean(on)));
+ housePanelToggle.tabIndex=on?-1:0;
  if(on){setHouseTab("build");setHousePanel(false)}
  updateFurnitureLabel();
  updateFurnitureGuides();
@@ -870,9 +884,6 @@ clearAllFurnitureButton.addEventListener("click",()=>{
  clearFurnitureStatus.textContent="Press Confirm clear all to remove every furniture item and save an empty house.";
  clearFurnitureConfirmTimer=setTimeout(resetClearFurnitureConfirmation,10000);
 });
-backPlaces.onclick=()=>{startPage.style.display="block";window.showWorldPicker?.();setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;hideSpaceWorld();destroyCityWorld();if(castle)castle.visible=false;window.RestaurantWorld?.destroy?.();setBakeryVisible(false)};
-
-
 function restoreGameButtons(){
  const pad=document.getElementById("pad");
  

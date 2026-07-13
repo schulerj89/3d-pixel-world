@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>My 3D World</title><link rel="stylesheet" href="styles.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="title-screen.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="pregame-wizard.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="build-catalog.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="object-action-system.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="ui-system.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="conversation-system.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="coin-quest-system.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="world-menu.css?v=__BUILD_VERSION__">
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>My 3D World</title><link rel="stylesheet" href="styles.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="title-screen.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="pregame-wizard.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="build-catalog.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="object-action-system.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="ui-system.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="conversation-system.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="coin-quest-system.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="world-menu.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="house-shell.css?v=__BUILD_VERSION__">
 
 </head><body>
 <section id="titleScreen" aria-labelledby="titleScreenHeading">
@@ -92,14 +92,14 @@
 </main></div>
 <button id="menuGoCastle" type="button" hidden>🏰 Go to Castle</button>
 <button id="housePanelToggle" class="gameHudButton gameHudButton--house" aria-expanded="false" aria-controls="housePanel"><img class="gameIcon" src="assets/ui/gvesster/house.png?v=__BUILD_VERSION__" alt=""> House</button>
-<div id="housePanel" aria-hidden="true">
- <div class="housePanelHeader"><b><img class="gameIcon" src="assets/ui/gvesster/house.png?v=__BUILD_VERSION__" alt=""> My House</b><button id="closeHousePanel" aria-label="Close house menu">×</button></div>
- <div class="houseTabs" role="tablist"><button class="active" data-house-tab="home">Home</button><button data-house-tab="build">Build</button></div>
- <section class="houseTab active" data-house-view="home">
+<div id="housePanel" class="houseModePanel" role="dialog" aria-modal="false" aria-labelledby="housePanelTitle" aria-hidden="true">
+ <div class="housePanelHeader"><b id="housePanelTitle"><img class="gameIcon" src="assets/ui/gvesster/house.png?v=__BUILD_VERSION__" alt=""> My House</b><button id="closeHousePanel" aria-label="Close house menu">×</button></div>
+ <div class="houseTabs" role="tablist" aria-label="House tools"><button id="houseHomeTab" class="active" type="button" role="tab" aria-selected="true" aria-controls="houseHomeView" data-house-tab="home">Home</button><button id="houseBuildTab" type="button" role="tab" aria-selected="false" aria-controls="houseBuildView" data-house-tab="build" tabindex="-1">Build</button></div>
+ <section id="houseHomeView" class="houseTab active" role="tabpanel" aria-labelledby="houseHomeTab" data-house-view="home">
   <p id="buildMessage"></p>
-  <div class="houseQuickActions"><button id="openHouseShop"><img class="gameIcon" src="assets/ui/gvesster/shopping-bag.png?v=__BUILD_VERSION__" alt=""> Furniture Shop</button><button id="backPlaces">⬅️ Places</button></div>
+  <div class="houseQuickActions"><button id="openHouseShop"><img class="gameIcon" src="assets/ui/gvesster/shopping-bag.png?v=__BUILD_VERSION__" alt=""> Furniture Shop</button></div>
  </section>
- <section class="houseTab" data-house-view="build">
+ <section id="houseBuildView" class="houseTab" role="tabpanel" aria-labelledby="houseBuildTab" data-house-view="build" hidden>
   <div class="buildModeRow"><button id="buildHouse">🔨 Start building</button><button id="saveHouse">✓ Done & save</button></div>
   <div id="buildingTools">
    <div class="furnitureCatalog" aria-label="Add furniture">
