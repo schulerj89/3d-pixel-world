@@ -786,11 +786,11 @@ function updateCamera(){
  if(!followCamera)return;
  cameraTargetPosition.set(
    P.position.x+Math.sin(cameraAngle)*cameraDistance,
-   cameraHeight,
+   cameraHeight+P.position.y,
    P.position.z+Math.cos(cameraAngle)*cameraDistance
  );
  C.position.lerp(cameraTargetPosition,.09);
- cameraLookAtPosition.set(P.position.x,1.2,P.position.z);
+ cameraLookAtPosition.set(P.position.x,P.position.y+1.2,P.position.z);
  C.lookAt(cameraLookAtPosition);
  // The connected world is much larger than DirectionalLight's default
  // -5..5 shadow volume. Re-center a larger, still high-resolution volume as
@@ -985,6 +985,7 @@ if(perfOverlay){perfOverlay.style.cssText="position:fixed;right:8px;bottom:8px;z
 let walkStrength=0;
 function updatePlayerWalkAnimation(isMoving,dt){
  const easing=1-Math.exp(-dt*14);
+ const groundY=currentPlace==="castle"?castleElevationAt(P.position.x,P.position.z,P.position.y):0;
  const seated=Boolean(window.isPlayerSeated?.());
  if(seated){
   walkStrength=THREE.MathUtils.lerp(walkStrength,0,easing);
@@ -993,6 +994,7 @@ function updatePlayerWalkAnimation(isMoving,dt){
   playerLeftLeg.rotation.x=THREE.MathUtils.lerp(playerLeftLeg.rotation.x,-Math.PI/2,easing);
   playerRightLeg.rotation.x=THREE.MathUtils.lerp(playerRightLeg.rotation.x,-Math.PI/2,easing);
   P.rotation.z=THREE.MathUtils.lerp(P.rotation.z,0,easing);
+  P.position.y=THREE.MathUtils.lerp(P.position.y,groundY,easing);
   return;
  }
  walkStrength=THREE.MathUtils.lerp(walkStrength,isMoving?1:0,easing);
@@ -1003,7 +1005,7 @@ function updatePlayerWalkAnimation(isMoving,dt){
  playerLeftLeg.rotation.x=THREE.MathUtils.lerp(playerLeftLeg.rotation.x,-swing,easing);
  playerRightLeg.rotation.x=THREE.MathUtils.lerp(playerRightLeg.rotation.x,swing,easing);
  P.rotation.z=THREE.MathUtils.lerp(P.rotation.z,Math.sin(walk)*.035*walkStrength,easing);
- P.position.y=THREE.MathUtils.lerp(P.position.y,Math.abs(Math.sin(walk))*.06*walkStrength,easing);
+ P.position.y=THREE.MathUtils.lerp(P.position.y,groundY+Math.abs(Math.sin(walk))*.06*walkStrength,easing);
 }
 let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);const worldShadows=currentPlace!=="beach";if(sun.castShadow!==worldShadows)sun.castShadow=worldShadows;moveCameraControl(dt);let playerMoved=false;if(!window.isPlayerSeated?.()&&Math.abs(vx)+Math.abs(vz)>.08){
 // Movement is relative to the camera direction.
@@ -1160,7 +1162,7 @@ function canWalkOnBeach(x,z){
 
 // The castle is intentionally lazy: its meshes do not consume GPU resources
 // until the destination is visited, and the shared world loader can dispose it.
-const CASTLE_CONFIG={size:30,spawn:{x:0,z:11.5},camera:{angle:0,height:9,distance:13},gateHalfWidth:2.1,frontWallZ:3.5,backWallZ:-13};
+const CASTLE_CONFIG={size:30,worldSize:40,spawn:{x:0,z:18},camera:{angle:0,height:11,distance:16},gateHalfWidth:2.25,frontWallZ:14,backWallZ:-14,upperY:4.35};
 let castle=null;
 function castleBox(parent,geometry,material,x,y,z,cast=false){
  const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.castShadow=cast;mesh.receiveShadow=true;parent.add(mesh);return mesh;
@@ -1169,8 +1171,9 @@ function createCastleWorld(){
  if(castle)return castle;
  const group=new THREE.Group();group.name="castle-world";group.visible=false;
  const geometries={
-  ground:new THREE.BoxGeometry(30,.25,30),wallLong:new THREE.BoxGeometry(9.8,5.2,.65),wallSide:new THREE.BoxGeometry(.65,5.2,17.2),
-  tower:new THREE.CylinderGeometry(1.75,1.95,7.2,10),merlon:new THREE.BoxGeometry(.72,.7,.72),floor:new THREE.BoxGeometry(23,.18,16),
+  ground:new THREE.BoxGeometry(40,.25,40),wallLong:new THREE.BoxGeometry(11.45,7.5,.65),wallSide:new THREE.BoxGeometry(.65,7.5,28),
+  tower:new THREE.CylinderGeometry(1.65,1.9,10.2,10),merlon:new THREE.BoxGeometry(.72,.7,.72),floor:new THREE.BoxGeometry(27,.18,27),
+  gallerySide:new THREE.BoxGeometry(4.6,.22,25.8),galleryBack:new THREE.BoxGeometry(18,.22,4.4),ramp:new THREE.BoxGeometry(3.5,.22,20),
   column:new THREE.CylinderGeometry(.32,.38,3.5,8),table:new THREE.BoxGeometry(4,.25,1.3),bench:new THREE.BoxGeometry(2.8,.28,.65),
   body:new THREE.BoxGeometry(.72,.9,.42),head:new THREE.SphereGeometry(.38,8,6),limb:new THREE.BoxGeometry(.2,.75,.2)
  };
@@ -1178,22 +1181,37 @@ function createCastleWorld(){
   darkStone:new THREE.MeshStandardMaterial({color:0x687384,roughness:1}),floor:new THREE.MeshStandardMaterial({color:0xb8a789,roughness:1}),wood:new THREE.MeshStandardMaterial({color:0x71452d,roughness:1}),
   gold:new THREE.MeshStandardMaterial({color:0xe9bd42,roughness:.55}),red:new THREE.MeshStandardMaterial({color:0xa73546,roughness:.9}),blue:new THREE.MeshStandardMaterial({color:0x355fb3,roughness:.9}),skin:new THREE.MeshStandardMaterial({color:0xd69a72,roughness:1})};
  castleBox(group,geometries.ground,materials.grass,0,-.16,0);
- castleBox(group,geometries.floor,materials.floor,0,-.03,-4.5);
+ castleBox(group,geometries.floor,materials.floor,0,-.03,0);
  // Two front segments preserve a clearly readable, collision-matched gate.
- castleBox(group,geometries.wallLong,materials.stone,-7.05,2.6,CASTLE_CONFIG.frontWallZ);
- castleBox(group,geometries.wallLong,materials.stone,7.05,2.6,CASTLE_CONFIG.frontWallZ);
- castleBox(group,new THREE.BoxGeometry(4.2,1.25,.7),materials.stone,0,5.25,CASTLE_CONFIG.frontWallZ);
- castleBox(group,new THREE.BoxGeometry(23,.65,.65),materials.darkStone,0,5.55,CASTLE_CONFIG.backWallZ);
- castleBox(group,new THREE.BoxGeometry(23,5.2,.65),materials.stone,0,2.6,CASTLE_CONFIG.backWallZ);
- castleBox(group,geometries.wallSide,materials.stone,-11.5,2.6,-4.75);
- castleBox(group,geometries.wallSide,materials.stone,11.5,2.6,-4.75);
- [[-11.5,3.5],[11.5,3.5],[-11.5,-13],[11.5,-13]].forEach(([x,z])=>castleBox(group,geometries.tower,materials.darkStone,x,3.6,z));
- // Repeated battlements share one geometry/material and stay shadow-free.
- for(let x=-10.6;x<=10.6;x+=1.35){castleBox(group,geometries.merlon,materials.stone,x,5.9,CASTLE_CONFIG.backWallZ);if(Math.abs(x)>2.35)castleBox(group,geometries.merlon,materials.stone,x,5.9,CASTLE_CONFIG.frontWallZ)}
- for(let z=-11.8;z<=2.4;z+=1.35){castleBox(group,geometries.merlon,materials.stone,-11.5,5.9,z);castleBox(group,geometries.merlon,materials.stone,11.5,5.9,z)}
+ castleBox(group,geometries.wallLong,materials.stone,-8.0,3.75,CASTLE_CONFIG.frontWallZ);
+ castleBox(group,geometries.wallLong,materials.stone,8.0,3.75,CASTLE_CONFIG.frontWallZ);
+ castleBox(group,new THREE.BoxGeometry(4.5,2.15,.7),materials.stone,0,6.45,CASTLE_CONFIG.frontWallZ);
+ castleBox(group,new THREE.BoxGeometry(28,.65,.65),materials.darkStone,0,7.75,CASTLE_CONFIG.backWallZ);
+ castleBox(group,new THREE.BoxGeometry(28,7.5,.65),materials.stone,0,3.75,CASTLE_CONFIG.backWallZ);
+ castleBox(group,geometries.wallSide,materials.stone,-14,3.75,0);
+ castleBox(group,geometries.wallSide,materials.stone,14,3.75,0);
+ [[-14,14],[14,14],[-14,-14],[14,-14]].forEach(([x,z])=>castleBox(group,geometries.tower,materials.darkStone,x,5.1,z));
+ // One instanced batch keeps the much larger two-storey silhouette cheap.
+ const merlonPositions=[];
+ for(let x=-13.2;x<=13.2;x+=1.3){merlonPositions.push([x,14],[x,-14])}
+ for(let z=-12.7;z<=12.7;z+=1.3){merlonPositions.push([-14,z],[14,z])}
+ const merlons=new THREE.InstancedMesh(geometries.merlon,materials.stone,merlonPositions.length),merlonMatrix=new THREE.Matrix4();
+ merlonPositions.forEach(([x,z],index)=>{merlonMatrix.makeTranslation(x,8,z);merlons.setMatrixAt(index,merlonMatrix)});
+ merlons.instanceMatrix.needsUpdate=true;merlons.computeBoundingSphere();merlons.receiveShadow=true;group.add(merlons);
+ // The upper floor is a U-shaped gallery, leaving the great hall visible from
+ // above. A broad ramp is easier to steer on touch screens than narrow stairs.
+ castleBox(group,geometries.gallerySide,materials.floor,-10.6,CASTLE_CONFIG.upperY,0);
+ castleBox(group,geometries.gallerySide,materials.floor,10.6,CASTLE_CONFIG.upperY,0);
+ castleBox(group,geometries.galleryBack,materials.floor,0,CASTLE_CONFIG.upperY,-10.7);
+ const ramp=castleBox(group,geometries.ramp,materials.darkStone,-10.6,CASTLE_CONFIG.upperY/2,0);
+ ramp.rotation.x=Math.atan2(CASTLE_CONFIG.upperY,20);
+ // Waist-high gallery rails clearly communicate the safe walkable edge.
+ castleBox(group,new THREE.BoxGeometry(.22,1,18.2),materials.gold,-8.2,4.9,.9);
+ castleBox(group,new THREE.BoxGeometry(.22,1,18.2),materials.gold,8.2,4.9,.9);
+ castleBox(group,new THREE.BoxGeometry(16.2,1,.22),materials.gold,0,4.9,-8.35);
  // Great-hall landmarks: a carpeted aisle, throne dais, banquet tables,
  // columns and banners make entering through the gate feel consequential.
- castleBox(group,new THREE.BoxGeometry(3.2,.06,13.5),materials.red,0,.13,-4.2);
+ castleBox(group,new THREE.BoxGeometry(3.2,.06,24),materials.red,0,.13,0);
  castleBox(group,new THREE.BoxGeometry(5,.35,2.2),materials.darkStone,0,.25,-11.2);
  const throne=castleBox(group,new THREE.BoxGeometry(1.7,2.4,.8),materials.gold,0,1.45,-11.35);throne.castShadow=true;
  [-7,7].forEach(x=>{
@@ -1202,14 +1220,20 @@ function createCastleWorld(){
  });
  [-9,-5,5,9].forEach(x=>castleBox(group,geometries.column,materials.stone,x,1.75,-8.5));
  [-7.5,7.5].forEach(x=>{const banner=castleBox(group,new THREE.BoxGeometry(1.7,2.5,.08),x<0?materials.red:materials.blue,x,3.35,-12.62);banner.receiveShadow=false});
+ // A reading nook and royal map table give the second storey its own purpose.
+ [-11.8,-9.7].forEach(x=>castleBox(group,new THREE.BoxGeometry(1.45,1.9,.45),materials.wood,x,5.35,5.9));
+ castleBox(group,new THREE.CylinderGeometry(1.25,1.25,.28,10),materials.wood,5.3,4.62,-10.8);
+ castleBox(group,new THREE.CylinderGeometry(.08,.08,2.3,6),materials.gold,0,5.55,-11.7);
+ const royalFlag=castleBox(group,new THREE.BoxGeometry(2.2,1.35,.08),materials.red,1.1,6.15,-11.65);royalFlag.receiveShadow=false;
  function guard(x,z,turn,color){
   const npc=new THREE.Group();castleBox(npc,geometries.body,color,0,1.5,0);castleBox(npc,geometries.head,materials.skin,0,2.3,0);
   [-.48,.48].forEach(px=>castleBox(npc,geometries.limb,materials.skin,px,1.45,0));[-.22,.22].forEach(px=>castleBox(npc,geometries.limb,materials.darkStone,px,.58,0));
   const helmet=castleBox(npc,new THREE.ConeGeometry(.48,.7,8),materials.darkStone,0,2.78,0);helmet.receiveShadow=false;
   npc.position.set(x,0,z);npc.rotation.y=turn;group.add(npc);
  }
- guard(-3.3,2,0,materials.red);guard(3.3,2,0,materials.blue);guard(-4,-10,Math.PI,materials.red);guard(4,-10,Math.PI,materials.blue);
- group.userData.lifecycle={destination:"castle",footprint:"30x30",lazy:true,dispose:"window.worldFactories.castle.destroy()",estimatedMeshes:group.children.length};
+ guard(-3.3,12.2,0,materials.red);guard(3.3,12.2,0,materials.blue);guard(-4,-10,Math.PI,materials.red);guard(4,-10,Math.PI,materials.blue);
+ group.userData.lifecycle={destination:"castle",footprint:"30x30",stories:2,lazy:true,dispose:"window.worldFactories.castle.destroy()",estimatedMeshes:group.children.length};
+ group.userData.debug=()=>({footprint:"30x30",stories:2,drawCallEstimate:group.children.length,instancedBattlements:merlonPositions.length,playerFloor:P.position.y>2?2:1});
  group.userData.resources={geometries:Object.values(geometries),materials:Object.values(materials)};
  S.add(group);castle=group;return group;
 }
@@ -1220,20 +1244,31 @@ function destroyCastleWorld(){
  castle.traverse(object=>{if(object.isMesh&&!resources.geometries.includes(object.geometry))object.geometry.dispose()});castle=null;
 }
 window.worldFactories=window.worldFactories||{};
-window.worldFactories.castle={create:createCastleWorld,destroy:destroyCastleWorld,metadata:{destination:"castle",size:"30x30",spawnOutside:true,lazy:true}};
+window.worldFactories.castle={create:createCastleWorld,destroy:destroyCastleWorld,metadata:{destination:"castle",size:"30x30",stories:2,spawnOutside:true,lazy:true}};
 window.releaseLargeWorlds=except=>{
  if(except!=="space")destroySpaceWorld();
  if(except!=="forest")destroyForestWorld();
  if(except!=="castle")destroyCastleWorld();
 };
 function canWalkInCastle(x,z){
- const inset=.55;if(x<-15+inset||x>15-inset||z<-15+inset||z>15-inset)return false;
- // Outer keep walls block the player, while the 4.2-unit gate remains open.
- if(z>3.05&&z<4.05&&Math.abs(x)>CASTLE_CONFIG.gateHalfWidth&&Math.abs(x)<11.9)return false;
- if(z<-12.55&&Math.abs(x)<11.9)return false;
- if(Math.abs(x)>11.05&&Math.abs(x)<11.95&&z>-13.4&&z<4.1)return false;
+ const inset=.55,worldHalf=CASTLE_CONFIG.worldSize/2;if(x<-worldHalf+inset||x>worldHalf-inset||z<-worldHalf+inset||z>worldHalf-inset)return false;
+ const onRamp=isCastleRamp(x,z),nextY=castleElevationAt(x,z,P.position.y),onUpper=nextY>2.25;
+ if(onUpper&&!onRamp&&!isCastleUpperGallery(x,z))return false;
+ // Outer keep walls block the player, while the broad gate remains open.
+ if(z>13.55&&z<14.45&&Math.abs(x)>CASTLE_CONFIG.gateHalfWidth&&Math.abs(x)<14.45)return false;
+ if(z<-13.55&&Math.abs(x)<14.45)return false;
+ if(Math.abs(x)>13.55&&z>-14.45&&z<14.45)return false;
+ if(onUpper)return true;
  // Keep the throne and banquet tables solid without cluttering the aisle.
  if(z<-10.75&&z>-12.25&&Math.abs(x)<2.7)return false;
  if(Math.abs(x)>4.7&&Math.abs(x)<9.3&&z>-6&&z<-2.8)return false;
  return true;
+}
+function isCastleRamp(x,z){return x>-12.35&&x<-8.85&&z>-10.15&&z<10.15}
+function isCastleUpperGallery(x,z){
+ return z>-12.9&&z<12.9&&((x>-12.9&&x<-8.25)||(x>8.25&&x<12.9))||z>-12.9&&z<-8.25&&x>-12.9&&x<12.9;
+}
+function castleElevationAt(x,z,currentY=0){
+ if(isCastleRamp(x,z))return THREE.MathUtils.clamp((10-z)/20*CASTLE_CONFIG.upperY,0,CASTLE_CONFIG.upperY);
+ return currentY>2.25&&isCastleUpperGallery(x,z)?CASTLE_CONFIG.upperY:0;
 }
