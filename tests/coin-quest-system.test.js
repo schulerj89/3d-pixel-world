@@ -26,6 +26,7 @@ assert.equal(isHudVisiblePhase("success"),false,"completed missions dismiss the 
 
 assert.equal(DEFAULT_CONFIG.reward,10);assert.equal(DEFAULT_CONFIG.count,6);
 const source=fs.readFileSync(path.join(__dirname,"..","coin-quest-system.js"),"utf8");
+const css=fs.readFileSync(path.join(__dirname,"..","coin-quest-system.css"),"utf8");
 assert.match(source,/CylinderGeometry/,"primitive fallback is available before/when GLTF fails");
 assert.match(source,/prototype\.clone\(true\)/,"one loaded prototype is cloned across pickups");
 assert.match(source,/Math\.sin\(elapsed\*config\.hoverSpeed/,"coins hover deterministically");
@@ -36,6 +37,13 @@ assert.match(source,/getRenderInfo/,"browser render metrics can be exposed in de
 assert.match(source,/disposeObjectResources\(prototype\)/,"loaded GLTF resources are disposed with the quest system");
 assert.match(source,/showRetryButton===false/,"portable integrations can route retries through their quest giver");
 assert.match(source,/catch\(error\)\{disposeObjectResources\(loadedScene\)/,"failed GLTF normalization releases loaded resources");
+assert.match(source,/progressNode\.textContent=`\$\{state\.collectedCount\}\/\$\{state\.count\}`/,"compact progress omits redundant copy");
+assert.match(source,/coins collected`\)/,"compact progress keeps a descriptive accessibility label");
+assert.match(css,/grid-template-columns:minmax\(0,1fr\) auto auto/,"quest HUD uses a compact one-row information hierarchy");
+assert.match(css,/@media \(orientation:landscape\) and \(max-height:820px\)/,"short landscape gets a dedicated HUD layout");
+assert.match(css,/left:calc\(var\(--game-hud-safe-left[^;]+\) \+ 100px\)/,"landscape quest HUD sits beside the Menu cluster");
+assert.match(css,/max-width:250px/,"landscape quest HUD has a strict width budget");
+assert.match(css,/min-height:44px/,"compact quest HUD remains touch-HUD height");
 const assetPath=path.join(__dirname,"..","assets","models","quaternius-platformer-coin","Coin.gltf");
 const sourcePath=path.join(path.dirname(assetPath),"SOURCE.md");
 assert.ok(fs.existsSync(assetPath));assert.ok(fs.statSync(assetPath).size<100*1024,"coin asset stays below 100 KB");
