@@ -31,6 +31,7 @@
   openBtn.addEventListener("pointerdown",e=>{
     e.preventDefault();
     e.stopPropagation();
+    window.setHousePanelOpen?.(false);
     openShop();
   });
 

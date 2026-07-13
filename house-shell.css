@@ -1,0 +1,32 @@
+#housePanel.houseModePanel{
+  border-color:var(--ui-border,#d8c9ff);
+  background:var(--ui-surface,#fffdf4f5);
+  color:var(--ui-text,#273a63);
+  box-shadow:var(--ui-shadow,0 8px 26px #0004);
+}
+#housePanel.houseModePanel button:focus-visible{outline:3px solid var(--ui-focus,#365fc7);outline-offset:2px;position:relative;z-index:2}
+#housePanel.houseModePanel .housePanelHeader #closeHousePanel{min-width:44px;width:44px;height:44px}
+#housePanel.houseModePanel .houseTabs button,#housePanel.houseModePanel .houseQuickActions button,#housePanel.houseModePanel .buildModeRow button{min-height:44px}
+#housePanel.houseModePanel .houseQuickActions,#housePanel.houseModePanel .buildModeRow{grid-template-columns:1fr}
+#housePanel.houseModePanel #openHouseShop,#housePanel.houseModePanel #buildHouse{width:100%;margin:0!important}
+body.house-building #housePanelToggle.gameHudButton{display:none!important}
+body.house-building #housePanel.open{display:none!important}
+body.house-building #hudMenuButton.gameHudButton--menu{border-radius:var(--game-hud-radius,14px)}
+
+@media (orientation:landscape){
+  #housePanel.houseModePanel{left:max(8px,env(safe-area-inset-left));top:max(58px,calc(env(safe-area-inset-top) + 50px));width:min(560px,calc(100vw - max(16px,env(safe-area-inset-left) + env(safe-area-inset-right) + 12px)));max-height:calc(100dvh - max(66px,calc(env(safe-area-inset-top) + 58px)) - max(6px,env(safe-area-inset-bottom)));padding:8px;border-width:2px;border-radius:16px;overflow:auto}
+  #housePanel.houseModePanel.open{display:grid!important;grid-template-columns:minmax(128px,1fr) minmax(190px,230px) 44px;gap:7px 9px;align-items:center}
+  #housePanel.houseModePanel .housePanelHeader{display:contents}
+  #housePanel.houseModePanel .housePanelHeader>b{grid-column:1;display:flex;min-width:0;align-items:center;gap:6px;font-size:16px;white-space:nowrap}
+  #housePanel.houseModePanel .housePanelHeader #closeHousePanel{grid-column:3;grid-row:1}
+  #housePanel.houseModePanel .houseTabs{grid-column:2;grid-row:1;display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:0}
+  #housePanel.houseModePanel .houseTabs button{min-width:0;margin:0!important;padding:5px 8px!important}
+  #housePanel.houseModePanel .houseTab.active{grid-column:1/-1;grid-row:2;min-width:0}
+  #housePanel.houseModePanel .houseQuickActions,#housePanel.houseModePanel .buildModeRow{margin:0}
+  #housePanel.houseModePanel #buildMessage{margin:0}
+}
+
+@media (orientation:landscape) and (max-width:700px){
+  #housePanel.houseModePanel.open{grid-template-columns:minmax(105px,1fr) minmax(168px,210px) 44px;gap:6px}
+  #housePanel.houseModePanel .housePanelHeader>b{font-size:14px}
+}

@@ -36,5 +36,6 @@ assert(avatar.includes("storedOutfitColor")&&avatar.includes("legacyShirt"),"leg
 assert(avatar.includes('localStorage.setItem("my3DWorld",JSON.stringify(saved))'),"retired fields must be cleared before the Styloo loader reads customization");
 assert(!avatar.includes('colorButtons("startOutfit"')&&!avatar.includes("startAstronautHelmet"),"obsolete startup controls must not be wired");
 assert(avatar.includes("titleScreen?.hidden")&&avatar.includes("!customizeStep.hidden"),"large preview must render only while customization is visible");
-assert(house.includes("window.showPregameCustomization?.()")&&house.includes("window.showWorldPicker?.()"),"in-game Edit and Places actions must reopen the correct wizard step");
+assert(house.includes("window.showPregameCustomization?.()"),"in-game Edit must reopen character customization");
+assert(!html.includes('id="backPlaces"')&&!house.includes("backPlaces.onclick"),"house navigation must rely on the global world menu instead of a duplicate Places action");
 console.log("pre-game wizard: four colors, two steps, compact landscape, and world routing validated");
