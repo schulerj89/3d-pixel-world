@@ -7,7 +7,7 @@ name: Grand Whimsy Forest
 size: 240x240
 cell: 8
 seed: 73421
-spawn: 14,27
+spawn: 14,24
 legend: F=forest P=path C=clearing L=lake G=glen R=rock-garden
 map:
 FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
