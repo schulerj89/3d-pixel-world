@@ -320,6 +320,54 @@ const buildMessage=document.getElementById("buildMessage");
 const housePanelToggle=document.getElementById("housePanelToggle");
 const closeHousePanel=document.getElementById("closeHousePanel");
 let selectedFurnitureIndex=-1;
+// Build guides are created once and reused. Keeping them in the house group means
+// their coordinates always match the furniture coordinates, without adding them
+// to the normal house presentation.
+const furnitureGrid=new THREE.GridHelper(
+ Math.min(HOUSE_CONFIG.width,HOUSE_CONFIG.depth)-HOUSE_CONFIG.furnitureInset*2,
+ Math.round((Math.min(HOUSE_CONFIG.width,HOUSE_CONFIG.depth)-HOUSE_CONFIG.furnitureInset*2)/HOUSE_BOUNDS.step),
+ 0x6c3cff,0xb9a7e8
+);
+furnitureGrid.position.y=.145;
+furnitureGrid.material.transparent=true;
+furnitureGrid.material.opacity=.42;
+furnitureGrid.material.depthWrite=false;
+furnitureGrid.renderOrder=5;
+furnitureGrid.visible=false;
+house.add(furnitureGrid);
+const furnitureFootprint=new THREE.Mesh(
+ new THREE.PlaneGeometry(1,1),
+ new THREE.MeshBasicMaterial({color:0x8cff88,transparent:true,opacity:.25,depthWrite:false,side:THREE.DoubleSide})
+);
+furnitureFootprint.rotation.x=-Math.PI/2;
+furnitureFootprint.position.y=.16;
+furnitureFootprint.renderOrder=6;
+furnitureFootprint.visible=false;
+house.add(furnitureFootprint);
+let furnitureOutline=null;
+
+function updateFurnitureGuides(){
+ const item=selectedFurniture();
+ const visible=Boolean(buildingMode&&currentPlace==="house"&&item);
+ furnitureGrid.visible=Boolean(buildingMode&&currentPlace==="house");
+ furnitureFootprint.visible=visible;
+ if(furnitureOutline)furnitureOutline.visible=visible;
+ if(!visible)return;
+ if(!furnitureOutline){
+  furnitureOutline=new THREE.BoxHelper(item,0xffe45c);
+  furnitureOutline.material.transparent=true;
+  furnitureOutline.material.opacity=.95;
+  furnitureOutline.material.depthTest=false;
+  furnitureOutline.renderOrder=7;
+  house.add(furnitureOutline);
+ }else furnitureOutline.object=item;
+ furnitureOutline.setFromObject(item);
+ const box=new THREE.Box3().setFromObject(item);
+ const size=box.getSize(new THREE.Vector3());
+ const center=box.getCenter(new THREE.Vector3());
+ furnitureFootprint.position.set(center.x,.16,center.z);
+ furnitureFootprint.scale.set(Math.max(size.x,.5),Math.max(size.z,.5),1);
+}
 
 function setHousePanel(open){
  const show=Boolean(open&&currentPlace==="house"&&startPage.style.display==="none");
@@ -350,6 +398,7 @@ function setBuildingMode(on){
  document.body.classList.toggle("house-building",on&&currentPlace==="house");
  if(on)setHouseTab("build");
  updateFurnitureLabel();
+ updateFurnitureGuides();
 }
 
 saveHouseButton.addEventListener("pointerdown",e=>{
@@ -373,6 +422,7 @@ function updateFurnitureLabel(){
  const item=selectedFurniture();
  document.getElementById("selectedFurniture").textContent=item?"Selected: "+item.userData.kind.replace(/^./,c=>c.toUpperCase())+" · "+(selectedFurnitureIndex+1)+" of "+furniture.length:"No furniture selected";
  furniture.forEach((f,i)=>f.traverse(child=>{if(child.isMesh){if(!child.userData.baseEmissive)child.userData.baseEmissive=child.material.emissive.getHex();child.material.emissive.setHex(i===selectedFurnitureIndex&&buildingMode?0x24104a:child.userData.baseEmissive)} }));
+ updateFurnitureGuides();
 }
 document.getElementById("selectFurniture").onclick=()=>{
  if(!furniture.length){
@@ -387,6 +437,7 @@ function moveSelected(dx,dz){
  if(!item)return;
  item.position.x+=dx;item.position.z+=dz;
  constrainFurniture(item);
+ updateFurnitureGuides();
  saveWorld();
 }
 function constrainFurniture(item){
@@ -397,15 +448,16 @@ function constrainFurniture(item){
  if(box.min.z<HOUSE_BOUNDS.minZ)item.position.z+=HOUSE_BOUNDS.minZ-box.min.z;
  if(box.max.z>HOUSE_BOUNDS.maxZ)item.position.z-=box.max.z-HOUSE_BOUNDS.maxZ;
 }
-document.getElementById("moveFUp").onclick=()=>moveSelected(0,-.5);
-document.getElementById("moveFDown").onclick=()=>moveSelected(0,.5);
-document.getElementById("moveFLeft").onclick=()=>moveSelected(-.5,0);
-document.getElementById("moveFRight").onclick=()=>moveSelected(.5,0);
+document.getElementById("moveFUp").onclick=()=>moveSelected(0,-HOUSE_BOUNDS.step);
+document.getElementById("moveFDown").onclick=()=>moveSelected(0,HOUSE_BOUNDS.step);
+document.getElementById("moveFLeft").onclick=()=>moveSelected(-HOUSE_BOUNDS.step,0);
+document.getElementById("moveFRight").onclick=()=>moveSelected(HOUSE_BOUNDS.step,0);
 document.getElementById("rotateF").onclick=()=>{
  const item=selectedFurniture();
  if(!item)return;
  item.rotation.y+=Math.PI/4;
  constrainFurniture(item);
+ updateFurnitureGuides();
  saveWorld();
 };
 

@@ -159,6 +159,22 @@ body.house-mode #housePanelToggle{display:block}
 #saveHouse[hidden],#buildHouse[hidden]{display:none!important}
 body.house-building #pad,body.house-building #lookPad{opacity:.45}
 body.house-building #houseAction{display:none!important}
+/* Placement controls become a thumb-friendly bottom dock while building. The
+   world stays visible above it, and these rules never affect normal play. */
+body.house-building .furnitureEditor{position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));z-index:390;display:grid;grid-template-columns:minmax(125px,1fr) minmax(100px,auto) repeat(5,52px) minmax(86px,auto);align-items:center;gap:6px;width:min(900px,calc(100vw - 20px));box-sizing:border-box;padding:9px 10px;border:3px solid #8c67e8;border-radius:18px;background:#fffdf4f5;box-shadow:0 8px 28px #24164b55;transform:translateX(-50%);backdrop-filter:blur(8px)}
+body.house-building #selectedFurniture{min-height:0;margin:0;text-align:left;font-size:13px}
+body.house-building #selectFurniture,body.house-building #deleteFurniture{width:auto!important;min-height:48px;margin:0!important;padding:5px 9px!important;touch-action:manipulation}
+body.house-building .moveGrid{display:contents}
+body.house-building .moveGrid span{display:none}
+body.house-building .moveGrid button{width:52px!important;height:48px!important;border:2px solid #c5afff!important;background:#f1ebff!important;font-size:24px!important;touch-action:manipulation}
+body.house-building #rotateF{background:#ffe8a8!important;border-color:#e1b754!important}
+@media (max-width:720px){
+ body.house-building .furnitureEditor{grid-template-columns:repeat(6,1fr);gap:5px}
+ body.house-building #selectedFurniture{grid-column:1/-1;text-align:center}
+ body.house-building #selectFurniture{grid-column:span 3}
+ body.house-building #deleteFurniture{grid-column:span 3}
+ body.house-building .moveGrid button{width:100%!important}
+}
 @media (orientation:landscape) and (max-height:820px){
  #housePanel{top:64px;max-height:calc(100vh - 76px)}
  #housePanelToggle{top:12px;left:112px}
