@@ -7,11 +7,19 @@ const read=file=>fs.readFileSync(path.join(__dirname,"..",file),"utf8");
 const dining=Restaurant.parseLevel(read(Restaurant.ROOM_FILES.dining));
 const kitchen=Restaurant.parseLevel(read(Restaurant.ROOM_FILES.kitchen));
 const rooms=[dining,kitchen];
+const kitPath=path.join(__dirname,"..","assets","models","restaurant","kaykit-restaurant-kit.glb");
+const kitBuffer=fs.readFileSync(kitPath);
+assert.strictEqual(kitBuffer.toString("ascii",0,4),"glTF","KayKit restaurant kit must be a valid binary glTF");
+assert.strictEqual(kitBuffer.length,503564,"audited KayKit derivative size changed unexpectedly");
+assert(Restaurant.KIT_URL.endsWith("?v=__BUILD_VERSION__"),"restaurant GLB must be cache-versioned before Pages stamping");
+const jsonLength=kitBuffer.readUInt32LE(12),gltf=JSON.parse(kitBuffer.subarray(20,20+jsonLength).toString("utf8").replace(/\0+$/,""));
+const kitScenes=new Set(gltf.scenes.flatMap(scene=>scene.nodes.map(node=>gltf.nodes[node]?.name)));
 const html=read("index.html"),houseSystem=read("house-system.js"),styles=read("styles.css");
 assert(/id="goBakery">🍽️<span>Restaurant<\/span>/.test(html),"Realm destination must display Restaurant");
 assert(!/id="goBakery">[^<]*<span>Bakery<\/span>/.test(html),"Bakery must not remain a visible Realm destination");
 assert(html.indexOf("restaurant-world.js")<html.indexOf("house-system.js"),"Restaurant runtime must load before destination routing");
 assert(/goBakery\.onclick=\(\)=>window\.runWorldTransition\([^\n]+restaurant/.test(houseSystem),"legacy destination ID must route to Restaurant");
+assert(houseSystem.includes('get("restaurantRoom")'),"named restaurant room poses must be available for screenshot QA");
 assert(/function showBakery\(\)/.test(houseSystem),"dormant Bakery implementation must remain available");
 assert(/body\.restaurant-mode #kitchenTools[^\n]+#orders[^\n]+#inventoryBox/.test(styles),"Restaurant mode must suppress Bakery HUD panels");
 
@@ -40,6 +48,11 @@ for(const symbol of symbols){
  assert(asset,`missing asset registry entry for ${symbol}`);
  assert(/^restaurant\./.test(asset.assetId),`${symbol} needs a stable restaurant asset ID`);
  assert(Array.isArray(asset.size)&&asset.size.length===3,`${symbol} needs placeholder dimensions`);
+}
+for(const symbol of ["T","C","B","H","K","S","F","W","R"]){
+ const source=Restaurant.ASSET_REGISTRY[symbol].sourceScene;
+ assert(source,`${symbol} must use a KayKit scene instead of its primitive fallback`);
+ assert(kitScenes.has(source),`${symbol} references missing KayKit scene ${source}`);
 }
 
 class Node3D{

@@ -8,7 +8,7 @@ room: dining
 size: 40x40
 cell: 1
 origin: -20,-20
-spawn: 19,34
+spawn: 19,30
 connect: kitchen:north:18-21
 legend: #=wall .=floor D=doorway T=table C=chair B=booth H=host-stand P=plant
 map:

@@ -4,7 +4,7 @@ Audit date: 2026-07-13. Official source: <https://kaylousberg.itch.io/restaurant
 
 ## Decision
 
-The free pack is suitable for the planned 40x40 main restaurant and 25x25 kitchen. It is internally consistent, CC0, correctly scaled for the current character, low-poly, and uses one shared gradient atlas. A curated optimized kit has been added at `assets/models/restaurant/kaykit-restaurant-kit.glb`; runtime code is intentionally unchanged.
+The free pack is suitable for the 40x40 main restaurant and 25x25 kitchen. It is internally consistent, CC0, correctly scaled for the current character, low-poly, and uses one shared gradient atlas. The runtime loads the curated `assets/models/restaurant/kaykit-restaurant-kit.glb` once and clones its shared static scenes for tables, chairs, counters, stoves, refrigerators, sinks, cabinets, and entrance menus. Primitive fixtures remain as load-failure fallbacks; the potted plant stays intentionally primitive because that model is not part of the curated pack.
 
 ## Provenance and license
 
