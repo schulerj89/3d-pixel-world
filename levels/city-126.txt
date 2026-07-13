@@ -1,10 +1,10 @@
-# Runtime layout for the 98x98 City Realm (larger than the 70x70 target).
-# One character is a 7x7-world-unit cell. KayKit building footprints are about
+# Runtime layout for the 126x126 City Realm with two full traffic lanes.
+# One character is a 9x9-world-unit cell. KayKit building footprints are about
 # 8x8 units at chibi scale, so occupied lots are separated by at least one
 # empty cell. The validator enforces 2 clear world units between buildings.
 name: Chibi City
-size: 98x98
-cell: 7
+size: 126x126
+cell: 9
 seed: 70425
 spawn: 7,13
 legend: .=sidewalk -=east-west-road |=north-south-road +=junction A-H=buildings X=spawn
