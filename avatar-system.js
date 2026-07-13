@@ -152,7 +152,12 @@ function runBlenderEffect(durationMs=1900){
 const previewScene=new THREE.Scene();previewScene.background=new THREE.Color(0xe9f7ff);
 const previewCamera=new THREE.PerspectiveCamera(45,210/270,.1,50);previewCamera.position.set(0,2.3,6);previewCamera.lookAt(0,1.2,0);
 const previewRenderer=new THREE.WebGLRenderer({antialias:true,alpha:true});previewRenderer.setSize(200,260);
-document.getElementById("characterPreview3D").appendChild(previewRenderer.domElement);
+const previewHost=document.getElementById("characterPreview3D");previewHost.appendChild(previewRenderer.domElement);
+function resizeCharacterPreview(){
+ const width=Math.max(1,previewHost.clientWidth),height=Math.max(1,previewHost.clientHeight);
+ previewRenderer.setSize(width,height,false);previewCamera.aspect=width/height;previewCamera.updateProjectionMatrix();
+}
+new ResizeObserver(resizeCharacterPreview).observe(previewHost);resizeCharacterPreview();
 previewScene.add(new THREE.HemisphereLight(0xffffff,0x777777,2.5));
 const previewAvatar=new THREE.Group();previewScene.add(previewAvatar);
 function previewBox(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(x,y,z);previewAvatar.add(m);return m}
