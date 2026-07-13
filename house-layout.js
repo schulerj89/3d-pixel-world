@@ -39,25 +39,24 @@
  }
  function lineWalls(level){
   const walls=[],thickness=level.wallThickness;
-  const add=(id,orientation,fixed,start,end,kind="interior")=>walls.push({id,type:"line",orientation,fixed,start,end,thickness,kind});
+  const add=(id,orientation,fixed,start,end,kind="interior")=>walls.push({id,type:"line",orientation,fixed,start,end,thickness,kind,heightOffset:orientation==="V"?-.015:0});
   const runs=(values,predicate)=>{const found=[];let start=-1;for(let index=0;index<=values.length;index++){if(predicate(values[index])&&start<0)start=index;if(!predicate(values[index])&&start>=0){found.push([start,index]);start=-1}}return found};
-  // Perimeter walls sit just inside the authored bounds. Exterior cladding is
-  // placed just outside the same boundary, so the two surfaces meet without
-  // occupying the same volume or competing for a depth-buffer plane.
-  for(const [start,end] of runs([...level.map[0]],symbol=>symbol==="#"))add(`perimeter-north-${start}`,"H",level.originZ+thickness/2,level.originX+start,level.originX+end,"perimeter");
-  for(const [start,end] of runs([...level.map[level.depth-1]],symbol=>symbol==="#"))add(`perimeter-south-${start}`,"H",level.originZ+level.depth-thickness/2,level.originX+start,level.originX+end,"perimeter");
-  add("perimeter-west","V",level.originX+thickness/2,level.originZ+thickness,level.originZ+level.depth-thickness,"perimeter");
-  add("perimeter-east","V",level.originX+level.width-thickness/2,level.originZ+thickness,level.originZ+level.depth-thickness,"perimeter");
-  // Interior walls use thin center lines. Horizontal and vertical runs are
-  // emitted independently so T/cross junctions close cleanly without stacks
-  // of coplanar one-cell boxes.
-  for(let row=1;row<level.depth-1;row++){
-   const values=[...level.map[row]].slice(1,-1);
-   for(const [localStart,localEnd] of runs(values,symbol=>symbol==="#"))if(localEnd-localStart>=2){const start=localStart+1,end=localEnd+1;add(`interior-h-${row}-${start}`,"H",level.originZ+row+.5,level.originX+start,level.originX+end)}
+  // Maximal runs cover complete authored wall cells. Horizontal and vertical
+  // runs therefore cross at every corner/T-junction instead of stopping half
+  // a unit apart. Vertical caps sit 0.015u lower than horizontal caps so the
+  // overlapping junction top has one stable depth winner and cannot shimmer.
+  for(let row=0;row<level.depth;row++)for(const [start,end] of runs([...level.map[row]],symbol=>symbol==="#"))if(end-start>=2){
+   const kind=row===0||row===level.depth-1?"perimeter":"interior";
+   const lineStart=level.originX+start+(start===0?.5:0),lineEnd=level.originX+end-(end===level.width?.5:0);
+   add(`${kind}-h-${row}-${start}`,"H",level.originZ+row+.5,lineStart,lineEnd,kind);
   }
-  for(let col=1;col<level.width-1;col++){
-   const values=level.map.slice(1,-1).map(row=>row[col]);
-   for(const [localStart,localEnd] of runs(values,symbol=>symbol==="#"))if(localEnd-localStart>=2){const start=localStart+1,end=localEnd+1;add(`interior-v-${col}-${start}`,"V",level.originX+col+.5,level.originZ+start,level.originZ+end)}
+  for(let col=0;col<level.width;col++){
+   const values=level.map.map(row=>row[col]);
+   for(const [start,end] of runs(values,symbol=>symbol==="#"))if(end-start>=2){
+   const kind=col===0||col===level.width-1?"perimeter":"interior";
+    const lineStart=level.originZ+start+(start===0?.5:0),lineEnd=level.originZ+end-(end===level.depth?.5:0);
+    add(`${kind}-v-${col}-${start}`,"V",level.originX+col+.5,lineStart,lineEnd,kind);
+   }
   }
   return walls;
  }

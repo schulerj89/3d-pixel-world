@@ -35,7 +35,7 @@
   const [width,depth]=String(values.size||"").split("x").map(Number);
   const [originX,originZ]=String(values.origin||"").split(",").map(Number);
   const level={...values,width,depth,originX,originZ,cell:Number(values.cell),wallThickness:Number(values["wall-thickness"]),wallHeight:Number(values["wall-height"]),minimumClearance:Number(values["minimum-clearance"]),primaryClearance:Number(values["primary-clearance"]),applianceAisle:Number(values["appliance-aisle"]),entranceWidth:Number(values["entrance-width"]),rooms,fixtures,map};
-  validateLevel(level);return level;
+  validateLevel(level);planValidator().validate(level);return level;
  }
  function isBoundarySymbol(symbol){return symbol==="#"||symbol==="E"}
  function validateLevel(level){

@@ -52,13 +52,14 @@ function applyHouseLayout(layout){
  }
  for(const wall of layout.walls){
   const length=wall.end-wall.start;
+  const renderedHeight=layout.wallHeight+(wall.heightOffset||0);
   const wallWidth=wall.type==="cell"?wall.width:length;
-  const interiorMaterial=window.HouseWallMaterials?.create("interior",{width:wallWidth,height:layout.wallHeight,renderer:R})||0xf2e8dc;
+  const interiorMaterial=window.HouseWallMaterials?.create("interior",{width:wallWidth,height:renderedHeight,renderer:R})||0xf2e8dc;
   const mesh=wall.type==="cell"
-   ?hbox(wall.width,layout.wallHeight,wall.depth,interiorMaterial,wall.x,layout.wallHeight/2,wall.z,houseLayoutShell)
+   ?hbox(wall.width,renderedHeight,wall.depth,interiorMaterial,wall.x,renderedHeight/2,wall.z,houseLayoutShell)
    :wall.orientation==="H"
-    ?hbox(length,layout.wallHeight,wall.thickness||layout.wallThickness,interiorMaterial,(wall.start+wall.end)/2,layout.wallHeight/2,wall.fixed,houseLayoutShell)
-    :hbox(wall.thickness||layout.wallThickness,layout.wallHeight,length,interiorMaterial,wall.fixed,layout.wallHeight/2,(wall.start+wall.end)/2,houseLayoutShell);
+    ?hbox(length,renderedHeight,wall.thickness||layout.wallThickness,interiorMaterial,(wall.start+wall.end)/2,renderedHeight/2,wall.fixed,houseLayoutShell)
+    :hbox(wall.thickness||layout.wallThickness,renderedHeight,length,interiorMaterial,wall.fixed,renderedHeight/2,(wall.start+wall.end)/2,houseLayoutShell);
   mesh.name=`house-wall-${wall.id}`;mesh.userData.wallId=wall.id;
  }
  document.body.dataset.houseLayoutStatus="ready";
@@ -640,6 +641,7 @@ const saveHouseButton=document.getElementById("saveHouse");
 const buildHouseButton=document.getElementById("buildHouse");
 const clearAllFurnitureButton=document.getElementById("clearAllFurniture");
 const clearFurnitureStatus=document.getElementById("clearFurnitureStatus");
+let clearFurnitureConfirmTimer=null;
 const buildMessage=document.getElementById("buildMessage");
 const housePanelToggle=document.getElementById("housePanelToggle");
 const closeHousePanel=document.getElementById("closeHousePanel");
@@ -839,10 +841,21 @@ function clearAllFurniture(){
  document.getElementById("msg").textContent="All furniture cleared and the empty house was saved.";
  return true;
 }
+function resetClearFurnitureConfirmation(){
+ clearTimeout(clearFurnitureConfirmTimer);clearFurnitureConfirmTimer=null;
+ clearAllFurnitureButton.dataset.confirming="false";
+ clearAllFurnitureButton.textContent="Clear all furniture";
+}
 window.clearAllHouseFurniture=clearAllFurniture;
 clearAllFurnitureButton.addEventListener("click",()=>{
  if(!furniture.length)return;
- if(window.confirm("Remove all furniture from My House? This saves an empty layout."))clearAllFurniture();
+ if(clearAllFurnitureButton.dataset.confirming==="true"){
+  resetClearFurnitureConfirmation();clearAllFurniture();return;
+ }
+ clearAllFurnitureButton.dataset.confirming="true";
+ clearAllFurnitureButton.textContent="Confirm clear all";
+ clearFurnitureStatus.textContent="Press Confirm clear all to remove every furniture item and save an empty house.";
+ clearFurnitureConfirmTimer=setTimeout(resetClearFurnitureConfirmation,10000);
 });
 backPlaces.onclick=()=>{startPage.style.display="block";window.showWorldPicker?.();setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;hideSpaceWorld();destroyCityWorld();if(castle)castle.visible=false;window.RestaurantWorld?.destroy?.();setBakeryVisible(false)};
 

@@ -19,5 +19,7 @@ assert(house.includes("saved.houseFurnitureCleared=true")&&house.includes("saveW
 assert(house.includes('clearAllFurnitureButton.disabled=furniture.length===0')&&house.includes('setAttribute("aria-disabled"'),"clear-all must expose its unavailable state to assistive technology");
 assert(house.includes("queueMicrotask(()=>updateFurnitureLabel())"),"loaded and intentionally empty saves must initialize reset UI state");
 assert(house.includes("window.clearAllHouseFurniture=clearAllFurniture"),"browser QA must have a deterministic clear-all hook");
+assert(house.includes('dataset.confirming="true"')&&house.includes('textContent="Confirm clear all"'),"clear-all must use an accessible inline confirmation state");
+assert(!house.includes('window.confirm("Remove all furniture'),"clear-all must not depend on a blocking native dialog");
 
 console.log("house clear furniture: seating, actions, selection, persistence, reseed guard, and accessible control validated");

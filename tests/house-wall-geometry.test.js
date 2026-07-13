@@ -16,8 +16,23 @@ for(const wall of layout.walls){
 }
 
 const frontWalls=layout.walls.filter(wall=>wall.kind==="perimeter"&&wall.orientation==="H"&&wall.fixed>0);
-assert.deepStrictEqual(frontWalls.map(wall=>[wall.start,wall.end]),[[-12,-2],[2,12]],"front wall runs must stop at the four-unit entrance instead of drawing behind its door");
-assert(frontWalls.every(wall=>wall.fixed+wall.thickness/2===layout.bounds.maxZ),"interior front wall must terminate exactly on the shell boundary");
+assert.deepStrictEqual(frontWalls.map(wall=>[wall.start,wall.end]),[[-11.5,-2],[2,11.5]],"front structure must meet the side-wall centerlines and stop at the four-unit entrance");
+assert(frontWalls.every(wall=>wall.fixed===layout.bounds.maxZ-.5),"front structure must follow the authored perimeter-cell centerline");
+
+function touches(a,b){
+ const epsilon=1e-9;
+ if(a.orientation===b.orientation){
+  if(Math.abs(a.fixed-b.fixed)>epsilon)return false;
+  return a.start<=b.end+epsilon&&b.start<=a.end+epsilon;
+ }
+ const horizontal=a.orientation==="H"?a:b,vertical=a.orientation==="V"?a:b;
+ return vertical.fixed>=horizontal.start-epsilon&&vertical.fixed<=horizontal.end+epsilon&&horizontal.fixed>=vertical.start-epsilon&&horizontal.fixed<=vertical.end+epsilon;
+}
+const connected=new Set([0]),queue=[0];
+while(queue.length){const current=queue.shift();layout.walls.forEach((wall,index)=>{if(!connected.has(index)&&touches(layout.walls[current],wall)){connected.add(index);queue.push(index)}})}
+assert.strictEqual(connected.size,layout.walls.length,"rendered wall segments must form one continuous corner/T-junction network");
+assert(layout.walls.filter(wall=>wall.orientation==="H").every(wall=>wall.heightOffset===0),"horizontal wall caps use the full authored height");
+assert(layout.walls.filter(wall=>wall.orientation==="V").every(wall=>wall.heightOffset<0),"vertical caps need a tiny height reveal so crossing tops cannot z-fight");
 
 const context={console};context.window=context;context.globalThis=context;
 vm.runInNewContext(fs.readFileSync(path.join(root,"house-exterior.js"),"utf8"),context,{filename:"house-exterior.js"});
