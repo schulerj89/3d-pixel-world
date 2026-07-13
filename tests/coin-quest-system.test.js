@@ -26,7 +26,10 @@ assert.match(source,/CylinderGeometry/,"primitive fallback is available before/w
 assert.match(source,/prototype\.clone\(true\)/,"one loaded prototype is cloned across pickups");
 assert.match(source,/Math\.sin\(elapsed\*config\.hoverSpeed/,"coins hover deterministically");
 assert.match(source,/anchor\.rotation\.y\+=/,"coins rotate every update");
+assert.match(source,/controller\.phase==="active"&&!coin\.collected/,"coins stay hidden outside an active quest run");
+assert.match(source,/hud\.hidden=state\.phase==="idle"/,"the timer HUD stays hidden before the NPC starts the quest");
 assert.match(source,/getRenderInfo/,"browser render metrics can be exposed in debug state");
+assert.match(source,/disposeObjectResources\(prototype\)/,"loaded GLTF resources are disposed with the quest system");
 const assetPath=path.join(__dirname,"..","assets","models","quaternius-platformer-coin","Coin.gltf");
 const sourcePath=path.join(path.dirname(assetPath),"SOURCE.md");
 assert.ok(fs.existsSync(assetPath));assert.ok(fs.statSync(assetPath).size<100*1024,"coin asset stays below 100 KB");

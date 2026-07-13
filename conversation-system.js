@@ -179,7 +179,7 @@
   const prompt=doc.createElement("button");prompt.type="button";prompt.className="conversation-prompt";prompt.hidden=true;
   const panel=doc.createElement("section");panel.className="conversation-panel";panel.hidden=true;panel.setAttribute("role","dialog");panel.setAttribute("aria-live","polite");
   const speaker=doc.createElement("h2"),text=doc.createElement("p"),actions=doc.createElement("div"),hint=doc.createElement("p");
-  speaker.className="conversation-speaker";text.className="conversation-text";actions.className="conversation-actions";hint.className="conversation-hint";hint.textContent="Enter to continue  •  Esc to leave";
+  speaker.className="conversation-speaker";text.className="conversation-text";actions.className="conversation-actions";hint.className="conversation-hint";hint.textContent="Enter to continue  /  Esc to leave";
   panel.append(speaker,text,actions,hint);root.append(prompt,panel);
   let system=null;
   prompt.addEventListener("click",()=>system&&system.interact());

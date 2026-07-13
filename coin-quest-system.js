@@ -126,7 +126,7 @@
 
   function placeVisual(coin,visual){
    if(coin.visual)coin.anchor.remove(coin.visual);
-   coin.visual=visual;coin.anchor.add(visual);visual.visible=!coin.collected;
+   coin.visual=visual;coin.anchor.add(visual);visual.visible=controller.phase==="active"&&!coin.collected;
   }
   for(let index=0;index<config.count;index++){
    const position=config.positions[index],anchor=new THREE.Group();
@@ -148,12 +148,13 @@
   }
   function renderHud(){
    if(!hud)return;const state=controller.snapshot(),seconds=Math.max(0,state.remainingMs/1000);
+   hud.hidden=state.phase==="idle";
    titleNode.textContent=config.title;timerNode.textContent=`${seconds.toFixed(seconds<10?1:0)}s`;
    progressNode.textContent=`${state.collectedCount} / ${state.count} coins`;
    hud.dataset.phase=state.phase;retryButton.hidden=state.phase!=="failed";
    statusNode.textContent=state.phase==="success"?`Mission complete  +$${config.reward}`:state.phase==="failed"?"Time expired":"";
   }
-  function syncCoinVisibility(){for(const coin of coins){coin.collected=controller.collected[coin.index];coin.visual.visible=!coin.collected}}
+  function syncCoinVisibility(){for(const coin of coins){coin.collected=controller.collected[coin.index];coin.visual.visible=controller.phase==="active"&&!coin.collected}}
   function start(at){const state=controller.start(at);syncCoinVisibility();renderHud();return state}
   function retry(at){const state=controller.retry(at);syncCoinVisibility();renderHud();return state}
   function collect(index,at){const didCollect=controller.collect(index,at);if(didCollect){coins[index].collected=true;coins[index].visual.visible=false;renderHud()}return didCollect}
@@ -170,7 +171,7 @@
      const dy=(finite(player.y,coin.baseY)-coin.baseY)*.35;
      if(dx*dx+dy*dy+dz*dz<=config.collectRadius*config.collectRadius)collect(coin.index,at);
     }
-    controller.update(at);renderHud();
+    controller.update(at);if(controller.phase!=="active")syncCoinVisibility();renderHud();
    }
    return controller.snapshot();
   }
@@ -188,17 +189,29 @@
    if(!options.loader||typeof options.loader.load!=="function")return Promise.resolve({status:"fallback",reason:"loader-unavailable"});
    assetStatus="loading";
    return new Promise(resolve=>options.loader.load(assetUrl,gltf=>{
-    if(destroyed)return resolve({status:"discarded"});
+    const loadedScene=gltf.scene||gltf.scenes&&gltf.scenes[0];
+    if(destroyed){disposeObjectResources(loadedScene);return resolve({status:"discarded"})}
     try{
-     prototype=normalizePrototype((gltf.scene||gltf.scenes&&gltf.scenes[0]).clone(true));
+     prototype=normalizePrototype(loadedScene.clone(true));
      for(const coin of coins)placeVisual(coin,prototype.clone(true));
      assetStatus="ready";loadedAssetIds.push("quaternius-platformer-coin");syncCoinVisibility();resolve({status:"ready",url:assetUrl});
     }catch(error){assetStatus="fallback";resolve({status:"fallback",error});}
    },undefined,error=>{assetStatus="fallback";resolve({status:"fallback",error});}));
   }
   const assetReady=loadAsset();renderHud();
+  function disposeMaterial(material){
+   if(!material)return;for(const value of Object.values(material))if(value&&value.isTexture)value.dispose();material.dispose();
+  }
+  function disposeObjectResources(object){
+   if(!object||typeof object.traverse!=="function")return;
+   const geometries=new Set(),materials=new Set();object.traverse(child=>{
+    if(child.geometry)geometries.add(child.geometry);
+    const list=Array.isArray(child.material)?child.material:[child.material];for(const material of list)if(material)materials.add(material);
+   });
+   geometries.forEach(geometry=>geometry.dispose());materials.forEach(disposeMaterial);
+  }
   function debugSnapshot(){
-   const visible=coins.reduce((sum,coin)=>sum+(coin.collected?0:1),0);
+   const visible=coins.reduce((sum,coin)=>sum+(coin.visual.visible?1:0),0);
    return Object.assign(controller.snapshot(),{
     assetStatus,assetUrl,loadedAssetIds:loadedAssetIds.slice(),coinPositions:coins.map(coin=>({x:coin.anchor.position.x,y:coin.anchor.position.y,z:coin.anchor.position.z,collected:coin.collected})),
     budget:{assetBytes:20862,prototypeLoads:assetStatus==="ready"?1:0,prototypeMeshCount,visibleCoinDrawEstimate:prototypeMeshCount*visible},
@@ -206,9 +219,11 @@
    });
   }
   function destroy(){
-   destroyed=true;scene.remove(group);if(hud)hud.remove();fallbackGeometry.dispose();fallbackInsetGeometry.dispose();fallbackMaterial.dispose();
+   if(destroyed)return;destroyed=true;scene.remove(group);if(hud)hud.remove();
+   if(assetStatus==="ready")disposeObjectResources(prototype);
+   fallbackGeometry.dispose();fallbackInsetGeometry.dispose();fallbackMaterial.dispose();
   }
-  return {config,group,coins,controller,assetReady,start,retry,collect,update,destroy,subscribe:listener=>controller.subscribe(listener),debugSnapshot,debugCollect:(index,at)=>collect(index,at),debugFail:(reason,at)=>{const result=controller.fail(reason,at);renderHud();return result},hud};
+  return {config,group,coins,controller,assetReady,start,retry,collect,update,destroy,subscribe:listener=>controller.subscribe(listener),debugSnapshot,debugCollect:(index,at)=>collect(index,at),debugFail:(reason,at)=>{const result=controller.fail(reason,at);syncCoinVisibility();renderHud();return result},hud};
  }
 
  return {DEFAULT_CONFIG,normalizeConfig,CoinQuestController,createCoinQuestSystem};
