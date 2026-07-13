@@ -149,7 +149,7 @@ function resizeCharacterPreview(){
 }
 new ResizeObserver(resizeCharacterPreview).observe(previewHost);resizeCharacterPreview();
 previewScene.add(new THREE.HemisphereLight(0xffffff,0x777777,2.5));
-const previewAvatar=new THREE.Group();previewScene.add(previewAvatar);
+const previewAvatar=new THREE.Group();previewScene.add(previewAvatar);window.avatarPreviewRoot=previewAvatar;
 function previewBox(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(x,y,z);previewAvatar.add(m);return m}
 const pvHead=previewBox(.9,.9,.9,0xf2bb91,0,2.2,0),pvShirt=previewBox(1.05,1.05,.65,0xb77cff,0,1.25,0);
 const pvArm1=previewBox(.28,.95,.32,0xf2bb91,-.72,1.3,0),pvArm2=previewBox(.28,.95,.32,0xf2bb91,.72,1.3,0);
@@ -345,4 +345,4 @@ function saveWorld(){saved.furniture=furniture.filter(x=>x.userData.kind!=="remo
  x:x.position.x,
  z:x.position.z,
  rotation:x.rotation.y
-}));localStorage.setItem("my3DWorld",JSON.stringify(saved))}
+}));localStorage.setItem("my3DWorld",JSON.stringify(saved));window.customHumanoidCharacter?.applyCustomization(saved)}

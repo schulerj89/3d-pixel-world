@@ -440,7 +440,7 @@ function person(shirt){
  box(.055,.055,.05,0x9b3f55,.13,1.88,.39,g);
  S.add(g);return g
 }
-let P=person(0xb77cff);P.position.set(-1,0,2);
+let P=person(0xb77cff);P.position.set(-1,0,2);window.playerAvatarRoot=P;
 // Find the player's colored body parts so the avatar shop can change them.
 const playerMeshes=P.children;
 const playerHead=playerMeshes[0];
@@ -1030,7 +1030,9 @@ const canMove=currentPlace==="bakery"?canWalkAt(nextX,nextZ):
  currentPlace==="forest"?Boolean(forestWorld&&forestWorld.canWalk(nextX,nextZ)):
  currentPlace==="castle"?canWalkInCastle(nextX,nextZ):true;
 if(canMove){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
-syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);updateCastleFloorPresentation();
+syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);
+window.customHumanoidCharacter?.update(dt,playerMoved,Math.hypot(vx,vz));
+updateCastleFloorPresentation();
 // Sink the avatar slightly while wading and expose the state for future splash
 // effects. Deep water remains traversable but never lets the avatar leave bounds.
 window.houseWorldApi?.update?.(dt);
