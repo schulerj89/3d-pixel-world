@@ -996,7 +996,7 @@ if(perfOverlay){perfOverlay.style.cssText="position:fixed;right:8px;bottom:8px;z
 let walkStrength=0;
 function updatePlayerWalkAnimation(isMoving,dt){
  const easing=1-Math.exp(-dt*14);
- const groundY=currentPlace==="castle"?castleElevationAt(P.position.x,P.position.z,P.position.y):0;
+ const groundY=currentPlace==="castle"?castleElevationAt(P.position.x,P.position.z,P.position.y):currentPlace==="city"?(cityWorld?.surfaceYAt(P.position.x,P.position.z)??0):0;
  const seated=Boolean(window.isPlayerSeated?.());
  if(seated){
   walkStrength=THREE.MathUtils.lerp(walkStrength,0,easing);
@@ -1044,6 +1044,7 @@ const canMove=currentPlace==="bakery"?canWalkAt(nextX,nextZ):
 if(canMove){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
 syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);
 window.customHumanoidCharacter?.update(dt,playerMoved,Math.hypot(vx,vz));
+window.RestaurantWorld?.current?.update?.(dt,currentPlace==="restaurant"?P.position:null);
 updateCastleFloorPresentation();
 // Sink the avatar slightly while wading and expose the state for future splash
 // effects. Deep water remains traversable but never lets the avatar leave bounds.
@@ -1057,7 +1058,7 @@ if(currentPlace==="beach"){
  P.userData.wading=wadeDepth>0;
  P.position.y-=wadeDepth*.18;
 }else P.userData.wading=false;
-const desiredCameraFar=currentPlace==="city"?220:100;if(C.far!==desiredCameraFar){C.far=desiredCameraFar;C.updateProjectionMatrix()}
+const desiredCameraFar=currentPlace==="city"?280:100;if(C.far!==desiredCameraFar){C.far=desiredCameraFar;C.updateProjectionMatrix()}
 updateCamera();updateHeldItem();updateIngredientGrab();updateStoveButton();customers.forEach((q,i)=>{let u=q.userData,targetX,targetZ;
 // Everyone stands in one straight line at the same x position
 if(u.stage===0){targetX=3.8;targetZ=-1.8+i*1.15}

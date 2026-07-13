@@ -326,7 +326,7 @@ async function showSpace(){
  document.getElementById("orders").style.display="none";document.getElementById("recipePanel").style.display="none";document.getElementById("roomTeleport").style.display="none";
  const poseId=new URLSearchParams(location.search).get("spacePose")||"spawn",pose=world.debugPoses?.[poseId]||{...world.spawn,...world.camera};
  roomName.style.display="block";roomName.textContent=world.name;
- P.position.set(pose.x,0,pose.z);P.rotation.y=Math.PI;P.visible=pose.hidePlayer!==true;
+ P.position.set(pose.x,world.surfaceYAt?.(pose.x,pose.z)??0,pose.z);P.rotation.y=Math.PI;P.visible=pose.hidePlayer!==true;
  cameraAngle=pose.angle;cameraHeight=pose.height;cameraDistance=pose.distance;updateCamera();
  document.body.dataset.spacePose=poseId;document.body.dataset.spaceAssetStatus=world.group.userData.assets.status;document.body.dataset.spaceAliens=String(world.group.userData.npcs.aliens);document.body.dataset.spaceOtherNpcs=String(world.group.userData.npcs.nonAliens);
  document.body.dataset.spaceAlienGrounded=String(world.group.userData.npcs.grounded);document.body.dataset.spaceAlienAnimations=world.group.userData.npcs.idleAnimations.join(",");document.body.dataset.spaceAlienModels=world.group.userData.npcs.alienModels.join(",");

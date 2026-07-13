@@ -1,4 +1,4 @@
-// Data-driven 98x98 city built from KayKit: City Builder Bits.
+// Data-driven 126x126 city built from KayKit: City Builder Bits.
 (function(root,factory){
  const parser=root?.levelTemplateParser||(typeof module!=="undefined"&&module.exports?require("./level-template-parser.js"):null);
  const cars=root?.CityCarSystem||(typeof module!=="undefined"&&module.exports?require("./city-car-system.js").CityCarSystem:null);
@@ -8,9 +8,11 @@
 })(typeof globalThis!=="undefined"?globalThis:this,function(levelParser,CityCarSystem){
  "use strict";
  const BUILD_VERSION="__BUILD_VERSION__";
- const LEVEL_URL=`levels/city-98.txt?v=${BUILD_VERSION}`;
+ const LEVEL_URL=`levels/city-126.txt?v=${BUILD_VERSION}`;
  const ASSET_ROOT="assets/models/city-builder-bits/";
- const MIN_SPACING=2,PLAYER_RADIUS=.36,BUILDING_SCALE=4,ROAD_SCALE=3.5,PROP_SCALE=4,CAR_SCALE=8;
+ const SIDEWALK_TEXTURE_URL=`assets/textures/city/patterned-paving-diffuse-1k.jpg?v=${BUILD_VERSION}`;
+ const MIN_SPACING=2,PLAYER_RADIUS=.36,BUILDING_SCALE=4,ROAD_SCALE=4.5,PROP_SCALE=4,CAR_SCALE=8;
+ const ROAD_BASE_Y=.01,ROAD_SURFACE_Y=ROAD_BASE_Y+.1*ROAD_SCALE,CURB_HEIGHT=.12,SIDEWALK_SURFACE_Y=ROAD_SURFACE_Y+CURB_HEIGHT,CAR_WHEEL_OFFSET=.49,CAR_LANE_Y=ROAD_SURFACE_Y+CAR_WHEEL_OFFSET;
  const BUILDINGS=Object.freeze({
   A:{assetId:"city.building.a",file:"building_A",footprint:[8,8],size:[8,6.6,8],color:0xd86d5b},
   B:{assetId:"city.building.b",file:"building_B",footprint:[8,8],size:[8,6.6,8],color:0xe1aa58},
@@ -38,12 +40,14 @@
   validateSpacing(level);validateRoads(level);return level;
  }
  function cellCenter(level,col,row){return{x:-level.width/2+(col+.5)*level.cell,z:-level.depth/2+(row+.5)*level.cell}}
+ function symbolAtWorld(level,x,z){const col=Math.floor((x+level.width/2)/level.cell),row=Math.floor((z+level.depth/2)/level.cell);return level.map[row]?.[col]}
+ function surfaceYAt(level,x,z){return ROAD_SYMBOLS.has(symbolAtWorld(level,x,z))?ROAD_SURFACE_Y:SIDEWALK_SURFACE_Y}
  function buildingPlacements(level){
   const placements=[];level.map.forEach((line,row)=>[...line].forEach((symbol,col)=>{const spec=BUILDINGS[symbol];if(spec)placements.push({symbol,col,row,...cellCenter(level,col,row),spec,rotation:row===0?0:Math.PI})}));return placements;
  }
  function footprintDistance(a,b){const dx=Math.max(0,Math.abs(a.x-b.x)-(a.spec.footprint[0]+b.spec.footprint[0])/2),dz=Math.max(0,Math.abs(a.z-b.z)-(a.spec.footprint[1]+b.spec.footprint[1])/2);return Math.hypot(dx,dz)}
  function spacingReport(level){const placements=buildingPlacements(level);let minimum=Infinity,pair=null;for(let i=0;i<placements.length;i++)for(let j=i+1;j<placements.length;j++){const distance=footprintDistance(placements[i],placements[j]);if(distance<minimum){minimum=distance;pair=[placements[i],placements[j]]}}return{minimum:Number.isFinite(minimum)?minimum:Infinity,pair,count:placements.length,cell:level.cell}}
- function validateSpacing(level){const report=spacingReport(level);if(level.cell<7)throw new Error(`City cell size ${level.cell} is too tight for the enlarged city kit; use at least 7 world units`);if(report.minimum+1e-6<MIN_SPACING){const[a,b]=report.pair;throw new Error(`City buildings ${a.symbol}@${a.col},${a.row} and ${b.symbol}@${b.col},${b.row} are only ${report.minimum.toFixed(2)} units apart`)}return report}
+ function validateSpacing(level){const report=spacingReport(level);if(level.cell<9)throw new Error(`City cell size ${level.cell} is too tight for two full car lanes; use at least 9 world units`);if(report.minimum+1e-6<MIN_SPACING){const[a,b]=report.pair;throw new Error(`City buildings ${a.symbol}@${a.col},${a.row} and ${b.symbol}@${b.col},${b.row} are only ${report.minimum.toFixed(2)} units apart`)}return report}
  function validateRoads(level){
   const symbolAt=(col,row)=>level.map[row]?.[col];let junctions=0,roadTiles=0;
   level.map.forEach((line,row)=>[...line].forEach((symbol,col)=>{if(!ROAD_SYMBOLS.has(symbol))return;roadTiles++;if(symbol==="+"){junctions++;if(!ROAD_SYMBOLS.has(symbolAt(col-1,row))||!ROAD_SYMBOLS.has(symbolAt(col+1,row))||!ROAD_SYMBOLS.has(symbolAt(col,row-1))||!ROAD_SYMBOLS.has(symbolAt(col,row+1)))throw new Error(`City junction at ${col},${row} is not connected on all four sides`)}}));
@@ -51,6 +55,7 @@
  }
  function loadLevel(fetchImpl=globalThis.fetch){if(typeof fetchImpl!=="function")return Promise.reject(new Error("City layout requires fetch"));return fetchImpl(LEVEL_URL).then(response=>{if(!response.ok)throw new Error(`City level request failed (${response.status})`);return response.text()}).then(parseLevel)}
  function loadGLTF(loader,url){return new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject))}
+ function loadSidewalkTexture(THREE){return new Promise(resolve=>{if(!THREE?.TextureLoader)return resolve({texture:null,error:"City sidewalk texture loader is unavailable"});new THREE.TextureLoader().load(SIDEWALK_TEXTURE_URL,texture=>{texture.wrapS=texture.wrapT=THREE.RepeatWrapping;if("colorSpace" in texture&&THREE.SRGBColorSpace)texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=4;resolve({texture,error:null})},undefined,error=>resolve({texture:null,error:`patterned-paving: ${error?.message||error}`}) )})}
  async function loadAssets(Loader=globalThis.ThreeGLTFLoader?.GLTFLoader){
   if(!Loader)return{prototypes:new Map(),loadedAssetIds:[],errors:["City GLTF loader is unavailable"],texture:null};
   const loader=new Loader(),prototypes=new Map(),errors=[];
@@ -60,43 +65,57 @@
  }
  function placeholder(THREE,size,color){const geometry=new THREE.BoxGeometry(...size),material=new THREE.MeshLambertMaterial({color}),mesh=new THREE.Mesh(geometry,material);mesh.position.y=size[1]/2;mesh.userData.placeholder=true;return mesh}
  function cloneAsset(THREE,assets,file,scale,fallbackSize,fallbackColor){const prototype=assets.prototypes.get(file),object=prototype?prototype.clone(true):placeholder(THREE,fallbackSize,fallbackColor);if(prototype)object.scale.setScalar(scale);object.userData.placeholder=!prototype;object.userData.sourceFile=file;object.traverse(child=>{if(child.isMesh){child.castShadow=false;child.receiveShadow=false}});return object}
+ function instancedAsset(THREE,assets,file,placements,scale,fallbackSize,fallbackColor){let source=null;assets.prototypes.get(file)?.traverse(object=>{if(!source&&object.isMesh)source=object});const geometry=source?.geometry||new THREE.BoxGeometry(...fallbackSize),material=source?.material||new THREE.MeshLambertMaterial({color:fallbackColor}),mesh=new THREE.InstancedMesh(geometry,material,placements.length),matrix=new THREE.Matrix4(),position=new THREE.Vector3(),quaternion=new THREE.Quaternion(),scaleVector=new THREE.Vector3(scale,scale,scale);placements.forEach((placement,index)=>{position.set(placement.x,placement.y,placement.z);quaternion.setFromAxisAngle(new THREE.Vector3(0,1,0),placement.rotation);matrix.compose(position,quaternion,scaleVector);mesh.setMatrixAt(index,matrix)});mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingBox();mesh.computeBoundingSphere();mesh.castShadow=mesh.receiveShadow=false;mesh.userData={assetId:`city.${file.replaceAll("_","-")}`,sourceFile:file,placeholder:!source,instances:placements.length};return mesh}
  function disposeResources(root){const geometries=new Set(),materials=new Set(),textures=new Set();root?.traverse(object=>{if(object.geometry)geometries.add(object.geometry);const list=Array.isArray(object.material)?object.material:[object.material];list.filter(Boolean).forEach(material=>{materials.add(material);Object.values(material).forEach(value=>{if(value?.isTexture)textures.add(value)})})});textures.forEach(texture=>texture.dispose?.());materials.forEach(material=>material.dispose?.());geometries.forEach(geometry=>geometry.dispose?.());return{geometries:geometries.size,materials:materials.size,textures:textures.size}}
+ function addQuad(data,vertices,normal,uvs){const base=data.positions.length/3;vertices.forEach(vertex=>data.positions.push(...vertex));for(let i=0;i<4;i++)data.normals.push(...normal);data.uvs.push(...uvs);data.indices.push(base,base+1,base+2,base,base+2,base+3)}
+ function sidewalkGeometryData(level){
+  const top={positions:[],normals:[],uvs:[],indices:[]},curb={positions:[],normals:[],uvs:[],indices:[]},textureWorldSize=3.2,repeat=level.cell/textureWorldSize,isRoad=(col,row)=>ROAD_SYMBOLS.has(level.map[row]?.[col]);let tiles=0,curbFaces=0;
+  level.map.forEach((line,row)=>[...line].forEach((symbol,col)=>{if(ROAD_SYMBOLS.has(symbol))return;tiles++;const center=cellCenter(level,col,row),x0=center.x-level.cell/2,x1=center.x+level.cell/2,z0=center.z-level.cell/2,z1=center.z+level.cell/2,b=ROAD_SURFACE_Y,t=SIDEWALK_SURFACE_Y;
+   addQuad(top,[[x0,t,z0],[x0,t,z1],[x1,t,z1],[x1,t,z0]],[0,1,0],[x0/textureWorldSize,z0/textureWorldSize,x0/textureWorldSize,z1/textureWorldSize,x1/textureWorldSize,z1/textureWorldSize,x1/textureWorldSize,z0/textureWorldSize]);
+   if(isRoad(col-1,row)){addQuad(curb,[[x0,b,z0],[x0,b,z1],[x0,t,z1],[x0,t,z0]],[-1,0,0],[0,0,repeat,0,repeat,1,0,1]);curbFaces++}
+   if(isRoad(col+1,row)){addQuad(curb,[[x1,b,z1],[x1,b,z0],[x1,t,z0],[x1,t,z1]],[1,0,0],[0,0,repeat,0,repeat,1,0,1]);curbFaces++}
+   if(isRoad(col,row-1)){addQuad(curb,[[x1,b,z0],[x0,b,z0],[x0,t,z0],[x1,t,z0]],[0,0,-1],[0,0,repeat,0,repeat,1,0,1]);curbFaces++}
+   if(isRoad(col,row+1)){addQuad(curb,[[x0,b,z1],[x1,b,z1],[x1,t,z1],[x0,t,z1]],[0,0,1],[0,0,repeat,0,repeat,1,0,1]);curbFaces++}
+  }));return{top,curb,tiles,curbFaces};
+ }
+ function makeGeometry(THREE,data){const geometry=new THREE.BufferGeometry();geometry.setAttribute("position",new THREE.Float32BufferAttribute(data.positions,3));geometry.setAttribute("normal",new THREE.Float32BufferAttribute(data.normals,3));geometry.setAttribute("uv",new THREE.Float32BufferAttribute(data.uvs,2));geometry.setIndex(data.indices);geometry.computeBoundingBox();geometry.computeBoundingSphere();return geometry}
  function roadLanes(level){
   const half=level.width/2,rows=[],cols=[];level.map.forEach((line,row)=>{if(line.includes("-"))rows.push(row)});for(let col=0;col<level.map[0].length;col++)if(level.map.some(line=>line[col]==="|"))cols.push(col);
-  const lanes=[];rows.forEach((row,index)=>{const z=cellCenter(level,0,row).z+(index%2?1.1:-1.1),forward=index%2===0;lanes.push({id:`east-west-${row}`,start:{x:forward?-half:half,z},end:{x:forward?half:-half,z},speedMin:8,speedMax:12,fadeDistance:12.6})});
-  cols.forEach((col,index)=>{const x=cellCenter(level,col,0).x+(index%2?1.1:-1.1),forward=index%2===0;lanes.push({id:`north-south-${col}`,start:{x,z:forward?-half:half},end:{x,z:forward?half:-half},speedMin:8,speedMax:12,fadeDistance:12.6})});return lanes;
+  const lanes=[],offset=2.1,settings={y:CAR_LANE_Y,speedMin:8,speedMax:12,fadeDistance:16};rows.forEach(row=>{const z=cellCenter(level,0,row).z;lanes.push({id:`east-west-${row}-east`,start:{x:-half,z:z-offset},end:{x:half,z:z-offset},...settings},{id:`east-west-${row}-west`,start:{x:half,z:z+offset},end:{x:-half,z:z+offset},...settings})});
+  cols.forEach(col=>{const x=cellCenter(level,col,0).x;lanes.push({id:`north-south-${col}-north`,start:{x:x+offset,z:half},end:{x:x+offset,z:-half},...settings},{id:`north-south-${col}-south`,start:{x:x-offset,z:-half},end:{x:x-offset,z:half},...settings})});return lanes;
  }
  function create(THREE){
   const group=new THREE.Group();group.name="city-world";group.userData={destination:"city",layout:{url:LEVEL_URL,status:"loading"},assets:{source:"KayKit: City Builder Bits",license:"CC0-1.0",status:"loading",loadedAssetIds:[],errors:[]}};
   const collisionBoxes=[];let disposed=false,level=null,spacing=null,roads=null,traffic=null;
   const debugPoses=Object.freeze({
-   spawn:{x:3.5,z:45.5,angle:.24,height:16.8,distance:25.2},overview:{x:0,z:0,angle:.4,height:67.2,distance:78.4,hidePlayer:true},
-   buildingsNorth:{x:-10.5,z:-39.9,angle:0,height:9.8,distance:16.8},buildingsCenter:{x:-45.5,z:-23.8,angle:Math.PI,height:9.8,distance:16.8},buildingsSouth:{x:-45.5,z:11.2,angle:Math.PI,height:9.8,distance:16.8},
-   buildingA:{x:-45.5,z:-39.9,angle:0,height:9.8,distance:16.8},buildingB:{x:-10.5,z:-39.9,angle:0,height:9.8,distance:16.8},buildingC:{x:24.5,z:-39.9,angle:0,height:9.8,distance:16.8},
-   buildingD:{x:-45.5,z:-23.8,angle:Math.PI,height:9.8,distance:16.8},buildingE:{x:-17.5,z:-23.8,angle:Math.PI,height:9.8,distance:16.8},buildingF:{x:10.5,z:-23.8,angle:Math.PI,height:9.8,distance:16.8},
-   buildingG:{x:-45.5,z:11.2,angle:Math.PI,height:9.8,distance:16.8},buildingH:{x:-17.5,z:11.2,angle:Math.PI,height:9.8,distance:16.8},
-   trafficLights:{x:3.5,z:10.5,angle:0,height:7.7,distance:12.6},carsEast:{x:0,z:44.1,angle:0,height:8.4,distance:16.8},carsNorth:{x:44.1,z:0,angle:Math.PI/2,height:8.4,distance:16.8}
+   spawn:{x:4.5,z:58.5,angle:.24,height:21.6,distance:32.4},overview:{x:0,z:0,angle:.4,height:86.4,distance:100.8,hidePlayer:true},
+   buildingsNorth:{x:-13.5,z:-51.3,angle:0,height:12.6,distance:21.6},buildingsCenter:{x:-58.5,z:-30.6,angle:Math.PI,height:12.6,distance:21.6},buildingsSouth:{x:-58.5,z:14.4,angle:Math.PI,height:12.6,distance:21.6},
+   buildingA:{x:-58.5,z:-51.3,angle:0,height:12.6,distance:21.6},buildingB:{x:-13.5,z:-51.3,angle:0,height:12.6,distance:21.6},buildingC:{x:31.5,z:-51.3,angle:0,height:12.6,distance:21.6},
+   buildingD:{x:-58.5,z:-30.6,angle:Math.PI,height:12.6,distance:21.6},buildingE:{x:-22.5,z:-30.6,angle:Math.PI,height:12.6,distance:21.6},buildingF:{x:13.5,z:-30.6,angle:Math.PI,height:12.6,distance:21.6},
+   buildingG:{x:-58.5,z:14.4,angle:Math.PI,height:12.6,distance:21.6},buildingH:{x:-22.5,z:14.4,angle:Math.PI,height:12.6,distance:21.6},
+   trafficLights:{x:4.5,z:13.5,angle:0,height:9.9,distance:16.2},roadGrounding:{x:4.5,z:49.5,angle:0,height:5.5,distance:10.5},sidewalkGrounding:{x:13.5,z:58.5,angle:Math.PI/2,height:5.5,distance:10.5},carsEast:{x:0,z:56.7,angle:0,height:10.8,distance:21.6},carsNorth:{x:56.7,z:0,angle:Math.PI/2,height:10.8,distance:21.6}
   });
-  const world={group,bounds:{minX:-48.6,maxX:48.6,minZ:-48.6,maxZ:48.6},spawn:{x:3.5,z:45.5},camera:{angle:.24,height:16.8,distance:25.2},debugPoses,background:0xb8def0,name:"Chibi City",
+  const world={group,bounds:{minX:-62.6,maxX:62.6,minZ:-62.6,maxZ:62.6},spawn:{x:4.5,z:58.5},camera:{angle:.24,height:21.6,distance:32.4},debugPoses,background:0xb8def0,name:"Chibi City",
    canWalk(x,z){if(x<world.bounds.minX||x>world.bounds.maxX||z<world.bounds.minZ||z>world.bounds.maxZ)return false;return!collisionBoxes.some(box=>Math.abs(x-box.x)<box.halfX+PLAYER_RADIUS&&Math.abs(z-box.z)<box.halfZ+PLAYER_RADIUS)},
+   surfaceYAt(x,z){return level?surfaceYAt(level,x,z):ROAD_SURFACE_Y},
    update(dt,player){traffic?.update(dt,player)},
    prepareDebugPose(poseId){if(poseId==="carsEast")return traffic?.debugFormation("east-west-")||false;if(poseId==="carsNorth")return traffic?.debugFormation("north-south-")||false;return false},
-   debug(){return{layout:group.userData.layout,assets:group.userData.assets,buildings:collisionBoxes.length,minimumSpacing:spacing?.minimum??null,roads,traffic:traffic?.metrics()||null,scale:{building:BUILDING_SCALE,road:ROAD_SCALE,prop:PROP_SCALE,car:CAR_SCALE},carToChibiHeightRatio:+((.45*CAR_SCALE)/3).toFixed(2),poses:Object.keys(debugPoses)}},
+   debug(){return{layout:group.userData.layout,assets:group.userData.assets,buildings:collisionBoxes.length,minimumSpacing:spacing?.minimum??null,roads,traffic:traffic?.metrics()||null,surfaces:{road:ROAD_SURFACE_Y,sidewalk:SIDEWALK_SURFACE_Y,carRoot:CAR_LANE_Y},scale:{building:BUILDING_SCALE,road:ROAD_SCALE,prop:PROP_SCALE,car:CAR_SCALE},carToChibiHeightRatio:+((.45*CAR_SCALE)/3).toFixed(2),poses:Object.keys(debugPoses)}},
    dispose(){disposed=true;traffic?.destroy();group.parent?.remove(group);disposeResources(group)}
   };
-  world.ready=Promise.all([loadLevel(),loadAssets()]).then(([loadedLevel,assets])=>{
+  world.ready=Promise.all([loadLevel(),loadAssets(),loadSidewalkTexture(THREE)]).then(([loadedLevel,assets,sidewalkTexture])=>{
    if(disposed)return world;level=loadedLevel;spacing=validateSpacing(level);roads=validateRoads(level);world.name=level.name||world.name;world.bounds={minX:-level.width/2+PLAYER_RADIUS,maxX:level.width/2-PLAYER_RADIUS,minZ:-level.depth/2+PLAYER_RADIUS,maxZ:level.depth/2-PLAYER_RADIUS};world.spawn=cellCenter(level,level.spawnCol,level.spawnRow);
-   const floorGeometry=new THREE.BoxGeometry(level.width,.1,level.depth),floorMaterial=new THREE.MeshBasicMaterial({color:0xc7c6bd}),floor=new THREE.Mesh(floorGeometry,floorMaterial);
-   floor.position.set(0,-.07,0);floor.frustumCulled=false;floor.receiveShadow=false;floor.userData={assetId:"city.sidewalk.base",layout:"single-mesh",width:level.width,depth:level.depth};group.add(floor);
-   for(const placement of buildingPlacements(level)){const object=cloneAsset(THREE,assets,placement.spec.file,BUILDING_SCALE,placement.spec.size,placement.spec.color);object.position.set(placement.x,0,placement.z);object.rotation.y=placement.rotation;object.name=placement.spec.assetId;object.userData.assetId=placement.spec.assetId;object.userData.level={symbol:placement.symbol,col:placement.col,row:placement.row,rotation:placement.rotation};group.add(object);collisionBoxes.push({x:placement.x,z:placement.z,halfX:placement.spec.footprint[0]/2,halfZ:placement.spec.footprint[1]/2,assetId:placement.spec.assetId})}
-   let junctionIndex=0,lightCount=0,streetlightCount=0;level.map.forEach((line,row)=>[...line].forEach((symbol,col)=>{if(!ROAD_SYMBOLS.has(symbol))return;const center=cellCenter(level,col,row),file=symbol==="+"?"road_junction":(symbol==="-"?"road_straight":"road_straight"),road=cloneAsset(THREE,assets,file,ROAD_SCALE,[level.cell,.12,level.cell],0x555b62);road.position.set(center.x,.01,center.z);road.rotation.y=symbol==="-"?Math.PI/2:0;road.name=`city-road-${col}-${row}`;road.userData.assetId=`city.road.${symbol==="+"?"junction":"straight"}`;group.add(road);
-    if(symbol==="+"){[[2.4,2.4,Math.PI],[-2.4,-2.4,0]].forEach(([dx,dz,rotation],corner)=>{const light=cloneAsset(THREE,assets,corner?"trafficlight_B":"trafficlight_C",PROP_SCALE,[.9,3.9,.7],0xf2b632);light.position.set(center.x+dx,.06,center.z+dz);light.rotation.y=rotation;light.name=`city-trafficlight-${junctionIndex}-${corner}`;light.userData.assetId="city.traffic-light";group.add(light);lightCount++});junctionIndex++}
-    else if((row+col)%4===0){const horizontal=symbol==="-",lamp=cloneAsset(THREE,assets,"streetlight",PROP_SCALE,[.9,3.9,.35],0x404852);lamp.position.set(center.x+(horizontal?0:2.5),.06,center.z+(horizontal?2.5:0));lamp.rotation.y=horizontal?Math.PI/2:0;lamp.name=`city-streetlight-${streetlightCount++}`;lamp.userData.assetId="city.street-light";group.add(lamp)}
-   }));
+   const sidewalkData=sidewalkGeometryData(level),sidewalkMaterial=new THREE.MeshLambertMaterial({color:sidewalkTexture.texture?0xffffff:0xb8b5ad,map:sidewalkTexture.texture||null}),curbMaterial=new THREE.MeshLambertMaterial({color:0x8c939a}),sidewalk=new THREE.Mesh(makeGeometry(THREE,sidewalkData.top),sidewalkMaterial),curbs=new THREE.Mesh(makeGeometry(THREE,sidewalkData.curb),curbMaterial);
+   sidewalk.name="city-patterned-sidewalk";sidewalk.frustumCulled=false;sidewalk.receiveShadow=false;sidewalk.userData={assetId:"polyhaven.patterned-paving.diffuse-1k",layout:"merged-cell-tops",tiles:sidewalkData.tiles};curbs.name="city-curbs";curbs.frustumCulled=false;curbs.receiveShadow=false;curbs.userData={assetId:"city.sidewalk.curbs",faces:sidewalkData.curbFaces};group.add(sidewalk,curbs);
+   for(const placement of buildingPlacements(level)){const object=cloneAsset(THREE,assets,placement.spec.file,BUILDING_SCALE,placement.spec.size,placement.spec.color);object.position.set(placement.x,SIDEWALK_SURFACE_Y,placement.z);object.rotation.y=placement.rotation;object.name=placement.spec.assetId;object.userData.assetId=placement.spec.assetId;object.userData.level={symbol:placement.symbol,col:placement.col,row:placement.row,rotation:placement.rotation};group.add(object);collisionBoxes.push({x:placement.x,z:placement.z,halfX:placement.spec.footprint[0]/2,halfZ:placement.spec.footprint[1]/2,assetId:placement.spec.assetId})}
+   const trafficPlacements={trafficlight_B:[],trafficlight_C:[]};let lightCount=0,streetlightCount=0;level.map.forEach((line,row)=>[...line].forEach((symbol,col)=>{if(!ROAD_SYMBOLS.has(symbol))return;const center=cellCenter(level,col,row),file=symbol==="+"?"road_junction":"road_straight",road=cloneAsset(THREE,assets,file,ROAD_SCALE,[level.cell,.1*ROAD_SCALE,level.cell],0x555b62);road.position.set(center.x,ROAD_BASE_Y,center.z);road.rotation.y=symbol==="-"?Math.PI/2:0;road.name=`city-road-${col}-${row}`;road.userData.assetId=`city.road.${symbol==="+"?"junction":"straight"}`;group.add(road);
+    if(symbol==="+"){[["trafficlight_C",3.1,3.1,Math.PI],["trafficlight_B",-3.1,-3.1,0],["trafficlight_C",-3.1,3.1,Math.PI/2],["trafficlight_B",3.1,-3.1,-Math.PI/2]].forEach(([lightFile,dx,dz,rotation])=>trafficPlacements[lightFile].push({x:center.x+dx,y:SIDEWALK_SURFACE_Y,z:center.z+dz,rotation}));lightCount+=4}
+    else if((row+col)%4===0){const horizontal=symbol==="-",lamp=cloneAsset(THREE,assets,"streetlight",PROP_SCALE,[.9,3.9,.35],0x404852);lamp.position.set(center.x+(horizontal?0:3.2),SIDEWALK_SURFACE_Y,center.z+(horizontal?3.2:0));lamp.rotation.y=horizontal?Math.PI/2:0;lamp.name=`city-streetlight-${streetlightCount++}`;lamp.userData.assetId="city.street-light";group.add(lamp)}
+   }));for(const file of ["trafficlight_B","trafficlight_C"]){const signals=instancedAsset(THREE,assets,file,trafficPlacements[file],PROP_SCALE,[.9,3.9,.7],0xf2b632);signals.name=`city-${file}-instances`;group.add(signals)}
    traffic=new CityCarSystem(THREE,{lanes:roadLanes(level),maxCars:4,minDelay:.8,maxDelay:1.7,carScale:CAR_SCALE});group.add(traffic.root);traffic.setEnabled(true);const carTemplates=CAR_FILES.map(file=>assets.prototypes.get(file)).filter(Boolean);if(carTemplates.length)traffic.installTemplates(carTemplates,CAR_SCALE);
-   group.userData.layout={url:LEVEL_URL,status:"ready",size:`${level.width}x${level.depth}`,cell:level.cell,minimumSpacing:spacing.minimum,roadTiles:roads.roadTiles,junctions:roads.junctions};group.userData.assets={source:"KayKit: City Builder Bits",license:"CC0-1.0",status:assets.errors.length?(assets.loadedAssetIds.length?"partial":"fallback"):"ready",loadedAssetIds:assets.loadedAssetIds,errors:assets.errors,trafficLights:lightCount,streetlights:streetlightCount};return world;
+   const assetErrors=[...assets.errors,...(sidewalkTexture.error?[sidewalkTexture.error]:[])],loadedAssetIds=[...assets.loadedAssetIds,...(sidewalkTexture.texture?["polyhaven.patterned-paving.diffuse-1k"]:[])];group.userData.layout={url:LEVEL_URL,status:"ready",size:`${level.width}x${level.depth}`,cell:level.cell,minimumSpacing:spacing.minimum,roadTiles:roads.roadTiles,junctions:roads.junctions,roadSurfaceY:ROAD_SURFACE_Y,sidewalkSurfaceY:SIDEWALK_SURFACE_Y,sidewalkTiles:sidewalkData.tiles};group.userData.assets={source:"KayKit: City Builder Bits + Poly Haven Patterned Paving",license:"CC0-1.0",status:assetErrors.length?(loadedAssetIds.length?"partial":"fallback"):"ready",loadedAssetIds,errors:assetErrors,trafficLights:lightCount,streetlights:streetlightCount};return world;
   }).catch(error=>{group.userData.layout.status="error";group.userData.layout.error=String(error?.message||error);throw error});
   return world;
  }
- return{LEVEL_URL,ASSET_ROOT,BUILDINGS,MODEL_FILES,CAR_FILES,MIN_SPACING,PLAYER_RADIUS,BUILDING_SCALE,ROAD_SCALE,PROP_SCALE,CAR_SCALE,parseLevel,cellCenter,buildingPlacements,footprintDistance,spacingReport,validateSpacing,validateRoads,roadLanes,loadLevel,loadAssets,disposeResources,create};
+ return{LEVEL_URL,ASSET_ROOT,SIDEWALK_TEXTURE_URL,BUILDINGS,MODEL_FILES,CAR_FILES,MIN_SPACING,PLAYER_RADIUS,BUILDING_SCALE,ROAD_SCALE,PROP_SCALE,CAR_SCALE,ROAD_BASE_Y,ROAD_SURFACE_Y,SIDEWALK_SURFACE_Y,CAR_LANE_Y,parseLevel,cellCenter,symbolAtWorld,surfaceYAt,buildingPlacements,footprintDistance,spacingReport,validateSpacing,validateRoads,sidewalkGeometryData,roadLanes,loadLevel,loadAssets,loadSidewalkTexture,disposeResources,create};
 });
