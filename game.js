@@ -605,8 +605,15 @@ let inKitchen=false;
 let money=100;
 let servedCount=0;
 const foods=["🧁 Cupcake","🍪 Cookies","🎂 Cake","🥐 Croissant","🍞 Sweet Bread","🍓 Strawberry Milkshake","🍫 Chocolate Milkshake"];
-function updateMoney(){document.getElementById("moneyValue").textContent="$"+money}
+function updateMoney(){document.getElementById("moneyValue").textContent="$"+money;document.body.dataset.money=String(money)}
 updateMoney();
+window.gameEconomy={
+ getBalance:()=>money,
+ add(amount,reason="reward"){
+  const value=Number(amount);if(!Number.isFinite(value))throw new Error("Economy rewards must be finite");
+  money+=value;updateMoney();document.body.dataset.lastMoneyReason=reason;return money;
+ }
+};
 function newOrders(){
  if(window.BakeryOrderTracker){window.BakeryOrderTracker.refresh();return}
  document.getElementById("order1").textContent=foods[Math.floor(Math.random()*foods.length)];
