@@ -28,6 +28,7 @@ assert(fs.existsSync(path.join(root,Space.ASSET_ROOT,"spacebits_texture.png")),"
 assert.strictEqual(new Set(Object.values(Space.ASSET_REGISTRY).map(spec=>spec.file)).size,26,"asset registry should reuse twenty-six source models");
 const source=read("space-world.js");
 for(const pose of ["overview","landing","roads","cargo","aliens"])assert(source.includes(`${pose}:{`),`missing named ${pose} screenshot pose`);
+assert(source.includes("depthWrite:false,depthTest:true"),"starfield must respect scene depth instead of rendering through the floor and props");
 
 const broken=read("levels/space-80.txt").replace("...L.....rr.....p...","...Lp....rr.........");
 assert.throws(()=>Space.parseLevel(broken),/only .* units apart/,"layout validation must reject props with less than two units of clearance");
