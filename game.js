@@ -1041,6 +1041,7 @@ updateCastleFloorPresentation();
 // effects. Deep water remains traversable but never lets the avatar leave bounds.
 window.houseWorldApi?.update?.(dt);
 window.beachTownApi?.update?.(dt,currentPlace==="beach",C);
+spaceWorld?.update?.(dt,currentPlace==="space");
 if(currentPlace==="beach"){
  const wadeDepth=THREE.MathUtils.clamp((BEACH_CONFIG.waterEdgeZ-P.position.z)/5,0,1);
  P.userData.wading=wadeDepth>0;
@@ -1062,7 +1063,7 @@ addEventListener('resize',()=>{C.aspect=innerWidth/innerHeight;C.updateProjectio
 // Keep the bakery and house as two separate places.
 const bakeryObjects=S.children.filter(obj=>obj!==P && obj!==C && !obj.isLight);
 const house=new THREE.Group();house.visible=false;S.add(house);
-let spaceWorld=null;
+var spaceWorld=null;
 function ensureSpaceWorld(){
  if(!spaceWorld){
   const factory=window.worldFactories&&window.worldFactories.space;
