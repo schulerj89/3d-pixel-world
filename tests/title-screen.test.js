@@ -17,11 +17,12 @@ for(const asset of ["title-screen.css","title-screen.js"]){
 }
 assert(css.includes("orientation:landscape")&&css.includes("max-height:540px"),"title CSS needs a compact landscape layout");
 assert(css.includes("height:100dvh"),"title must follow the dynamic mobile viewport height");
-assert(css.includes("grid-template-columns:minmax(0,1.16fr) minmax(200px,.84fr)"),"compact landscape columns must be allowed to shrink inside iPhone safe areas");
-assert(css.includes("flex-wrap:nowrap;font-size:clamp(42px,7.5vw,70px)"),"compact landscape title must stay on one readable line");
-assert(css.includes("min-height:50px"),"compact landscape Start Game control must retain a generous touch target");
+assert(css.includes("grid-template-columns:minmax(0,1fr) minmax(180px,.64fr)"),"compact landscape must reserve more breathing room for the title than the character");
+assert(css.includes(".titleKicker,.titleWelcome{display:none}"),"compact landscape must remove secondary title copy");
+assert(css.includes("flex-wrap:nowrap;font-size:clamp(34px,5vw,52px)"),"compact landscape title must stay restrained and readable on one line");
+assert(css.includes("min-height:46px"),"compact landscape Start Game control must retain a touch target without dominating the screen");
 assert(css.includes("env(safe-area-inset-top)")&&css.includes("env(safe-area-inset-bottom)"),"compact landscape layout must respect every safe-area edge");
-assert(css.includes("#titleCharacterPreview{inset:4% 0 2%}"),"compact landscape chibi must sit lower over its pedestal");
+assert(css.includes("width:min(100%,330px)"),"compact landscape chibi stage must not consume the full right column");
 assert(css.includes("overflow:hidden"),"title must not scroll on short landscape screens");
 assert(script.includes("anim_iddle"),"title chibi must play the authored idle animation");
 assert(script.includes("styloo-chibi-student.glb?v=__BUILD_VERSION__"),"title model must use the cache-busted Styloo asset");
