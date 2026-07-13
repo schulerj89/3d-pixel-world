@@ -12,8 +12,8 @@
  const ASSET_ROOT="assets/models/city-builder-bits/";
  const SIDEWALK_TEXTURE_URL=`assets/textures/city/patterned-paving-diffuse-1k.jpg?v=${BUILD_VERSION}`;
  const CITY_SKY_TEXTURE_URL=`assets/textures/city/kloofendal-48d-partly-cloudy-puresky-1k.jpg?v=${BUILD_VERSION}`;
- const MIN_SPACING=2,PLAYER_RADIUS=.36,BUILDING_SCALE=4,ROAD_SCALE=4.5,PROP_SCALE=4,CAR_SCALE=8;
- const ROAD_BASE_Y=.01,ROAD_SURFACE_Y=ROAD_BASE_Y+.1*ROAD_SCALE,CURB_HEIGHT=.12,SIDEWALK_SURFACE_Y=ROAD_SURFACE_Y+CURB_HEIGHT,CAR_WHEEL_OFFSET=.49,CAR_LANE_Y=ROAD_SURFACE_Y+CAR_WHEEL_OFFSET;
+ const MIN_SPACING=2,PLAYER_RADIUS=.36,BUILDING_SCALE=4,ROAD_SCALE=4.5,PROP_SCALE=4,CAR_SCALE=7;
+ const ROAD_BASE_Y=.01,ROAD_SURFACE_Y=ROAD_BASE_Y+.1*ROAD_SCALE,CURB_HEIGHT=.12,SIDEWALK_SURFACE_Y=ROAD_SURFACE_Y+CURB_HEIGHT,CAR_WHEEL_SOURCE_OFFSET=.06105,CAR_WHEEL_OFFSET=CAR_WHEEL_SOURCE_OFFSET*CAR_SCALE,CAR_LANE_Y=ROAD_SURFACE_Y+CAR_WHEEL_OFFSET;
  const PROP_FACING_FLIP=Math.PI,SKY_RADIUS=140;
  const BUILDINGS=Object.freeze({
   A:{assetId:"city.building.a",file:"building_A",footprint:[8,8],size:[8,6.6,8],color:0xd86d5b},
@@ -98,13 +98,13 @@
    buildingA:{x:-58.5,z:-51.3,angle:0,height:12.6,distance:21.6},buildingB:{x:-13.5,z:-51.3,angle:0,height:12.6,distance:21.6},buildingC:{x:31.5,z:-51.3,angle:0,height:12.6,distance:21.6},
    buildingD:{x:-58.5,z:-30.6,angle:Math.PI,height:12.6,distance:21.6},buildingE:{x:-22.5,z:-30.6,angle:Math.PI,height:12.6,distance:21.6},buildingF:{x:13.5,z:-30.6,angle:Math.PI,height:12.6,distance:21.6},
    buildingG:{x:-58.5,z:14.4,angle:Math.PI,height:12.6,distance:21.6},buildingH:{x:-22.5,z:14.4,angle:Math.PI,height:12.6,distance:21.6},
-   trafficLights:{x:4.5,z:13.5,angle:0,height:9.9,distance:16.2},streetLights:{x:4.5,z:49.5,angle:Math.PI/2,height:6.3,distance:14.4},skyStreet:{x:4.5,z:49.5,angle:0,height:3.2,distance:24,hidePlayer:true},roadGrounding:{x:4.5,z:49.5,angle:0,height:5.5,distance:10.5},sidewalkGrounding:{x:13.5,z:58.5,angle:Math.PI/2,height:5.5,distance:10.5},carsEast:{x:0,z:56.7,angle:0,height:10.8,distance:21.6},carsNorth:{x:56.7,z:0,angle:Math.PI/2,height:10.8,distance:21.6}
+   trafficLights:{x:4.5,z:13.5,angle:0,height:9.9,distance:16.2},streetLights:{x:4.5,z:49.5,angle:Math.PI/2,height:6.3,distance:14.4},skyStreet:{x:4.5,z:49.5,angle:0,height:3.2,distance:24,hidePlayer:true},roadGrounding:{x:4.5,z:49.5,angle:0,height:5.5,distance:10.5},sidewalkGrounding:{x:13.5,z:58.5,angle:Math.PI/2,height:5.5,distance:10.5},carsEast:{x:0,z:56.7,angle:0,height:9,distance:18},carsNorth:{x:56.7,z:0,angle:Math.PI/2,height:9,distance:18},carsFadeEast:{x:-47,z:56.7,angle:0,height:7,distance:15,hidePlayer:true}
   });
   const world={group,bounds:{minX:-62.6,maxX:62.6,minZ:-62.6,maxZ:62.6},spawn:{x:4.5,z:58.5},camera:{angle:.24,height:21.6,distance:32.4},debugPoses,background:0xb8def0,name:"Chibi City",
    canWalk(x,z){if(x<world.bounds.minX||x>world.bounds.maxX||z<world.bounds.minZ||z>world.bounds.maxZ)return false;return!collisionBoxes.some(box=>Math.abs(x-box.x)<box.halfX+PLAYER_RADIUS&&Math.abs(z-box.z)<box.halfZ+PLAYER_RADIUS)},
    surfaceYAt(x,z){return level?surfaceYAt(level,x,z):ROAD_SURFACE_Y},
    update(dt,player){traffic?.update(dt,player)},
-   prepareDebugPose(poseId){if(poseId==="carsEast")return traffic?.debugFormation("east-west-")||false;if(poseId==="carsNorth")return traffic?.debugFormation("north-south-")||false;if(["trafficLights","streetLights","skyStreet","overview"].includes(poseId)){traffic?.setEnabled(false);return true}return false},
+   prepareDebugPose(poseId){if(poseId==="carsEast")return traffic?.debugFormation("east-west-")||false;if(poseId==="carsNorth")return traffic?.debugFormation("north-south-")||false;if(poseId==="carsFadeEast")return traffic?.debugFadeFormation("east-west-")||false;if(["trafficLights","streetLights","skyStreet","overview"].includes(poseId)){traffic?.setEnabled(false);return true}return false},
    debug(){return{layout:group.userData.layout,assets:group.userData.assets,buildings:collisionBoxes.length,minimumSpacing:spacing?.minimum??null,roads,traffic:traffic?.metrics()||null,surfaces:{road:ROAD_SURFACE_Y,sidewalk:SIDEWALK_SURFACE_Y,carRoot:CAR_LANE_Y},scale:{building:BUILDING_SCALE,road:ROAD_SCALE,prop:PROP_SCALE,car:CAR_SCALE},sky:{assetId:"polyhaven.kloofendal-48d-partly-cloudy-puresky.derived-1k",loaded:Boolean(sky),radius:SKY_RADIUS,drawCalls:sky?1:0},propFacingFlip:PROP_FACING_FLIP,carToChibiHeightRatio:+((.45*CAR_SCALE)/3).toFixed(2),poses:Object.keys(debugPoses)}},
    dispose(){disposed=true;traffic?.destroy();group.parent?.remove(group);disposeResources(group)}
   };
@@ -123,5 +123,5 @@
   }).catch(error=>{group.userData.layout.status="error";group.userData.layout.error=String(error?.message||error);throw error});
   return world;
  }
- return{LEVEL_URL,ASSET_ROOT,SIDEWALK_TEXTURE_URL,CITY_SKY_TEXTURE_URL,BUILDINGS,MODEL_FILES,CAR_FILES,MIN_SPACING,PLAYER_RADIUS,BUILDING_SCALE,ROAD_SCALE,PROP_SCALE,CAR_SCALE,ROAD_BASE_Y,ROAD_SURFACE_Y,SIDEWALK_SURFACE_Y,CAR_LANE_Y,PROP_FACING_FLIP,SKY_RADIUS,parseLevel,cellCenter,symbolAtWorld,surfaceYAt,buildingPlacements,footprintDistance,spacingReport,validateSpacing,validateRoads,sidewalkGeometryData,roadLanes,loadLevel,loadAssets,loadSidewalkTexture,loadCitySkyTexture,flipPropFacing,createSkyDome,disposeResources,create};
+ return{LEVEL_URL,ASSET_ROOT,SIDEWALK_TEXTURE_URL,CITY_SKY_TEXTURE_URL,BUILDINGS,MODEL_FILES,CAR_FILES,MIN_SPACING,PLAYER_RADIUS,BUILDING_SCALE,ROAD_SCALE,PROP_SCALE,CAR_SCALE,ROAD_BASE_Y,ROAD_SURFACE_Y,SIDEWALK_SURFACE_Y,CAR_WHEEL_SOURCE_OFFSET,CAR_WHEEL_OFFSET,CAR_LANE_Y,PROP_FACING_FLIP,SKY_RADIUS,parseLevel,cellCenter,symbolAtWorld,surfaceYAt,buildingPlacements,footprintDistance,spacingReport,validateSpacing,validateRoads,sidewalkGeometryData,roadLanes,loadLevel,loadAssets,loadSidewalkTexture,loadCitySkyTexture,flipPropFacing,createSkyDome,disposeResources,create};
 });
