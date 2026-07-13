@@ -1,6 +1,7 @@
 ; Starlight Restaurant connected kitchen v1
-; 25x25 world units, one character per 1x1 floor cell.
-; # wall | . walkable floor | D doorway | K prep counter
+; 25x25 world units. Grid cells are 1x1, while kitchen fixtures use their
+; measured 2-3 unit footprints and are offset flush to the nearest wall.
+; # wall | . walkable floor | D doorway | K free-standing prep counter
 ; S stove | F refrigerator | W sink | R storage rack.
 ; The south doorway aligns exactly with the dining room north doorway.
 name: Starlight Restaurant Kitchen
@@ -13,24 +14,24 @@ connect: dining:south:10-13
 legend: #=wall .=floor D=doorway K=prep-counter S=stove F=refrigerator W=sink R=rack
 map:
 #########################
-#..F...F....S...S....W..#
-#.......................#
-#..K..K..K..K..K..K..K..#
+#.F....F....S....S....W.#
 #.......................#
 #.......................#
 #.......................#
 #.......................#
 #.......................#
+#R.....................R#
 #.......................#
 #.......................#
-#...K...K...K...K...K...#
+#.......K..K..K.........#
+#.......................#
+#.......................#
+#R.....................R#
 #.......................#
 #.......................#
 #.......................#
 #.......................#
 #.......................#
-#.......................#
-#..R.................R..#
 #.......................#
 #.......................#
 #.......................#
