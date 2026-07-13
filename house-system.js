@@ -238,19 +238,21 @@ function showBeach(){
  updateCamera();
  if(window.switchWorldMusic)window.switchWorldMusic("beach");
 }
-function showSpace(){
+async function showSpace(){
  destroyForestWorld();
  if(castle)castle.visible=false;
- const world=ensureSpaceWorld();currentPlace="space";P.visible=true;
+ const world=ensureSpaceWorld();await world.ready;currentPlace="space";P.visible=true;
  document.body.classList.add("space-mode");document.body.classList.remove("restaurant-mode","bakery-mode","house-mode","beach-mode","forest-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(world.background);startPage.style.display="none";
  setBakeryVisible(false);house.visible=false;beach.visible=false;world.group.visible=true;
  inKitchen=false;inStorage=false;page5Group.visible=false;
  setHousePanel(false);setBuildingMode(false);setHudMenu(false);closeKitchenPanels();
  document.getElementById("orders").style.display="none";document.getElementById("recipePanel").style.display="none";document.getElementById("roomTeleport").style.display="none";
+ const poseId=new URLSearchParams(location.search).get("spacePose")||"spawn",pose=world.debugPoses?.[poseId]||{...world.spawn,...world.camera};
  roomName.style.display="block";roomName.textContent=world.name;
- P.position.set(world.spawn.x,0,world.spawn.z);P.rotation.y=Math.PI;
- cameraAngle=world.camera.angle;cameraHeight=world.camera.height;cameraDistance=world.camera.distance;updateCamera();
+ P.position.set(pose.x,0,pose.z);P.rotation.y=Math.PI;P.visible=pose.hidePlayer!==true;
+ cameraAngle=pose.angle;cameraHeight=pose.height;cameraDistance=pose.distance;updateCamera();
+ document.body.dataset.spacePose=poseId;document.body.dataset.spaceAssetStatus=world.group.userData.assets.status;document.body.dataset.spaceAliens=String(world.group.userData.npcs.aliens);document.body.dataset.spaceOtherNpcs=String(world.group.userData.npcs.nonAliens);
  if(window.switchWorldMusic)window.switchWorldMusic("space");
 }
 function showForest(){

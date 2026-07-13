@@ -597,6 +597,7 @@ window.getGameDebug=()=>({
  player:{x:+P.position.x.toFixed(2),y:+P.position.y.toFixed(2),z:+P.position.z.toFixed(2)},
  render:{calls:R.info.render.calls,triangles:R.info.render.triangles},
  memory:{geometries:R.info.memory.geometries,textures:R.info.memory.textures},
+ space:spaceWorld?.debug?.()||null,
  forest:forestWorld?.debug?.()||null,
  restaurant:window.RestaurantWorld?.current?.group?.userData||null
 });
