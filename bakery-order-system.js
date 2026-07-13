@@ -25,7 +25,18 @@
   _emit(type,payload){const event=Object.freeze({type,...payload,snapshot:this.snapshot()});for(const fn of this._listeners.get(type)||[])fn(event);for(const fn of this._listeners.get("*")||[])fn(event);}
   start(){this.refill();return this.snapshot();}
   refill(){while(this.active.length<this.maxActive){const n=this._nextCustomer++,raw=this.customerFactory(n);if(!raw||!raw.id)throw new Error("customerFactory must return an object with an id");const productId=this.productSequence[this._nextProduct++%this.productSequence.length],order=new Order({id:"order-"+String(this._nextOrder++).padStart(4,"0"),productId,createdAt:this.now()}).activate(),association=new CustomerOrder({id:"customer-order-"+String(this._nextAssociation++).padStart(4,"0"),customerId:String(raw.id),customerName:raw.name||"Customer",order,joinedAt:this.now()});this.active.push(association);this._emit("order:added",{customerOrder:association.snapshot()});}return this.active.map(item=>item.snapshot());}
-  submitProduct(product){const productId=productIdOf(product);if(!productId){const result={ok:false,reason:"unknown-product",productId:null,reward:0};this._emit("product:rejected",result);return result;}const index=this.active.findIndex(item=>item.order.status===OrderStatus.ACTIVE&&item.order.productId===productId);if(index<0){const result={ok:false,reason:"no-matching-order",productId,reward:0};this._emit("product:rejected",result);return result;}const association=this.active[index];if(!association.order.complete(this.now())){const result={ok:false,reason:"order-not-active",productId,reward:0};this._emit("product:rejected",result);return result;}this.active.splice(index,1);this.completed.push(association);const reward=ProductCatalog[productId].reward;this.totalRewards+=reward;this.rewardSink(reward,association.snapshot());this._emit("order:completed",{customerOrder:association.snapshot(),productId,reward,totalRewards:this.totalRewards});this.refill();return {ok:true,reason:null,productId,reward,customerOrder:association.snapshot()};}
+  submitProduct(product){
+   const productId=productIdOf(product);
+   if(!productId){const result={ok:false,reason:"unknown-product",productId:null,reward:0};this._emit("product:rejected",result);return result;}
+   const association=this.active[0];
+   if(!association||association.order.status!==OrderStatus.ACTIVE){const result={ok:false,reason:"no-active-order",productId,reward:0};this._emit("product:rejected",result);return result;}
+   if(association.order.productId!==productId){const result={ok:false,reason:"front-order-mismatch",productId,expectedProductId:association.order.productId,reward:0};this._emit("product:rejected",result);return result;}
+   if(!association.order.complete(this.now())){const result={ok:false,reason:"order-not-active",productId,reward:0};this._emit("product:rejected",result);return result;}
+   this.active.shift();this.completed.push(association);
+   const reward=ProductCatalog[productId].reward;this.totalRewards+=reward;this.rewardSink(reward,association.snapshot());
+   this._emit("order:completed",{customerOrder:association.snapshot(),productId,reward,totalRewards:this.totalRewards});this.refill();
+   return {ok:true,reason:null,productId,reward,customerOrder:association.snapshot()};
+  }
   cancel(orderId){const index=this.active.findIndex(item=>item.order.id===orderId);if(index<0)return false;const association=this.active[index];if(!association.order.cancel(this.now()))return false;this.active.splice(index,1);this._emit("order:cancelled",{customerOrder:association.snapshot()});this.refill();return true;}
   snapshot(){return {maxActive:this.maxActive,active:this.active.map(item=>item.snapshot()),completed:this.completed.map(item=>item.snapshot()),totalRewards:this.totalRewards,counters:{nextOrder:this._nextOrder,nextCustomer:this._nextCustomer,nextAssociation:this._nextAssociation,nextProduct:this._nextProduct}};}
   debug(){return this.snapshot();}

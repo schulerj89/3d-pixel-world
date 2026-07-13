@@ -6,7 +6,8 @@ const manager=new OrderManager({maxActive:2,productSequence:["cupcake","cookies"
 manager.subscribe("*",event=>events.push(event.type));manager.start();
 assert.deepEqual(manager.snapshot().active.map(item=>item.order.productId),["cupcake","cookies"]);
 assert.deepEqual(manager.snapshot().active.map(item=>item.order.id),["order-0001","order-0002"]);
-const invalid=manager.submitProduct("cake");assert.equal(invalid.ok,false);assert.equal(invalid.reason,"no-matching-order");assert.equal(invalid.reward,0);assert.equal(rewards,0);assert.equal(manager.snapshot().active.length,2);
+const invalid=manager.submitProduct("cake");assert.equal(invalid.ok,false);assert.equal(invalid.reason,"front-order-mismatch");assert.equal(invalid.reward,0);assert.equal(rewards,0);assert.equal(manager.snapshot().active.length,2);
+const outOfTurn=manager.submitProduct("cookies");assert.equal(outOfTurn.ok,false);assert.equal(outOfTurn.reason,"front-order-mismatch");assert.equal(outOfTurn.reward,0);assert.equal(rewards,0);assert.equal(manager.snapshot().active[0].order.productId,"cupcake");
 const valid=manager.submitProduct("cupcake");assert.equal(valid.ok,true);assert.equal(valid.reward,5);assert.equal(valid.customerOrder.order.status,OrderStatus.COMPLETED);assert.equal(rewards,5);
 const after=manager.snapshot();assert.equal(after.active.length,2);assert.deepEqual(after.active.map(item=>item.order.productId),["cookies","cake"]);assert.deepEqual(after.active.map(item=>item.order.id),["order-0002","order-0003"]);assert.equal(after.completed.length,1);
 const duplicate=manager.submitProduct("cupcake");assert.equal(duplicate.ok,false);assert.equal(rewards,5);assert.equal(manager.snapshot().totalRewards,5);assert.ok(events.includes("order:completed"));assert.ok(events.includes("product:rejected"));

@@ -814,8 +814,7 @@ setInterval(()=>{
  });
 
  // After a full set of 3 bakery orders is finished, the shelf runs out.
- const finishOrdersBtn2=document.getElementById("finishOrders");
- finishOrdersBtn2.addEventListener("pointerdown",()=>{
+ window.addEventListener("bakery-order-served",()=>{
    setAllIngredientStock(false);
    selectedIngredient=null;
    const a=document.getElementById("fixedIngredientGrab");
