@@ -37,12 +37,14 @@ function codes(level){return Validator.audit(level).issues.map(issue=>issue.code
 
 const good=Validator.validate(plan());
 assert(good.valid,"well-formed sectioned plan must pass");
-assert.deepStrictEqual(good.metrics,{width:24,depth:20,rooms:5,doorRuns:4,reachableCells:362});
+assert.deepStrictEqual(good.metrics,{width:24,depth:20,rooms:5,doorRuns:4,reachableCells:362,wallJunctions:11});
 assert(HouseSpaceSpec.validatePlan(plan()).valid,"HouseSpaceSpec must expose the same CI/browser QA contract");
 
 assert(codes(replaceCell(plan(),0,7,".")).includes("open-perimeter"),"a wall gap must fail enclosure QA");
 assert(codes(replaceCell(plan(),0,0,"E")).includes("corner-seam"),"a door cannot replace a load-bearing exterior corner");
 assert(codes(replaceCell(plan(),11,5,".")).includes("unmarked-wall-gap"),"a broken divider seam must be labeled as a valid doorway");
+const doubleWall=replaceCell(plan(),1,1,"#");
+assert(codes(doubleWall).includes("wall-block"),"a 2x2 wall block must fail as a double-thick wall layer");
 
 const narrow=plan({map:plan().map.map((row,index)=>index===9?"#####DD##########DD#####":row)});
 assert(Validator.audit(narrow).issues.filter(issue=>issue.code==="door-width").length>=2,"one/two-unit doorways must fail the 3-4 unit entry contract");

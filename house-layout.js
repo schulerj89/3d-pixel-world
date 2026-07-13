@@ -39,24 +39,53 @@
  }
  function lineWalls(level){
   const walls=[],thickness=level.wallThickness;
-  const add=(id,orientation,fixed,start,end,kind="interior")=>walls.push({id,type:"line",orientation,fixed,start,end,thickness,kind,heightOffset:orientation==="V"?-.015:0});
+  const addLine=(id,orientation,fixed,start,end,kind="interior",outward=null)=>{
+   if(end-start<=1e-9)return;
+   walls.push({id,type:"line",orientation,fixed,start,end,thickness,kind,outward,heightOffset:0});
+  };
   const runs=(values,predicate)=>{const found=[];let start=-1;for(let index=0;index<=values.length;index++){if(predicate(values[index])&&start<0)start=index;if(!predicate(values[index])&&start>=0){found.push([start,index]);start=-1}}return found};
-  // Maximal runs cover complete authored wall cells. Horizontal and vertical
-  // runs therefore cross at every corner/T-junction instead of stopping half
-  // a unit apart. Vertical caps sit 0.015u lower than horizontal caps so the
-  // overlapping junction top has one stable depth winner and cannot shimmer.
+  const isWall=(col,row)=>level.map[row]?.[col]==="#";
+  const junctions=[];
+  for(let row=0;row<level.depth;row++)for(let col=0;col<level.width;col++)if(isWall(col,row)){
+   const horizontal=isWall(col-1,row)||isWall(col+1,row),vertical=isWall(col,row-1)||isWall(col,row+1);
+   if(horizontal&&vertical)junctions.push({col,row});
+  }
+  const center=(index,origin)=>origin+(index+.5)*level.cell;
+  const addRun=(id,orientation,fixed,start,end,kind,outward,runJunctions)=>{
+   let cursor=start,part=0;
+   for(const junction of runJunctions.sort((a,b)=>a-b)){
+    addLine(`${id}-${part++}`,orientation,fixed,cursor,junction-thickness/2,kind,outward);
+    cursor=junction+thickness/2;
+   }
+   addLine(`${id}-${part}`,orientation,fixed,cursor,end,kind,outward);
+  };
+  // A junction owns one thickness-by-thickness square. Straight wall pieces
+  // stop exactly at that square instead of passing through one another, so all
+  // joins share boundaries without stacked caps or positive-volume overlap.
   for(let row=0;row<level.depth;row++)for(const [start,end] of runs([...level.map[row]],symbol=>symbol==="#"))if(end-start>=2){
    const kind=row===0||row===level.depth-1?"perimeter":"interior";
-   const lineStart=level.originX+start+(start===0?.5:0),lineEnd=level.originX+end-(end===level.width?.5:0);
-   add(`${kind}-h-${row}-${start}`,"H",level.originZ+row+.5,lineStart,lineEnd,kind);
+   const startsAtJunction=junctions.some(cell=>cell.row===row&&cell.col===start),endsAtJunction=junctions.some(cell=>cell.row===row&&cell.col===end-1);
+   const lineStart=startsAtJunction?center(start,level.originX):level.originX+start+(start===0?.5:0),lineEnd=endsAtJunction?center(end-1,level.originX):level.originX+end-(end===level.width?.5:0);
+   const outward=row===0?"north":row===level.depth-1?"south":null;
+   const runJunctions=junctions.filter(cell=>cell.row===row&&cell.col>=start&&cell.col<end).map(cell=>center(cell.col,level.originX));
+   addRun(`${kind}-h-${row}-${start}`,"H",center(row,level.originZ),lineStart,lineEnd,kind,outward,runJunctions);
   }
   for(let col=0;col<level.width;col++){
    const values=level.map.map(row=>row[col]);
    for(const [start,end] of runs(values,symbol=>symbol==="#"))if(end-start>=2){
-   const kind=col===0||col===level.width-1?"perimeter":"interior";
-    const lineStart=level.originZ+start+(start===0?.5:0),lineEnd=level.originZ+end-(end===level.depth?.5:0);
-    add(`${kind}-v-${col}-${start}`,"V",level.originX+col+.5,lineStart,lineEnd,kind);
+    const kind=col===0||col===level.width-1?"perimeter":"interior";
+    const startsAtJunction=junctions.some(cell=>cell.col===col&&cell.row===start),endsAtJunction=junctions.some(cell=>cell.col===col&&cell.row===end-1);
+    const lineStart=startsAtJunction?center(start,level.originZ):level.originZ+start+(start===0?.5:0),lineEnd=endsAtJunction?center(end-1,level.originZ):level.originZ+end-(end===level.depth?.5:0);
+    const outward=col===0?"west":col===level.width-1?"east":null;
+    const runJunctions=junctions.filter(cell=>cell.col===col&&cell.row>=start&&cell.row<end).map(cell=>center(cell.row,level.originZ));
+    addRun(`${kind}-v-${col}-${start}`,"V",center(col,level.originX),lineStart,lineEnd,kind,outward,runJunctions);
    }
+  }
+  for(const {col,row} of junctions){
+   const outwardFaces=[];
+   if(col===0)outwardFaces.push("west");if(col===level.width-1)outwardFaces.push("east");
+   if(row===0)outwardFaces.push("north");if(row===level.depth-1)outwardFaces.push("south");
+   walls.push({id:`junction-${col}-${row}`,type:"cell",x:center(col,level.originX),z:center(row,level.originZ),width:thickness,depth:thickness,thickness,kind:outwardFaces.length?"perimeter":"interior",outwardFaces,heightOffset:0,junction:{col,row}});
   }
   return walls;
  }
@@ -74,6 +103,7 @@
  function adaptLevel(level){
   validateLevel(level);
   const walls=lineWalls(level);
+  const geometryReport=wallValidator().validateWallGeometry(level,walls);
   const rooms=level.rooms.map(room=>({id:room.id,minX:level.originX+room.col,maxX:level.originX+room.col+room.width,minZ:level.originZ+room.row,maxZ:level.originZ+room.row+room.depth}));
   const openings=connectedOpenings(level);
   const bounds={minX:level.originX,maxX:level.originX+level.width,minZ:level.originZ,maxZ:level.originZ+level.depth};
@@ -85,8 +115,13 @@
    const probes=[[x,z],[x-radius,z],[x+radius,z],[x,z-radius],[x,z+radius]];
    return probes.every(([px,pz])=>{const {col,row}=cellAt(px,pz);return row>=0&&row<level.depth&&col>=0&&col<level.width&&level.map[row][col]!=="#"});
   };
-  layout.debug=()=>({source:layout.source,version:layout.version,gridCell:1,size:{width:layout.width,depth:layout.depth},spacings:{...layout.spacings},rooms:rooms.map(room=>({...room})),walls:walls.length,openings:openings.map(opening=>({...opening})),spawn:{...layout.spawn}});
+  layout.debug=()=>({source:layout.source,version:layout.version,gridCell:1,size:{width:layout.width,depth:layout.depth},spacings:{...layout.spacings},rooms:rooms.map(room=>({...room})),walls:walls.length,wallGeometry:{...geometryReport.metrics},openings:openings.map(opening=>({...opening})),spawn:{...layout.spawn}});
   return layout;
+ }
+ function wallValidator(){
+  if(root.HouseLayoutValidator)return root.HouseLayoutValidator;
+  if(typeof require==="function")return require("./house-layout-validator.js");
+  throw new Error("HouseLayoutValidator must load before wall geometry QA");
  }
  function parse(text){
   const parser=root.HouseSpaceSpec?.parseLevel||fallbackParseLevel;

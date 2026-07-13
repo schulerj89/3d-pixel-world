@@ -54,7 +54,8 @@ for(const required of["living","kitchen","bedroom","dining","entry"])assert(layo
 assert.deepStrictEqual(layout.openings.filter(opening=>opening.symbol==="D").map(opening=>opening.width).sort(),[3,4,4],"interior entries must reserve three or four units");
 assert(layout.openings.some(opening=>opening.symbol==="D"&&opening.orientation==="V"&&opening.width===3),"vertical room entry must preserve its authored orientation");
 assert(layout.openings.some(opening=>opening.symbol==="E"&&opening.width===4),"map must expose the enclosed four-unit exterior entrance");
-assert(layout.walls.every(wall=>wall.type==="line"&&wall.thickness===.25),"walls must render as thin line segments instead of overlapping one-unit boxes");
+assert(layout.walls.every(wall=>(wall.type==="line"||wall.type==="cell")&&wall.thickness===.25&&wall.heightOffset===0),"walls must use thin same-height line and junction pieces");
+assert.deepStrictEqual(layout.debug().wallGeometry,{pieces:28,junctions:11,overlaps:0},"runtime debug data must expose single-layer wall QA metrics");
 
 for(const sample of[
  {x:-6,z:-6.5,room:"kitchen"},{x:6,z:-6.5,room:"bedroom"},{x:-5,z:2.5,room:"living"},
