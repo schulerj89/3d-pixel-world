@@ -166,6 +166,7 @@ body.house-building #houseAction{display:none!important}
 #money{top:12px!important}
 #avatarButton{position:static}
 #msg:empty{display:none}
+#msg{transition:opacity .35s ease,filter .35s ease}#msg.notification-fade{opacity:0;filter:blur(2px);pointer-events:none}
 
 @media (orientation:landscape) and (max-width:1366px){
  #msg{top:54px!important;max-width:min(55vw,430px)!important}

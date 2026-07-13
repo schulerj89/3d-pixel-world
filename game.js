@@ -637,7 +637,7 @@ document.getElementById("menuGoCastle").hidden=false;
 const musicToggle=document.getElementById("musicToggle");
 const menuGoSpace=document.createElement("button");menuGoSpace.id="menuGoSpace";menuGoSpace.type="button";menuGoSpace.textContent="🚀 Go to Space";hudDrawer.insertBefore(menuGoSpace,musicToggle);
 const forestMenuButton=document.createElement("button");forestMenuButton.id="menuGoForest";forestMenuButton.type="button";forestMenuButton.textContent="🌲 Go to Forest";hudDrawer.insertBefore(forestMenuButton,musicToggle);
-const forestTeleportButton=document.createElement("button");forestTeleportButton.id="teleportForest";forestTeleportButton.type="button";forestTeleportButton.textContent="🌲 Forest";document.getElementById("roomTeleport").appendChild(forestTeleportButton);
+document.getElementById("teleportBeach")?.remove();
 const bakeryMusicTracks=[document.getElementById("bakeryMusic"),document.getElementById("sprinkleMusic")];
 const beachMusicTracks=[document.getElementById("beachMusic")];
 const destinationMusicTracks={space:[document.getElementById("spaceMusic")],forest:[document.getElementById("forestMusic")],castle:[document.getElementById("castleMusic")]};
@@ -696,9 +696,7 @@ document.getElementById("menuGoBakery").addEventListener("pointerdown",event=>{e
 document.getElementById("menuGoBeach").addEventListener("pointerdown",event=>{event.preventDefault();showBeach()});
 menuGoSpace.addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Launching Space…","space",showSpace)});
 document.getElementById("menuGoCastle").addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Raising the castle gates…","castle",showCastle)});
-document.getElementById("teleportBeach").addEventListener("pointerdown",event=>{event.preventDefault();showBeach()});
 forestMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Growing the forest…","forest",showForest)});
-forestTeleportButton.addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Growing the forest…","forest",showForest)});
 const kitchenPanelIds=["recipePanel","orders","inventoryBox"];
 function closeKitchenPanels(){
  kitchenPanelIds.forEach(id=>document.getElementById(id).classList.remove("hud-open"));
