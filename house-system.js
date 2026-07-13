@@ -87,7 +87,11 @@ function addFurniture(kind,loading=false,savedItem=null){
 
  g.position.set(savedItem?.x ?? x,0,savedItem?.z ?? z);
 g.rotation.y=savedItem?.rotation ?? 0;
-g.userData.kind=kind;house.add(g);furniture.push(g);constrainFurniture(g);if(!loading)saveWorld()
+g.userData.kind=kind;house.add(g);furniture.push(g);constrainFurniture(g);
+// Saved furniture is constructed before the interaction declarations below are
+// initialized. A microtask registers it after this script has finished loading.
+queueMicrotask(()=>registerFurnitureAction(g));
+if(!loading)saveWorld()
 }
 saved.furniture=(saved.furniture||[]).filter(item=>(typeof item==="string"?item:item?.kind)!=="remote");
 localStorage.setItem("my3DWorld",JSON.stringify(saved));
@@ -253,24 +257,46 @@ function takeSeat(seat){
 }
 window.isPlayerSeated=()=>sitting;
 window.leavePlayerSeat=leaveSeat;
+function unregisterFurnitureAction(item){
+ const registration=item?.userData?.objectActionRegistration;
+ if(!registration)return;
+ if(typeof registration==="function")registration();
+ else if(typeof registration.unregister==="function")registration.unregister();
+ else if(typeof registration.dispose==="function")registration.dispose();
+ else if(window.objectActions?.unregister)window.objectActions.unregister(registration);
+ delete item.userData.objectActionRegistration;
+}
+function registerFurnitureAction(item){
+ if(!item||item.userData.objectActionRegistration||!window.objectActions?.register)return;
+ const kind=item.userData.kind;
+ if(kind!=="sofa"&&kind!=="chair"&&kind!=="tv")return;
+ const isSeat=kind==="sofa"||kind==="chair";
+ const config={
+  object:item,
+  icon:isSeat?"🛋️":"📺",
+  label:isSeat?"Sit down":"TV controls",
+  range:isSeat?2.25:2.4,
+  anchorOffset:new THREE.Vector3(0,isSeat?(kind==="sofa"?1.75:1.9):2.75,0),
+  enabled:()=>currentPlace==="house"&&!buildingMode&&(!sitting||(isSeat&&seatedFurniture===item)),
+  onAction:()=>{
+   if(isSeat){if(sitting)leaveSeat();else takeSeat(item);return}
+   tvControlsPanelEl.style.display="block";
+  }
+ };
+ item.userData.objectActionRegistration=window.objectActions.register(config)||config;
+}
+function registerPendingFurnitureActions(){furniture.forEach(registerFurnitureAction)}
+window.registerHouseFurnitureActions=registerPendingFurnitureActions;
 function refreshHouseButtons(){
  const inHouse=currentPlace==="house";
  if(!inHouse||buildingMode){if(sitting)leaveSeat();houseActionBtn.style.display="none";tvControlsPanelEl.style.display="none";return}
- const seat=nearbySeat(),fridge=nearFurniture("fridge"),tv=nearFurniture("tv",2.4);
- if(sitting||seat){houseActionBtn.style.display="block";houseActionBtn.classList.add("seat-action");houseActionBtn.textContent=sitting?"🚶":"🛋️";houseActionBtn.setAttribute("aria-label",sitting?"Stand up":"Sit down");houseActionBtn.title=sitting?"Stand up":"Sit down";houseActionBtn.dataset.action="sit"}
- else if(fridge){houseActionBtn.classList.remove("seat-action");houseActionBtn.style.display="block";houseActionBtn.textContent="🧊 OPEN FRIDGE";houseActionBtn.dataset.action="fridge"}
- else if(tv){houseActionBtn.classList.remove("seat-action");houseActionBtn.style.display="block";houseActionBtn.textContent="TV CONTROLS";houseActionBtn.dataset.action="tv"}
- else{houseActionBtn.classList.remove("seat-action");houseActionBtn.style.display="none";tvControlsPanelEl.style.display="none"}
+ registerPendingFurnitureActions();
+ const fridge=nearFurniture("fridge");
+ if(fridge){houseActionBtn.classList.remove("seat-action");houseActionBtn.style.display="block";houseActionBtn.textContent="🧊 OPEN FRIDGE";houseActionBtn.dataset.action="fridge"}
+ else{houseActionBtn.classList.remove("seat-action");houseActionBtn.style.display="none"}
 }
 houseActionBtn.onclick=()=>{
- if(houseActionBtn.dataset.action==="sit"){
-  if(sitting)leaveSeat();
-  else takeSeat(nearbySeat());
- }
  if(houseActionBtn.dataset.action==="fridge")document.getElementById("msg").textContent="Inside: milk, fruit, cake, and juice! 🥛🍓🍰";
- if(houseActionBtn.dataset.action==="tv"){
-  tvControlsPanelEl.style.display="block";
- }
 };
 let tvAnimationTimer=null,tvFrame=0;
 const channelScenes={
@@ -469,7 +495,7 @@ document.getElementById("rotateF").onclick=()=>{
  saveWorld();
 };
 
-document.getElementById("deleteFurniture").onclick=()=>{const item=selectedFurniture();if(!item)return;house.remove(item);furniture.splice(selectedFurnitureIndex,1);selectedFurnitureIndex=Math.min(selectedFurnitureIndex,furniture.length-1);updateFurnitureLabel();saveWorld()};
+document.getElementById("deleteFurniture").onclick=()=>{const item=selectedFurniture();if(!item)return;if(item===seatedFurniture)leaveSeat();unregisterFurnitureAction(item);house.remove(item);furniture.splice(selectedFurnitureIndex,1);selectedFurnitureIndex=Math.min(selectedFurnitureIndex,furniture.length-1);updateFurnitureLabel();saveWorld()};
 backPlaces.onclick=()=>{startPage.style.display="block";setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;hideSpaceWorld();destroyForestWorld();if(castle)castle.visible=false;setBakeryVisible(false)};
 
 
