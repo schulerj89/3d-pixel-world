@@ -4,24 +4,6 @@
 <div id="worldLoading" role="status" aria-live="polite" aria-hidden="true">
   <div class="loadingCard"><div class="loadingPlanet">✨</div><b id="worldLoadingTitle">Building your adventure…</b><div class="loadingBar"><i></i></div></div>
 </div>
-<button id="pickupRemoteButton" aria-label="Pick up TV remote"></button>
-<div id="handRemote">
-  <div class="remoteShape">
-    <b>📱 TV REMOTE</b><br>
-    <button id="handRemotePower">⏻ Power</button>
-    <button data-hand-channel="news">📰 News</button>
-    <button data-hand-channel="chef">👨‍🍳 Chef</button>
-    <button data-hand-channel="island">🏝️ Island</button>
-    <button data-hand-channel="monsters">⚡ Pals</button>
-    <div class="remotePageControls" aria-label="Change channel page">
-      <button id="handRemotePrevious" aria-label="Previous channel page">◀</button>
-      <span id="handRemotePage">1 / 3</span>
-      <button id="handRemoteNext" aria-label="Next channel page">▶</button>
-    </div>
-    <button id="putRemoteDown">👇 Put Down</button>
-  </div>
-</div>
-
 <div id="houseShop">
   <div id="houseShopCard">
     <button id="closeHouseShop">✖ Close Shop</button>
@@ -53,7 +35,7 @@
 <button id="blendShake">🌀 Blend Milkshake</button>
 <button id="addStraw" style="display:none">🥤 Add Red & White Straw</button>
 <div id="shakeResult" style="margin-top:6px;font-weight:bold"></div>
-</div><button id="blenderButton">🥤 USE BLENDER</button><div id="smoothieMessage">🍓 Strawberry-Banana Smoothie!</div><button id="openTVRemote">📱 TV REMOTE</button>
+</div><button id="blenderButton">🥤 USE BLENDER</button><div id="smoothieMessage">🍓 Strawberry-Banana Smoothie!</div>
 <button id="houseAction">🪑 SIT</button>
 <div id="tvScreen"><h2 id="tvTitle">📺 TV</h2>
 <div id="tvStage" style="position:relative;height:150px;overflow:hidden;border-radius:10px;background:#8ed6ff"><div id="channelArt"></div>
@@ -62,7 +44,7 @@
 <div id="tvProp" style="position:absolute;left:50%;bottom:8px;transform:translateX(-50%);font-size:45px">🎤</div>
 <div id="speech" style="position:absolute;left:15px;top:8px;right:15px;background:#fff;color:#222;border-radius:12px;padding:5px;font-size:13px">Welcome!</div>
 </div><div id="tvShow" style="font-size:15px;min-height:45px;margin-top:7px"></div></div>
-<div id="remotePanel"><b>📱 TV REMOTE</b><button id="tvPower">⏻ Power</button><button data-channel="news">📰 News</button><button data-channel="chef">👨‍🍳 Chef Show</button><button data-channel="island">🏝️ Island Hearts</button><button data-channel="monsters">⚡ Pocket Pals</button><button id="closeRemote">Close</button></div>
+<div id="tvControlsPanel"><b>📺 TV CONTROLS</b><button id="tvPower">⏻ Power</button><button data-channel="news">📰 News</button><button data-channel="chef">👨‍🍳 Chef Show</button><button data-channel="island">🏝️ Island Hearts</button><button data-channel="monsters">⚡ Pocket Pals</button><div class="tvPageControls"><button id="tvPrevious" aria-label="Previous program">◀</button><span id="tvPage">1 / 3</span><button id="tvNext" aria-label="Next program">▶</button></div><button id="closeTVControls">Close</button></div>
 <div id="startPage">
 <section id="adventureTypeScreen" aria-labelledby="adventureTitle">
  <div class="adventureSparkles" aria-hidden="true">🌈 ✨ 🌈</div>
@@ -120,7 +102,7 @@
   <div class="buildModeRow"><button id="buildHouse">🔨 Start building</button><button id="saveHouse">✓ Done & save</button></div>
   <div id="buildingTools">
    <div class="furnitureCatalog" aria-label="Add furniture">
-    <button data-f="sofa" data-build-category="living" data-build-icon="🛋️">🛋️ Sofa</button><button data-f="table" data-build-category="living" data-build-icon="🪵">🪵 Table</button><button data-f="bed" data-build-category="bedroom" data-build-icon="🛏️">🛏️ Bed</button><button data-f="lamp" data-build-category="decor" data-build-icon="💡">💡 Lamp</button><button data-f="chair" data-build-category="living" data-build-icon="🪑">🪑 Chair</button><button data-f="fridge" data-build-category="kitchen" data-build-icon="🧊">🧊 Fridge</button><button data-f="tv" data-build-category="electronics" data-build-icon="📺">📺 TV</button><button data-f="remote" data-build-category="electronics" data-build-icon="📱">📱 Remote</button>
+    <button data-f="sofa" data-build-category="living" data-build-icon="🛋️">🛋️ Sofa</button><button data-f="table" data-build-category="living" data-build-icon="🪵">🪵 Table</button><button data-f="bed" data-build-category="bedroom" data-build-icon="🛏️">🛏️ Bed</button><button data-f="lamp" data-build-category="decor" data-build-icon="💡">💡 Lamp</button><button data-f="chair" data-build-category="living" data-build-icon="🪑">🪑 Chair</button><button data-f="fridge" data-build-category="kitchen" data-build-icon="🧊">🧊 Fridge</button><button data-f="tv" data-build-category="electronics" data-build-icon="📺">📺 TV</button>
    </div>
    <div class="furnitureEditor">
     <div id="selectedFurniture" aria-live="polite">No furniture selected</div>

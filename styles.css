@@ -42,18 +42,17 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial;touc
 
 #houseAction{display:none;position:fixed;right:20px;bottom:245px;z-index:90;width:auto;height:auto;padding:12px;border:0;border-radius:15px;background:#ffd66b;font-weight:bold}
 #houseAction.seat-action{width:64px;height:64px;padding:0;border:4px solid #fff;border-radius:50%;background:#ffd66b;font-size:30px;line-height:1;box-shadow:0 5px 14px #0004;touch-action:manipulation}
-#remotePanel{display:none;position:fixed;right:15px;top:100px;z-index:95;background:#222;color:white;padding:12px;border-radius:18px;width:170px}
-#remotePanel button{width:100%;height:auto;padding:8px;margin:3px 0}
+#tvControlsPanel{display:none;position:fixed;right:15px;top:100px;z-index:95;background:#222;color:white;padding:12px;border-radius:18px;width:170px}
+#tvControlsPanel button{width:100%;height:auto;padding:8px;margin:3px 0}
+.tvPageControls{display:grid;grid-template-columns:42px 1fr 42px;gap:5px;align-items:center;text-align:center}.tvPageControls button{width:42px!important}
 #tvScreen{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:85;width:300px;max-width:70vw;background:#10131d;color:white;border:9px solid #444;border-radius:12px;padding:15px;text-align:center;pointer-events:none}
 
 #furnitureMover{display:none;position:fixed;right:12px;top:105px;z-index:350;width:175px;background:#fffdf4f2;border:4px solid #d7a86e;border-radius:18px;padding:9px;text-align:center;box-shadow:0 5px 16px #0004}
 #furnitureMover button{width:48px;height:43px;margin:2px;font-size:20px;border:0;border-radius:10px;background:#ffe09a}
 #furnitureMover #selectFurniture2{width:155px;height:auto;font-size:13px;padding:8px;background:#bfe8ff}
 
-#openTVRemote{display:none;position:fixed;right:12px;top:55px;z-index:360;width:auto;height:auto;padding:10px 13px;border:0;border-radius:14px;background:#bfe8ff;font-weight:bold}
 
 /* Hard safeguard: legacy refresh code must never resurrect these badges. */
-#openTVRemote,#pickupRemoteButton{display:none !important;visibility:hidden !important;pointer-events:none !important}
 
 #blenderButton{display:none;position:fixed;left:50%;bottom:150px;transform:translateX(-50%);z-index:380;width:auto;height:auto;padding:12px 18px;border:0;border-radius:16px;background:#ff9ed2;font-weight:bold}
 #smoothieMessage{display:none;position:fixed;left:50%;top:90px;transform:translateX(-50%);z-index:380;background:#fff8;padding:12px;border-radius:15px;font-weight:bold}
@@ -79,7 +78,6 @@ canvas{z-index:1 !important}
 #furnitureMover button{width:48px;height:43px;margin:2px;font-size:20px;border:0;border-radius:10px;background:#ffe09a}
 #furnitureMover #selectFurniture2{width:155px;height:auto;font-size:13px;padding:8px;background:#bfe8ff}
 
-#openTVRemote{display:none;position:fixed;right:12px;top:55px;z-index:360;width:auto;height:auto;padding:10px 13px;border:0;border-radius:14px;background:#bfe8ff;font-weight:bold}
 
 #blenderButton{display:none;position:fixed;left:50%;bottom:150px;transform:translateX(-50%);z-index:380;width:auto;height:auto;padding:12px 18px;border:0;border-radius:16px;background:#ff9ed2;font-weight:bold}
 #smoothieMessage{display:none;position:fixed;left:50%;top:90px;transform:translateX(-50%);z-index:380;background:#fff8;padding:12px;border-radius:15px;font-weight:bold}
@@ -315,29 +313,6 @@ body.kitchen-clean #lookPad{opacity:.82}
 #checkHouse{
   left:12px!important;right:auto!important;top:58px!important;
 }
-#pickupRemoteButton{
-  display:none;position:fixed;z-index:90;width:54px;height:54px;
-  padding:0;border:3px solid #fff;background:#292c34;color:#fff;opacity:1;
-  border-radius:50%;box-shadow:0 4px 12px #0006;touch-action:manipulation;
-}
-#pickupRemoteButton::before{content:"📱";font-size:27px;line-height:1}
-#pickupRemoteButton:active{transform:scale(.92)}
-#handRemote{
-  display:none;position:fixed;right:14px;bottom:22px;z-index:95;
-  width:170px;background:#252833;color:white;border:5px solid #555;
-  border-radius:24px;padding:11px;text-align:center;box-shadow:0 8px 20px #0005;
-}
-#handRemote .remoteShape{
-  background:#111;border-radius:20px;padding:9px;border:2px solid #666;
-}
-#handRemote button{
-  width:46%;height:auto;margin:4px 1%;padding:8px 5px;border:0;
-  border-radius:11px;font-weight:bold;font-size:12px;
-}
-.remotePageControls{display:grid;grid-template-columns:42px 1fr 42px;gap:5px;align-items:center;margin:4px 1%;font-size:12px;font-weight:bold}
-#handRemote .remotePageControls button{width:42px;margin:0;padding:7px 4px}
-#handRemotePage{white-space:nowrap;color:#fff}
-#handRemotePower{background:#ff8f9d}
 #channelArt{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
 }

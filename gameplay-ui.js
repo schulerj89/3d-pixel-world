@@ -288,16 +288,11 @@
 })();
 
 
-// ===== FINAL HOUSE TV REMOTE, CHANNEL SVGs, ROOM LABEL, CHECK HUD, RUG FIX =====
+// ===== HOUSE TV CHANNEL ART, ROOM LABEL, CHECK HUD, RUG FIX =====
 (function(){
   const roomLabel=document.getElementById("roomName");
-  const pickupBtn=document.getElementById("pickupRemoteButton");
-  const handRemote=document.getElementById("handRemote");
   const channelArt=document.getElementById("channelArt");
-  const oldOpenRemote=document.getElementById("openTVRemote");
 
-  let carryingRemote=false;
-  let pickedRemoteObject=null;
   let tvTexture=null;
   let tvPage=0;
 
@@ -370,7 +365,7 @@
     if(page%3===1)return `<svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="150" fill="${theme[2]}"/><circle cx="54" cy="38" r="23" fill="${accent}"/><path d="M0 116 Q52 62 103 114 T205 105 T300 112 V150 H0Z" fill="${ground}"/><path d="M18 118L76 57l46 61 55-82 62 82 34-48 27 48" fill="none" stroke="${theme[1]}" stroke-width="13" stroke-linejoin="round"/><g fill="white"><ellipse cx="145" cy="32" rx="35" ry="13"/><ellipse cx="220" cy="57" rx="43" ry="16"/></g><g fill="${accent}"><circle cx="124" cy="94" r="15"/><rect x="112" y="107" width="24" height="31" rx="7"/><circle cx="244" cy="99" r="15"/><rect x="232" y="112" width="24" height="27" rx="7"/></g></svg>`;
     return `<svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x2="0" y2="1"><stop stop-color="${theme[1]}"/><stop offset="1" stop-color="${sky}"/></linearGradient></defs><rect width="300" height="150" fill="url(#g)"/><path d="M0 122 Q60 82 120 122 T240 122 T300 122 V150 H0Z" fill="${ground}"/><g fill="${accent}"><circle cx="55" cy="59" r="24"/><circle cx="150" cy="43" r="29"/><circle cx="245" cy="66" r="22"/></g><g fill="#222"><circle cx="48" cy="56" r="3"/><circle cx="62" cy="56" r="3"/><circle cx="141" cy="39" r="4"/><circle cx="159" cy="39" r="4"/><circle cx="239" cy="63" r="3"/><circle cx="251" cy="63" r="3"/></g><g fill="${theme[2]}"><rect x="40" y="83" width="30" height="43" rx="9"/><rect x="132" y="76" width="36" height="55" rx="10"/><rect x="231" y="87" width="28" height="40" rx="8"/></g><circle cx="104" cy="24" r="4" fill="white"/><circle cx="204" cy="31" r="5" fill="white"/><circle cx="274" cy="21" r="3" fill="white"/></svg>`;
   }
-  function updateRemotePageLabel(){document.getElementById("handRemotePage").textContent=(tvPage+1)+" / 3"}
+  function updateTVPageLabel(){document.getElementById("tvPage").textContent=(tvPage+1)+" / 3"}
 
   function setRoomLabel(){
     if(currentPlace==="bakery"){
@@ -381,29 +376,6 @@
     }else{
       roomLabel.style.display="none";
     }
-  }
-
-  function nearestRemote(){
-    return furniture.find(f=>
-      f.userData.kind==="remote" &&
-      Math.hypot(f.position.x-P.position.x,f.position.z-P.position.z)<2.2
-    );
-  }
-
-  let lastHandRemoteVisible=null;
-  let lastPickupVisible=null;
-
-  function setRemoteVisible(el,show,lastName){
-    const value=show?"block":"none";
-    if(lastName==="hand"){
-      if(lastHandRemoteVisible===show)return;
-      lastHandRemoteVisible=show;
-    }else{
-      if(lastPickupVisible===show)return;
-      lastPickupVisible=show;
-    }
-    el.style.display=value;
-    el.setAttribute("aria-hidden",String(!show));
   }
 
   function houseTV(){
@@ -442,123 +414,19 @@
     image.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
   }
 
-  function updateRemotePickup(){
+  function updateTVPresentation(){
     setRoomLabel();
-
-    // Floating remote pickup badges are retired. Keep both legacy entry
-    // points inert even if another refresh path tries to restore them.
-    oldOpenRemote.style.display="none";
-    oldOpenRemote.hidden=true;
-    pickupBtn.style.display="none";
-    pickupBtn.hidden=true;
-    remotePanelEl.style.display="none";
-
-    const avatarShopOpen=avatarShop.style.display==="block";
-    const houseShopOpen=document.getElementById("houseShop") &&
-      document.getElementById("houseShop").style.display==="flex";
-
-    // Hide the remote while a full-screen shop is open so it never covers the shop.
-    if(currentPlace!=="house" || avatarShopOpen || houseShopOpen){
-      setRemoteVisible(pickupBtn,false,"pickup");
-      setRemoteVisible(handRemote,false,"hand");
-      return;
-    }
-
-    if(carryingRemote){
-      setRemoteVisible(pickupBtn,false,"pickup");
-      setRemoteVisible(handRemote,true,"hand");
-      return;
-    }
-
-    setRemoteVisible(handRemote,false,"hand");
-    // The actual remote controls are opened contextually beside the TV.
+    positionTVScreen();
   }
-
-  pickupBtn.addEventListener("pointerdown",e=>{
-    e.preventDefault();
-    e.stopPropagation();
-    const remote=nearestRemote();
-    if(!remote)return;
-    carryingRemote=true;
-    pickedRemoteObject=remote;
-    remote.visible=false;
-    setRemoteVisible(handRemote,true,"hand");
-    document.getElementById("msg").textContent="You picked up the TV remote! Use the remote at the bottom-right. 📱";
-  });
-
-  // Open the usable remote only after the player explicitly interacts with
-  // the physical TV; do not advertise it as a persistent floating badge.
-  document.getElementById("houseAction").addEventListener("pointerdown",()=>{
-    if(document.getElementById("houseAction").dataset.action!=="tv")return;
-    carryingRemote=true;
-    pickedRemoteObject=null;
-    setRemoteVisible(handRemote,true,"hand");
-  });
-
-  document.getElementById("putRemoteDown").addEventListener("pointerdown",e=>{
-    e.preventDefault();
-    e.stopPropagation();
-    carryingRemote=false;
-    if(pickedRemoteObject){
-      pickedRemoteObject.position.set(P.position.x,.15,P.position.z-.8);
-      pickedRemoteObject.visible=true;
-      pickedRemoteObject=null;
-      saveWorld();
-    }
-    setRemoteVisible(handRemote,false,"hand");
-
-    // Putting the remote down also closes and powers off the TV popup.
-    tvIsOn=false;
-    tvScreenEl.style.display="none";
-    paintTVScreen(currentChannel);
-    if(tvAnimationTimer){
-      clearInterval(tvAnimationTimer);
-      tvAnimationTimer=null;
-    }
-
-    document.getElementById("msg").textContent="You put the remote down, and the TV turned off. 📱📺";
-  });
-
-  function powerTV(){
-    if(!carryingRemote){
-      document.getElementById("msg").textContent="Pick up the remote first. 📱";
-      return;
-    }
-    if(!hasFurniture("tv")){
-      document.getElementById("msg").textContent="Add a TV to the house first. 📺";
-      return;
-    }
-    tvIsOn=!tvIsOn;
-    tvScreenEl.style.display="none";
-    if(tvIsOn)showTVChannel(currentChannel);
-    else paintTVScreen(currentChannel);
-  }
-
-  document.getElementById("handRemotePower").addEventListener("pointerdown",e=>{
-    e.preventDefault();e.stopPropagation();powerTV();
-  });
-
-  document.querySelectorAll("[data-hand-channel]").forEach(btn=>{
-    btn.addEventListener("pointerdown",e=>{
-      e.preventDefault();
-      e.stopPropagation();
-      if(!carryingRemote)return;
-      if(!tvIsOn){
-        document.getElementById("msg").textContent="Press Power on the remote first. 📺";
-        return;
-      }
-      tvPage=0;updateRemotePageLabel();showTVChannel(btn.dataset.handChannel);
-    });
-  });
 
   function changeTVPage(direction){
-    if(!carryingRemote)return;
-    if(!tvIsOn){document.getElementById("msg").textContent="Press Power on the remote first. 📺";return}
-    tvPage=(tvPage+direction+3)%3;updateRemotePageLabel();paintTVScreen(currentChannel);
+    if(!tvIsOn){document.getElementById("msg").textContent="Press Power first. 📺";return}
+    tvPage=(tvPage+direction+3)%3;updateTVPageLabel();paintTVScreen(currentChannel);
   }
-  document.getElementById("handRemotePrevious").addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();changeTVPage(-1)});
-  document.getElementById("handRemoteNext").addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();changeTVPage(1)});
-  updateRemotePageLabel();
+  document.getElementById("tvPrevious").addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();changeTVPage(-1)});
+  document.getElementById("tvNext").addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();changeTVPage(1)});
+  updateTVPageLabel();
+  document.getElementById("tvPower").addEventListener("click",()=>paintTVScreen(currentChannel));
 
   // Route every channel change to the physical TV texture pipeline.
   const oldShowTVChannel=showTVChannel;
@@ -587,5 +455,5 @@
     rug.visible=true;
   });
 
-  setInterval(()=>{updateRemotePickup();positionTVScreen()},100);
+  setInterval(updateTVPresentation,100);
 })();

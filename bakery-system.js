@@ -631,7 +631,7 @@ setInterval(()=>{
   let pinchDistance=0;
 
   function interactiveTarget(el){
-    return !!el.closest("button, #pad, #housePanel, #orders, #recipePanel, #avatarShop, #remotePanel, #tvScreen, #furnitureMover");
+    return !!el.closest("button, #pad, #housePanel, #orders, #recipePanel, #avatarShop, #tvControlsPanel, #tvScreen, #furnitureMover");
   }
 
   gameArea.addEventListener("pointerdown",e=>{

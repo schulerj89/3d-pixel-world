@@ -32,6 +32,7 @@ hbox(HOUSE_CONFIG.width,.25,HOUSE_CONFIG.depth,0xd7b08b,0,.03,0);
 hbox(HOUSE_CONFIG.width,HOUSE_CONFIG.wallHeight,HOUSE_CONFIG.wallThickness,0xddefff,0,HOUSE_CONFIG.wallHeight/2,-HOUSE_HALF_DEPTH+HOUSE_CONFIG.wallThickness/2);
 hbox(HOUSE_CONFIG.wallThickness,HOUSE_CONFIG.wallHeight,HOUSE_CONFIG.depth,0xffe5ef,-HOUSE_HALF_WIDTH+HOUSE_CONFIG.wallThickness/2,HOUSE_CONFIG.wallHeight/2,0);
 function addFurniture(kind,loading=false,savedItem=null){
+ if(kind==="remote")return null;
  let g=new THREE.Group(),n=furniture.length,x=-5+(n%6)*2,z=-4+Math.floor(n/6)*2;
  function q(w,h,d,c,px,py,pz){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(px,py,pz);m.castShadow=true;g.add(m);return m}
  if(kind==="sofa"){q(2,.7,.8,0xe889ad,0,.55,0);q(2,.8,.25,0xd96f9a,0,1,-.3);q(.25,.7,.8,0xd96f9a,-1,.65,0);q(.25,.7,.8,0xd96f9a,1,.65,0)}
@@ -41,16 +42,6 @@ function addFurniture(kind,loading=false,savedItem=null){
  if(kind==="chair"){q(.8,.18,.8,0x8f613f,0,.8,0);q(.8,1,.18,0x8f613f,0,1.3,-.3);q(.12,.8,.12,0x68442d,-.3,.4,0);q(.12,.8,.12,0x68442d,.3,.4,0)}
  if(kind==="fridge"){q(1.25,2.4,.9,0xdcecf2,0,1.2,0);q(.08,1,.08,0x777777,.48,1.55,.48)}
  if(kind==="tv"){q(2.5,1.5,.22,0x20232b,0,1.65,0);g.userData.tvScreen=q(2.15,1.15,.05,0x151923,0,1.65,.14);q(.2,.8,.2,0x555555,0,.65,0);q(1.3,.15,.55,0x555555,0,.2,0)}
- // The remote is intentionally shadow-free. Its very small moving shadow was
- // under a pixel at common iPad camera distances and shimmered as the camera
- // eased, which looked like the remote itself was flashing.
- if(kind==="remote"){
-   const body=q(.42,.16,.82,0x292c34,0,.18,0);
-   const power=q(.13,.07,.13,0xff5967,0,.315,-.26);
-   body.castShadow=body.receiveShadow=false;
-   power.castShadow=power.receiveShadow=false;
-   power.material.roughness=1;
- }
  if(kind==="bookshelf"){
    q(1.5,2.2,.45,0x8a5a3b,0,1.1,0);
    q(1.3,.12,.5,0x6f452d,0,.42,.02);
@@ -98,7 +89,9 @@ function addFurniture(kind,loading=false,savedItem=null){
 g.rotation.y=savedItem?.rotation ?? 0;
 g.userData.kind=kind;house.add(g);furniture.push(g);constrainFurniture(g);if(!loading)saveWorld()
 }
-(saved.furniture||[]).forEach(item=>{
+saved.furniture=(saved.furniture||[]).filter(item=>(typeof item==="string"?item:item?.kind)!=="remote");
+localStorage.setItem("my3DWorld",JSON.stringify(saved));
+saved.furniture.forEach(item=>{
  if(typeof item==="string")addFurniture(item,true);
  else addFurniture(item.kind,true,item);
 });
@@ -226,11 +219,10 @@ document.getElementById("goCastle").onclick=()=>window.runWorldTransition("Raisi
 
 let sitting=false,seatedFurniture=null,tvIsOn=false,currentChannel="news";
 const houseActionBtn=document.getElementById("houseAction");
-const remotePanelEl=document.getElementById("remotePanel");
+const tvControlsPanelEl=document.getElementById("tvControlsPanel");
 const tvScreenEl=document.getElementById("tvScreen");
 const tvTitleEl=document.getElementById("tvTitle");
 const tvShowEl=document.getElementById("tvShow");
-const openTVRemoteBtn=document.getElementById("openTVRemote");
 const shows={
  news:["📰 Tiny Town News","Breaking news: a giant cupcake was baked today! A little duck found its way home."],
  chef:["👨‍🍳 Chef Gary's Kitchen","Chef Gary is making rainbow pasta and teaching fun kitchen tips."],
@@ -263,16 +255,12 @@ window.isPlayerSeated=()=>sitting;
 window.leavePlayerSeat=leaveSeat;
 function refreshHouseButtons(){
  const inHouse=currentPlace==="house";
- // Retire the legacy floating badge. Its refresh loop used to fight the
- // newer remote UI hide loop, causing the top-right control to flash.
- openTVRemoteBtn.style.display="none";
- openTVRemoteBtn.hidden=true;
- if(!inHouse||buildingMode){if(sitting)leaveSeat();houseActionBtn.style.display="none";return}
+ if(!inHouse||buildingMode){if(sitting)leaveSeat();houseActionBtn.style.display="none";tvControlsPanelEl.style.display="none";return}
  const seat=nearbySeat(),fridge=nearFurniture("fridge"),tv=nearFurniture("tv",2.4);
  if(sitting||seat){houseActionBtn.style.display="block";houseActionBtn.classList.add("seat-action");houseActionBtn.textContent=sitting?"🚶":"🛋️";houseActionBtn.setAttribute("aria-label",sitting?"Stand up":"Sit down");houseActionBtn.title=sitting?"Stand up":"Sit down";houseActionBtn.dataset.action="sit"}
  else if(fridge){houseActionBtn.classList.remove("seat-action");houseActionBtn.style.display="block";houseActionBtn.textContent="🧊 OPEN FRIDGE";houseActionBtn.dataset.action="fridge"}
  else if(tv){houseActionBtn.classList.remove("seat-action");houseActionBtn.style.display="block";houseActionBtn.textContent="TV CONTROLS";houseActionBtn.dataset.action="tv"}
- else houseActionBtn.style.display="none";
+ else{houseActionBtn.classList.remove("seat-action");houseActionBtn.style.display="none";tvControlsPanelEl.style.display="none"}
 }
 houseActionBtn.onclick=()=>{
  if(houseActionBtn.dataset.action==="sit"){
@@ -281,11 +269,9 @@ houseActionBtn.onclick=()=>{
  }
  if(houseActionBtn.dataset.action==="fridge")document.getElementById("msg").textContent="Inside: milk, fruit, cake, and juice! 🥛🍓🍰";
  if(houseActionBtn.dataset.action==="tv"){
-  const handRemote=document.getElementById("handRemote");
-  if(handRemote){handRemote.style.display="block";handRemote.setAttribute("aria-hidden","false")}
+  tvControlsPanelEl.style.display="block";
  }
 };
-openTVRemoteBtn.onclick=null;
 let tvAnimationTimer=null,tvFrame=0;
 const channelScenes={
  news:[
@@ -327,11 +313,11 @@ document.getElementById("tvPower").onclick=()=>{
  if(!hasFurniture("tv")){document.getElementById("msg").textContent="Add a TV in Build Mode first! 📺";return}
  tvIsOn=!tvIsOn;tvScreenEl.style.display=tvIsOn?"block":"none";if(tvIsOn)showTVChannel(currentChannel)
 };
-document.querySelectorAll("#remotePanel [data-channel]").forEach(b=>b.onclick=()=>{
+document.querySelectorAll("#tvControlsPanel [data-channel]").forEach(b=>b.onclick=()=>{
  if(!tvIsOn){document.getElementById("msg").textContent="Press Power first! 📺";return}
  showTVChannel(b.dataset.channel)
 });
-document.getElementById("closeRemote").onclick=()=>remotePanelEl.style.display="none";
+document.getElementById("closeTVControls").onclick=()=>tvControlsPanelEl.style.display="none";
 setInterval(refreshHouseButtons,150);
 let buildingMode=false;
 const buildingTools=document.getElementById("buildingTools");
