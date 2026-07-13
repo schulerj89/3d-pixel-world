@@ -588,7 +588,7 @@ document.getElementById("rotateF").onclick=()=>{
 };
 
 document.getElementById("deleteFurniture").onclick=()=>{const item=selectedFurniture();if(!item)return;if(item===seatedFurniture)leaveSeat();unregisterFurnitureAction(item);house.remove(item);furniture.splice(selectedFurnitureIndex,1);selectedFurnitureIndex=Math.min(selectedFurnitureIndex,furniture.length-1);updateFurnitureLabel();saveWorld()};
-backPlaces.onclick=()=>{startPage.style.display="block";setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;hideSpaceWorld();destroyForestWorld();if(castle)castle.visible=false;window.RestaurantWorld?.destroy?.();setBakeryVisible(false)};
+backPlaces.onclick=()=>{startPage.style.display="block";window.showWorldPicker?.();setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;hideSpaceWorld();destroyForestWorld();if(castle)castle.visible=false;window.RestaurantWorld?.destroy?.();setBakeryVisible(false)};
 
 
 function restoreGameButtons(){
@@ -633,7 +633,7 @@ document.getElementById("goCastle").addEventListener("click",restoreGameButtons)
 document.getElementById("firstPageButton").addEventListener("pointerdown",function(event){
   event.preventDefault();
   document.getElementById("startPage").style.display="block";
-showCharacterTypeChooser();
+window.showPregameCustomization?.();
 setHousePanel(false);setBuildingMode(false);house.visible=false;setBakeryVisible(false);
 beach.visible=false;
 hideSpaceWorld();

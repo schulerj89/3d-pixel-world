@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>My 3D World</title><link rel="stylesheet" href="styles.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="title-screen.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="build-catalog.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="object-action-system.css?v=__BUILD_VERSION__">
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>My 3D World</title><link rel="stylesheet" href="styles.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="title-screen.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="pregame-wizard.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="build-catalog.css?v=__BUILD_VERSION__"><link rel="stylesheet" href="object-action-system.css?v=__BUILD_VERSION__">
 
 </head><body>
 <section id="titleScreen" aria-labelledby="titleScreenHeading">
@@ -62,49 +62,34 @@
 </div><div id="tvShow" style="font-size:15px;min-height:45px;margin-top:7px"></div></div>
 <div id="tvControlsPanel"><b>📺 TV CONTROLS</b><button id="tvPower">⏻ Power</button><button data-channel="news">📰 News</button><button data-channel="chef">👨‍🍳 Chef Show</button><button data-channel="island">🏝️ Island Hearts</button><button data-channel="monsters">⚡ Pocket Pals</button><div class="tvPageControls"><button id="tvPrevious" aria-label="Previous program">◀</button><span id="tvPage">1 / 3</span><button id="tvNext" aria-label="Next program">▶</button></div><button id="closeTVControls">Close</button></div>
 <div id="startPage">
-<section id="adventureTypeScreen" aria-labelledby="adventureTitle">
- <div class="adventureSparkles" aria-hidden="true">🌈 ✨ 🌈</div>
- <div class="buildVersion" aria-label="Game version">Build __DISPLAY_VERSION__</div>
- <p class="adventureEyebrow">YOUR ADVENTURE</p>
- <h1 id="adventureTitle">Who will you be?</h1>
- <p class="adventureIntro">Pick a character type to begin. You can customize every look on the next screen!</p>
- <div id="characterTypeOptions" role="radiogroup" aria-label="Choose your character type">
-  <button type="button" class="characterType" data-character-type="princess" role="radio" aria-checked="false"><span aria-hidden="true">👑</span><b>Princess</b><small>Royal and radiant</small></button>
-  <button type="button" class="characterType" data-character-type="wizard" role="radio" aria-checked="false"><span aria-hidden="true">🧙</span><b>Wizard</b><small>Magical and curious</small></button>
-  <button type="button" class="characterType" data-character-type="explorer" role="radio" aria-checked="false"><span aria-hidden="true">🧭</span><b>Explorer</b><small>Ready for discovery</small></button>
-  <button type="button" class="characterType" data-character-type="beach-star" role="radio" aria-checked="false"><span aria-hidden="true">🏖️</span><b>Beach Star</b><small>Sunny and carefree</small></button>
-  <button type="button" class="characterType" data-character-type="astronaut" role="radio" aria-checked="false"><span aria-hidden="true">🚀</span><b>Astronaut</b><small>Ready for space</small></button>
- </div>
- <button id="continueToCustomize" type="button">Customize my character <span aria-hidden="true">→</span></button>
-</section>
-<div id="startCard" aria-hidden="true">
-<header class="customizeHeader"><button id="backToCharacterTypes" type="button">← Heroes</button><div><h1>✨ Enchanted Wardrobe ✨</h1><p>Shape your hero, then choose a realm.</p></div></header>
-<div class="customizeLayout">
- <div class="previewPedestal"><div id="characterPreview3D"></div><small>Drag to spin your hero ↻</small></div>
- <div class="customizeWorkbench">
-  <div class="customizeTabs" role="tablist" aria-label="Character customization steps">
-   <button class="customizeTab selected" type="button" role="tab" aria-selected="true" aria-controls="customizeLooks" data-customize-tab="customizeLooks">✨ Looks</button>
-   <button class="customizeTab" type="button" role="tab" aria-selected="false" aria-controls="customizeOutfit" data-customize-tab="customizeOutfit">🪄 Outfit</button>
-   <button class="customizeTab" type="button" role="tab" aria-selected="false" aria-controls="customizeRealm" data-customize-tab="customizeRealm">🗺️ Realm</button>
+<main id="startCard" class="pregameWizard" data-step="customize">
+ <section id="customizeLooks" class="pregameStep customizeStep" aria-labelledby="customizeHeading">
+  <div class="previewPedestal"><div id="characterPreview3D"></div><small>Drag to spin</small></div>
+  <div class="customizeWorkbench">
+   <div class="wizardProgress" aria-label="Step 1 of 2"><b>1</b><span></span><i>2</i></div>
+   <p class="wizardEyebrow">STEP 1</p><h1 id="customizeHeading" tabindex="-1">Customize Your Character</h1>
+   <p class="wizardIntro">Choose four colors for your look.</p>
+   <div class="colorControlGrid">
+    <div class="magicChoice"><p>Hair</p><div id="startHairColor"></div></div>
+    <div class="magicChoice"><p>Skin</p><div id="startSkin"></div></div>
+    <div class="magicChoice"><p>Pants / Skirt</p><div id="startPants"></div></div>
+    <div class="magicChoice"><p>Outfit Color</p><div id="startOutfitColor"></div></div>
+   </div>
+   <button id="wizardNextButton" class="wizardPrimary" type="button">Next: Choose a World <span aria-hidden="true">&#8594;</span></button>
   </div>
-  <section id="customizeLooks" class="customizePanel selected" role="tabpanel">
-   <div class="magicChoice"><p>Skin</p><div id="startSkin"></div></div>
-   <div class="magicChoice"><p>Hair style</p><div id="startHairStyle"></div></div>
-   <div class="magicChoice"><p>Hair color</p><div id="startHairColor"></div></div>
-   <div class="magicChoice"><p>Shirt</p><div id="startShirt"></div></div>
-   <div class="magicChoice"><p>Pants</p><div id="startPants"></div></div>
-  </section>
-  <section id="customizeOutfit" class="customizePanel" role="tabpanel" hidden>
-   <div class="magicChoice wide"><p>Adventure outfit</p><div id="startOutfit"></div></div>
-   <div class="magicChoice"><p>Outfit color</p><div id="startOutfitColor"></div></div>
-   <div class="magicChoice"><p>Magic accessories</p><button id="startAstronautHelmet" class="option" type="button" aria-pressed="false">Astronaut helmet</button></div>
-  </section>
-  <section id="customizeRealm" class="customizePanel realmGrid" role="tabpanel" hidden>
-   <button class="place" id="goBakery">🍽️<span>Restaurant</span></button><button class="place" id="goHouse"><img class="gameIcon realmIcon" src="assets/ui/gvesster/house.png?v=__BUILD_VERSION__" alt=""><span>My House</span></button><button class="place" id="goBeach">🏖️<span>Beach</span></button><button class="place" id="goSpace"><img class="gameIcon realmIcon" src="assets/ui/gvesster/rocket.png?v=__BUILD_VERSION__" alt=""><span>Space</span></button><button class="place" id="goForest">🌲<span>Forest</span></button><button class="place" id="goCastle">🏰<span>Castle</span></button>
-  </section>
- </div>
-</div>
-</div></div>
+  <div class="buildVersion" aria-label="Game version">Build __DISPLAY_VERSION__</div>
+ </section>
+ <section id="customizeRealm" class="pregameStep worldStep" aria-labelledby="worldPickerHeading" hidden>
+  <header class="worldPickerHeader">
+   <button id="wizardBackButton" type="button"><span aria-hidden="true">&#8592;</span> Back / Edit</button>
+   <div><div class="wizardProgress" aria-label="Step 2 of 2"><i>1</i><span></span><b>2</b></div><p class="wizardEyebrow">STEP 2</p><h1 id="worldPickerHeading" tabindex="-1">Choose Your World</h1></div>
+  </header>
+  <div class="realmGrid" aria-label="Worlds">
+   <button class="place" id="goBakery">&#127869;&#65039;<span>Restaurant</span></button><button class="place" id="goHouse"><img class="gameIcon realmIcon" src="assets/ui/gvesster/house.png?v=__BUILD_VERSION__" alt=""><span>My House</span></button><button class="place" id="goBeach">&#127958;&#65039;<span>Beach</span></button><button class="place" id="goSpace"><img class="gameIcon realmIcon" src="assets/ui/gvesster/rocket.png?v=__BUILD_VERSION__" alt=""><span>Space</span></button><button class="place" id="goForest">&#127794;<span>Forest</span></button><button class="place" id="goCastle">&#127984;<span>Castle</span></button>
+  </div>
+  <div class="buildVersion" aria-label="Game version">Build __DISPLAY_VERSION__</div>
+ </section>
+</main></div>
 <button id="menuGoCastle" type="button" hidden>🏰 Go to Castle</button>
 <button id="housePanelToggle" aria-expanded="false" aria-controls="housePanel"><img class="gameIcon" src="assets/ui/gvesster/house.png?v=__BUILD_VERSION__" alt=""> House</button>
 <div id="housePanel" aria-hidden="true">
@@ -171,6 +156,7 @@
 <audio id="blenderSound" preload="metadata" src="assets/audio/blender-working.mp3?v=__BUILD_VERSION__"></audio>
 <script src="level-template-parser.js?v=__BUILD_VERSION__"></script>
 <script src="notification-system.js?v=__BUILD_VERSION__"></script>
+<script src="pregame-wizard.js?v=__BUILD_VERSION__"></script>
 <script src="bakery-order-system.js?v=__BUILD_VERSION__"></script>
 <script src="touch-interactions.js?v=__BUILD_VERSION__"></script>
 <script src="object-action-system.js?v=__BUILD_VERSION__"></script>

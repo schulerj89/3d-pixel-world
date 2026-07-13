@@ -1,67 +1,13 @@
-// Character-type chooser, avatar preview, hairstyles, outfits, and persisted customization.
-// ----- First page, character colors, and house decorating -----
+// Chibi color customization, preview, and persisted house decorating.
 const startPage=document.getElementById("startPage"),housePanel=document.getElementById("housePanel");
 let furniture=[];
 const saved=JSON.parse(localStorage.getItem("my3DWorld")||"{}");
-const adventureTypeScreen=document.getElementById("adventureTypeScreen");
-const startCard=document.getElementById("startCard");
-const characterTypeOptions=document.getElementById("characterTypeOptions");
-const CHARACTER_TYPES=["princess","wizard","explorer","beach-star","astronaut"];
-function chooseCharacterType(type,shouldSave=true){
- const safeType=CHARACTER_TYPES.includes(type)?type:"princess";
- saved.characterType=safeType;
- characterTypeOptions.querySelectorAll("[data-character-type]").forEach(button=>{
-  const selected=button.dataset.characterType===safeType;
-  button.classList.toggle("selected",selected);
-  button.setAttribute("aria-checked",String(selected));
- });
- if(shouldSave)saveWorld();
-}
-function showCharacterTypeChooser(){
- adventureTypeScreen.hidden=false;
- startCard.setAttribute("aria-hidden","true");
-}
-function showCharacterCustomization(){
- adventureTypeScreen.hidden=true;
- startCard.setAttribute("aria-hidden","false");
-}
-characterTypeOptions.addEventListener("click",event=>{
- const button=event.target.closest("[data-character-type]");
- if(button)chooseCharacterType(button.dataset.characterType);
-});
-document.getElementById("continueToCustomize").addEventListener("click",()=>{
- chooseCharacterType(saved.characterType||"princess");
- if(window.applyCharacterTypeDefault)window.applyCharacterTypeDefault(saved.characterType);
- showCharacterCustomization();
-});
-document.getElementById("backToCharacterTypes").addEventListener("click",showCharacterTypeChooser);
-const customizeTabs=[...document.querySelectorAll("[data-customize-tab]")];
-function showCustomizePanel(panelId){
- customizeTabs.forEach(tab=>{
-  const selected=tab.dataset.customizeTab===panelId;
-  tab.classList.toggle("selected",selected);
-  tab.setAttribute("aria-selected",String(selected));
-  tab.tabIndex=selected?0:-1;
- });
- document.querySelectorAll(".customizePanel").forEach(panel=>{
-  const selected=panel.id===panelId;
-  panel.hidden=!selected;
-  panel.classList.toggle("selected",selected);
- });
-}
-customizeTabs.forEach((tab,index)=>{
- tab.addEventListener("click",()=>showCustomizePanel(tab.dataset.customizeTab));
- tab.addEventListener("keydown",event=>{
-  if(event.key!=="ArrowLeft"&&event.key!=="ArrowRight")return;
-  event.preventDefault();
-  const direction=event.key==="ArrowRight"?1:-1;
-  const next=customizeTabs[(index+direction+customizeTabs.length)%customizeTabs.length];
-  showCustomizePanel(next.dataset.customizeTab);
-  next.focus();
- });
-});
-showCustomizePanel("customizeLooks");
-chooseCharacterType(saved.characterType||"princess",false);
+// The Styloo student has one locked outfit/hair mesh; retain only its four color choices.
+const legacyShirt=Number(saved.shirt),storedOutfitColor=Number(saved.outfitColor);
+const hasStoredOutfit=saved.outfitColor!=null&&Number.isFinite(storedOutfitColor),hasLegacyShirt=saved.shirt!=null&&Number.isFinite(legacyShirt);
+saved.outfitColor=hasStoredOutfit?storedOutfitColor:(hasLegacyShirt?legacyShirt:0xb77cff);
+delete saved.characterType;delete saved.hairStyle;delete saved.outfit;delete saved.shirt;delete saved.astronautHelmet;
+localStorage.setItem("my3DWorld",JSON.stringify(saved));
 function selectCustomizationButton(area,button){
  area.querySelectorAll("button").forEach(b=>{const selected=b===button;b.classList.toggle("selected",selected);b.setAttribute("aria-pressed",selected)});
 }
@@ -241,105 +187,29 @@ let previewDrag=false,lastPreviewX=0;
 previewRenderer.domElement.addEventListener("pointerdown",e=>{previewDrag=true;lastPreviewX=e.clientX;previewRenderer.domElement.setPointerCapture(e.pointerId)});
 previewRenderer.domElement.addEventListener("pointermove",e=>{if(previewDrag){previewAvatar.rotation.y+=(e.clientX-lastPreviewX)*.02;lastPreviewX=e.clientX}});
 previewRenderer.domElement.addEventListener("pointerup",()=>previewDrag=false);
-(function previewLoop(){requestAnimationFrame(previewLoop);previewRenderer.render(previewScene,previewCamera)})();
+const titleScreen=document.getElementById("titleScreen"),customizeStep=document.getElementById("customizeLooks");
+(function previewLoop(){requestAnimationFrame(previewLoop);if(titleScreen?.hidden&&startPage.style.display!=="none"&&!customizeStep.hidden)previewRenderer.render(previewScene,previewCamera)})();
 
-function setHairStyle(style){
- saved.hairStyle=style;
- playerHairTop.visible=style==="Classic";playerHairSide.visible=style==="Classic";
- pvHairTop.visible=style==="Classic";pvHairSide.visible=style==="Classic";
- playerPuffPieces.forEach(m=>m.visible=false);
- pvPuffPieces.forEach(m=>m.visible=false);
- playerLongPieces.forEach(m=>m.visible=false);
- pvLongPieces.forEach(m=>m.visible=false);
- playerShortCurlPieces.forEach(m=>m.visible=false);
- pvShortCurlPieces.forEach(m=>m.visible=false);
-
- if(style==="Short"){
-  playerHairTop.visible=false;playerHairSide.visible=false;
-  pvHairTop.visible=false;pvHairSide.visible=false;
-  playerShortCurlPieces.forEach(m=>m.visible=true);
-  pvShortCurlPieces.forEach(m=>m.visible=true);
- }
- if(style==="Long"){
-  // Hide the old block hair and show layered hair with a center part.
-  playerHairTop.visible=false;playerHairSide.visible=false;
-  pvHairTop.visible=false;pvHairSide.visible=false;
-  playerLongPieces.forEach(m=>m.visible=true);
-  pvLongPieces.forEach(m=>m.visible=true);
- }
- if(style==="Puffy"){
-  // Hide the old flat top block and side strip.
-  playerHairTop.visible=false;playerHairSide.visible=false;
-  pvHairTop.visible=false;pvHairSide.visible=false;
-  // Show many small voxel puffs around the top, sides, and back.
-  playerPuffPieces.forEach(m=>m.visible=true);
-  pvPuffPieces.forEach(m=>m.visible=true);
- }
- saveWorld();
-}
-["Classic","Short","Long","Puffy"].forEach(style=>{let b=document.createElement("button");b.className="option";b.textContent=style;b.onclick=()=>{setHairStyle(style);selectCustomizationButton(startHairStyle,b)};startHairStyle.appendChild(b);if(style===(saved.hairStyle||"Classic"))selectCustomizationButton(startHairStyle,b)});
 colorButtons("startHairColor",[0x2b1a12,0x6b3c35,0xc9873c,0xf2d36b,0x222222,0xff79b0],c=>{materialColor(playerHairTop,c);materialColor(playerHairSide,c);materialColor(pvHairTop,c);materialColor(pvHairSide,c);playerPuffPieces.forEach(m=>materialColor(m,c));pvPuffPieces.forEach(m=>materialColor(m,c));playerLongPieces.forEach(m=>materialColor(m,c));pvLongPieces.forEach(m=>materialColor(m,c));playerShortCurlPieces.forEach(m=>materialColor(m,c));pvShortCurlPieces.forEach(m=>materialColor(m,c));saved.hair=c},saved.hair??0x6b3c35);
 colorButtons("startSkin",[0xf2bb91,0xd99568,0xb97850,0x7b4932,0x4b2b20],c=>{materialColor(playerHead,c);materialColor(playerLeftArm,c);materialColor(playerRightArm,c);saved.skin=c;materialColor(pvHead,c);materialColor(pvArm1,c);materialColor(pvArm2,c)},saved.skin??0xf2bb91);
-colorButtons("startShirt",[0xb77cff,0xff73aa,0x55c985,0x5b9cff,0xffc83d],c=>{materialColor(playerShirt,c);materialColor(pvShirt,c);saved.shirt=c},Number(saved.shirt??0xb77cff));
+colorButtons("startOutfitColor",[0xb77cff,0xff73aa,0x55c985,0x5b9cff,0xffc83d],c=>{materialColor(playerShirt,c);materialColor(pvShirt,c);saved.outfitColor=c;setFallbackOutfitColor(c)},saved.outfitColor);
 colorButtons("startPants",[0x5870c8,0x292b35,0xd95b91,0x397b55,0xf1f1f1],c=>{materialColor(playerLeftLeg,c);materialColor(playerRightLeg,c);saved.pants=c;materialColor(pvLeg1,c);materialColor(pvLeg2,c)},saved.pants??0x5870c8);
-const OUTFIT_NAMES=["Everyday","Princess","Wizard","Explorer","Beach Star","Astronaut"];
-function normalizedCharacterType(value){
- const key=String(value||"").toLowerCase().replace(/[^a-z]/g,"");
- if(key.includes("princess"))return "Princess";
- if(key.includes("wizard"))return "Wizard";
- if(key.includes("explorer"))return "Explorer";
- if(key.includes("beach"))return "Beach Star";
- if(key.includes("astronaut")||key.includes("space"))return "Astronaut";
- return "Everyday";
+function showEverydayFallback(){
+ Object.entries(playerWearables).forEach(([key,value])=>(value.setVisible||((visible)=>value.group.visible=visible))(key==="Everyday"));
+ Object.entries(previewWearables).forEach(([key,value])=>(value.setVisible||((visible)=>value.group.visible=visible))(key==="Everyday"));
 }
-function setOutfit(name,{persist=true}={}){
- if(!OUTFIT_NAMES.includes(name))name="Everyday";
- Object.entries(playerWearables).forEach(([key,value])=>(value.setVisible||((visible)=>value.group.visible=visible))(key===name));
- Object.entries(previewWearables).forEach(([key,value])=>(value.setVisible||((visible)=>value.group.visible=visible))(key===name));
- if(persist){saved.outfit=name;saveWorld()}
- document.querySelectorAll("#startOutfit .option").forEach(button=>{
-  const selected=button.dataset.outfit===name;
-  button.classList.toggle("selected",selected);button.setAttribute("aria-pressed",selected);
- });
-}
-function setOutfitColor(color,{persist=true}={}){
+function setFallbackOutfitColor(color){
  Object.values(playerWearables).forEach(value=>value.colorMeshes.forEach(mesh=>materialColor(mesh,color)));
  Object.values(previewWearables).forEach(value=>value.colorMeshes.forEach(mesh=>materialColor(mesh,color)));
- if(persist){saved.outfitColor=color;saveWorld()}
 }
-const outfitIcons={Everyday:"👕",Princess:"👑",Wizard:"🪄",Explorer:"🧭","Beach Star":"🏖️",Astronaut:"🚀"};
-OUTFIT_NAMES.forEach(name=>{
- const button=document.createElement("button");button.className="option";button.dataset.outfit=name;
- button.textContent=`${outfitIcons[name]} ${name}`;button.onclick=()=>setOutfit(name);
- startOutfit.appendChild(button);
-});
-const initialOutfit=saved.outfit||normalizedCharacterType(saved.characterType);
-setOutfitColor(Number(saved.outfitColor??0xb65bd4),{persist:false});
-setOutfit(initialOutfit,{persist:false});
-colorButtons("startOutfitColor",[0xb65bd4,0xff76ad,0x36b9c7,0x4f72cf,0x45a568,0xd69642],c=>setOutfitColor(c),Number(saved.outfitColor??0xb65bd4));
-const astronautHelmetButton=document.getElementById("startAstronautHelmet");
-function setAstronautHelmet(enabled,{persist=true}={}){
- enabled=!!enabled;playerAstronautHelmet.visible=enabled;previewAstronautHelmet.visible=enabled;
- astronautHelmetButton.classList.toggle("selected",enabled);
- astronautHelmetButton.setAttribute("aria-pressed",String(enabled));
- astronautHelmetButton.textContent="🪖 Astronaut helmet";
- if(persist){saved.astronautHelmet=enabled;saveWorld()}
-}
-astronautHelmetButton.addEventListener("click",()=>setAstronautHelmet(!playerAstronautHelmet.visible));
-setAstronautHelmet(saved.astronautHelmet===true,{persist:false});
-// The preceding character-type screen can call this without rebuilding the avatar.
-window.applyCharacterTypeDefault=type=>{
- saved.characterType=type;
- setOutfit(normalizedCharacterType(type));
- saveWorld();
-};
+setFallbackOutfitColor(saved.outfitColor);showEverydayFallback();
+playerAstronautHelmet.visible=false;previewAstronautHelmet.visible=false;
 if(saved.skin){materialColor(playerHead,saved.skin);materialColor(playerLeftArm,saved.skin);materialColor(playerRightArm,saved.skin)}
-if(saved.shirt)materialColor(playerShirt,saved.shirt);
+materialColor(playerShirt,saved.outfitColor);
 if(saved.pants){materialColor(playerLeftLeg,saved.pants);materialColor(playerRightLeg,saved.pants);materialColor(pvLeg1,saved.pants);materialColor(pvLeg2,saved.pants)}
 if(saved.skin){materialColor(pvHead,saved.skin);materialColor(pvArm1,saved.skin);materialColor(pvArm2,saved.skin)}
-if(saved.shirt)materialColor(pvShirt,saved.shirt);
+materialColor(pvShirt,saved.outfitColor);
 if(saved.hair){materialColor(playerHairTop,saved.hair);materialColor(playerHairSide,saved.hair);materialColor(pvHairTop,saved.hair);materialColor(pvHairSide,saved.hair);playerPuffPieces.forEach(m=>materialColor(m,saved.hair));pvPuffPieces.forEach(m=>materialColor(m,saved.hair));playerLongPieces.forEach(m=>materialColor(m,saved.hair));pvLongPieces.forEach(m=>materialColor(m,saved.hair));playerShortCurlPieces.forEach(m=>materialColor(m,saved.hair));pvShortCurlPieces.forEach(m=>materialColor(m,saved.hair))}
-if(saved.hairStyle)setHairStyle(saved.hairStyle);
 function saveWorld(){saved.furniture=furniture.filter(x=>x.userData.kind!=="remote").map(x=>({
  kind:x.userData.kind,
  x:x.position.x,

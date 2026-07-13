@@ -1,14 +1,20 @@
 const assert=require("assert");
 
 global.window=global;
-global.localStorage={getItem(){return JSON.stringify({skin:0xd99568,hair:0x222222,shirt:0x55c985,pants:0x292b35})}};
+const saved={skin:0xd99568,hair:0x222222,outfitColor:0x55c985,pants:0x292b35};
+global.localStorage={getItem(){return JSON.stringify(saved)}};
 let facingAttachments=0;
 global.characterFacing={STYLOO_MODEL_FORWARD_AXIS:"+z",STYLOO_MODEL_FORWARD_CORRECTION:0,
  attachVisual(visual,axis){facingAttachments++;assert.strictEqual(axis,"+z");visual.rotation.y=0;return 0}};
 function root(){return {children:[{visible:true}],userData:{},add(child){this.children.push(child)},remove(child){this.children=this.children.filter(item=>item!==child)}}}
 global.playerAvatarRoot=root();global.avatarPreviewRoot=root();
-const clips=["anim_iddle","anim_walk","anim_run"].map(name=>({name}));
-class Loader{load(_url,resolve){resolve({scene:{name:"",scale:{setScalar(){}},rotation:{},userData:{},traverse(){}},animations:clips})}}
+const clips=["anim_iddle","anim_walk","anim_run"].map(name=>({name})),scenes=[];
+function material(name){return {name,color:{value:null,setHex(value){this.value=value}},clone(){return material(name)}}}
+function characterScene(){
+ const meshes=["character","hairvariant","schooloutfit","schoolskirt"].map(name=>({isMesh:true,material:material(name)}));
+ const scene={name:"",scale:{setScalar(){}},rotation:{},userData:{},meshes,traverse(visitor){meshes.forEach(visitor)}};scenes.push(scene);return scene;
+}
+class Loader{load(_url,resolve){resolve({scene:characterScene(),animations:clips})}}
 class AnimationMixer{
  constructor(){this.actions=new Map()}
  clipAction(clip){
@@ -30,8 +36,13 @@ setImmediate(()=>{
  assert.strictEqual(playerAvatarRoot.userData.characterAsset,"styloo-chibi-student-v1.2");
  assert.strictEqual(playerAvatarRoot.userData.characterForwardAxis,"+z");
  assert(playerAvatarRoot.children[0].visible===false,"voxel fallback should hide only after successful validation");
+ const expected={character:saved.skin,hairvariant:saved.hair,schooloutfit:saved.outfitColor,schoolskirt:saved.pants};
+ assert.strictEqual(scenes.length,2,"world and wardrobe preview must load separate Styloo instances");
+ scenes.forEach(scene=>scene.meshes.forEach(mesh=>assert.strictEqual(mesh.material.color.value,expected[mesh.material.name],`${mesh.material.name} initial tint must match in world and preview`)));
+ const updated={skin:0x4b2b20,hair:0xff79b0,outfitColor:0x36b9c7,pants:0xd95b91};customHumanoidCharacter.applyCustomization(updated);
+ scenes.forEach(scene=>scene.meshes.forEach(mesh=>assert.strictEqual(mesh.material.color.value,({character:updated.skin,hairvariant:updated.hair,schooloutfit:updated.outfitColor,schoolskirt:updated.pants})[mesh.material.name],`${mesh.material.name} live tint must stay synchronized`)));
  customHumanoidCharacter.update(.016,true,.45);assert.strictEqual(getCharacterAssetDebug().state,"walk");
  customHumanoidCharacter.update(.016,true,1);assert.strictEqual(getCharacterAssetDebug().state,"run");
  customHumanoidCharacter.update(.016,false,0);assert.strictEqual(getCharacterAssetDebug().state,"idle");
- console.log("humanoid character system: validated idle/walk/run state selection");
+ console.log("humanoid character system: synchronized four tints plus idle/walk/run state selection");
 });
