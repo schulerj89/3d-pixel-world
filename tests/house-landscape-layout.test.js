@@ -6,6 +6,7 @@ const read=name=>fs.readFileSync(path.join(root,name),"utf8");
 const css=read("build-catalog.css"),catalog=read("build-catalog.js"),house=read("house-system.js"),styles=read("styles.css");
 
 assert(css.includes("max-height:150px"),"expanded short-landscape dock must remain within a 150px scene budget");
+assert(css.includes(".house-building #buildingTools.buildCatalogTray.enabled")&&css.includes("grid-template-columns:218px minmax(0,1fr)"),"the catalog layout must override the legacy house tool columns in short landscape");
 assert(css.includes("max-height:min(220px,29dvh)"),"tablet dock must preserve room visibility with a proportional height budget");
 assert(css.includes("env(safe-area-inset-left)")&&css.includes("env(safe-area-inset-right)"),"build dock must respect landscape safe areas");
 assert(css.includes("min-height:44px")&&css.includes("width:44px"),"primary, paging, and edit controls must retain touch targets");
@@ -30,6 +31,9 @@ assert(catalog.includes('categoryPreference=null')&&catalog.includes('if(categor
 assert(catalog.includes('["ArrowLeft","ArrowRight","Home","End"]')&&catalog.includes('buttons[index].focus()'),"category tabs must support keyboard navigation and roving focus");
 assert(catalog.includes('aria-label","Previous furniture')&&catalog.includes('aria-label","Next furniture'),"catalog must preserve explicit furniture paging controls");
 assert(catalog.includes('aria-expanded')&&catalog.includes('window.setBuildCatalogCollapsed'),"room-view collapse state must remain accessible and resettable");
+assert(catalog.includes("setDangerExpanded")&&catalog.includes('dangerActions.hidden=!expanded'),"destructive furniture controls must be grouped behind an accessible disclosure");
+assert(css.includes(".furnitureEditor.danger-open .moveGrid{display:none}"),"movement controls must yield their row while destructive actions are open");
+assert(css.includes("#buildRemoveToggle")&&css.includes("min-width:88px!important"),"the compact remove disclosure must retain a touch-sized target");
 assert(house.includes('window.setBuildCatalogCollapsed?.(false)'),"build sessions must reopen with tools available");
 assert(styles.includes("max-height:calc(100dvh - 68px)"),"landscape house panel must stay inside the dynamic viewport");
 
