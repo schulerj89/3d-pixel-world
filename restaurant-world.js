@@ -7,6 +7,7 @@
  "use strict";
  const BUILD_VERSION="__BUILD_VERSION__";
  const KIT_URL=`assets/models/restaurant/kaykit-restaurant-kit.glb?v=${BUILD_VERSION}`;
+ const KIT_BYTES=573880;
  const BACKGROUND_COLOR=0x87ceeb;
  const EXTRA_ASSETS=Object.freeze({
   cashRegister:Object.freeze({assetId:"restaurant.front.cash-register",kind:"prop",url:`assets/models/restaurant-extras/cash-register.glb?v=${BUILD_VERSION}`,bytes:323928,position:Object.freeze({x:0,y:1.03,z:15.08}),scale:1.15,yaw:Math.PI}),
@@ -20,6 +21,18 @@
   food:Object.freeze([Object.freeze({assetId:"restaurant.kitchen.food.burger",sourceScene:"food_burger",x:-.6,y:1.04,z:0,scale:.55}),Object.freeze({assetId:"restaurant.kitchen.food.dinner",sourceScene:"food_dinner",x:.6,y:1.04,z:0,scale:.55})]),
   marker:Object.freeze({id:"restaurant.kitchen.food-counter-nearby",icon:"🍔",range:3.4,x:0,y:2.15,z:0,action:null})
  });
+ const DINING_TABLE_FOOD=Object.freeze([
+  Object.freeze({assetId:"restaurant.dining.table-food.northwest-produce",position:Object.freeze({x:-11.5,z:-11.5}),items:Object.freeze([
+   Object.freeze({assetId:"restaurant.dining.food.northwest-tomatoes",sourceScene:"food_ingredient_tomato",scale:.42,copies:Object.freeze([Object.freeze({x:-.22,z:-.12}),Object.freeze({x:.22,z:-.12}),Object.freeze({x:0,z:.18})])})
+  ])}),
+  Object.freeze({assetId:"restaurant.dining.table-food.north-stew",position:Object.freeze({x:-3.5,z:-11.5}),items:Object.freeze([Object.freeze({assetId:"restaurant.dining.food.north-stew",sourceScene:"food_stew",scale:.55,copies:Object.freeze([Object.freeze({x:0,z:0})])})])}),
+  Object.freeze({assetId:"restaurant.dining.table-food.north-burger",position:Object.freeze({x:4.5,z:-11.5}),items:Object.freeze([Object.freeze({assetId:"restaurant.dining.food.north-burger",sourceScene:"food_burger",scale:.48,copies:Object.freeze([Object.freeze({x:0,z:0})])})])}),
+  Object.freeze({assetId:"restaurant.dining.table-food.northeast-dinner",position:Object.freeze({x:12.5,z:-11.5}),items:Object.freeze([Object.freeze({assetId:"restaurant.dining.food.northeast-dinner",sourceScene:"food_dinner",scale:.47,copies:Object.freeze([Object.freeze({x:0,z:0})])})])}),
+  Object.freeze({assetId:"restaurant.dining.table-food.midwest-produce",position:Object.freeze({x:-11.5,z:-4.5}),items:Object.freeze([
+   Object.freeze({assetId:"restaurant.dining.food.midwest-tomatoes",sourceScene:"food_ingredient_tomato",scale:.42,copies:Object.freeze([Object.freeze({x:-.22,z:-.12}),Object.freeze({x:.22,z:-.12}),Object.freeze({x:0,z:.18})])})
+  ])}),
+  Object.freeze({assetId:"restaurant.dining.table-food.mid-dinner",position:Object.freeze({x:-3.5,z:-4.5}),items:Object.freeze([Object.freeze({assetId:"restaurant.dining.food.mid-dinner",sourceScene:"food_dinner",scale:.47,copies:Object.freeze([Object.freeze({x:0,z:0})])})])})
+ ]);
  const ROOM_FILES={dining:"restaurant-main-level.txt",kitchen:"restaurant-kitchen-level.txt"};
  const WALKABLE=new Set([".","D","E"]);
  const PLAYER_RADIUS=.28;
@@ -42,6 +55,7 @@
   "restaurant-cashier-npc":Object.freeze({room:"dining",position:Object.freeze({x:0,z:13.5}),camera:Object.freeze({angle:Math.PI,height:4.6,distance:6}),hidePlayer:true}),
   "restaurant-customer-line":Object.freeze({room:"dining",position:Object.freeze({x:2.5,z:17.25}),camera:Object.freeze({angle:Math.PI,height:6,distance:8}),hidePlayer:true}),
   "restaurant-sky-overview":Object.freeze({room:"dining",position:Object.freeze({x:0,z:5}),camera:Object.freeze({angle:.35,height:9,distance:11})}),
+  "restaurant-food-tables":Object.freeze({room:"dining",position:Object.freeze({x:.5,z:-9.5}),camera:Object.freeze({angle:0,height:7.5,distance:12}),hidePlayer:true}),
   "kitchen-food-counter":Object.freeze({room:"kitchen",position:Object.freeze({x:-8.6,z:-34.5}),camera:Object.freeze({angle:Math.PI/2,height:5.8,distance:7}),hidePlayer:true}),
   "kitchen-wall-northwest":Object.freeze({room:"kitchen",position:Object.freeze({x:-8,z:-41}),camera:Object.freeze({angle:.8,height:6.5,distance:7})}),
   "kitchen-wall-northeast":Object.freeze({room:"kitchen",position:Object.freeze({x:9,z:-41}),camera:Object.freeze({angle:-.8,height:6.5,distance:7})})
@@ -252,6 +266,24 @@
   KITCHEN_FOOD_COUNTER.food.forEach((spec,index)=>{const prototype=sourceScene(kit,spec.sourceScene);if(prototype){const food=prototype.clone(true);food.position.set(spec.x,spec.y,spec.z);food.scale.setScalar(spec.scale);food.userData={assetId:spec.assetId,sourceScene:spec.sourceScene,placeholder:false};food.traverse(object=>{if(object.isMesh){object.castShadow=object.receiveShadow=true}});display.add(food);loadedAssetIds.push(spec.assetId)}else{const food=new THREE.Mesh(new THREE.BoxGeometry(.55,.45,.5),new THREE.MeshStandardMaterial({color:index?0xf0c978:0xb87955,roughness:.82}));food.position.set(spec.x,spec.y+.22,spec.z);food.userData={assetId:spec.assetId,placeholder:true};display.add(food)}});
   const marker=createProximityIcon(THREE,KITCHEN_FOOD_COUNTER.marker);display.add(marker);display.userData={assetId:KITCHEN_FOOD_COUNTER.assetId,sourceScene:KITCHEN_FOOD_COUNTER.sourceScene,food:KITCHEN_FOOD_COUNTER.food.map(spec=>spec.assetId),marker:marker.userData,collision:KITCHEN_FOOD_COUNTER.collision};group.add(display);return {display,marker};
  }
+ function addDiningTableFood(THREE,group,kit,loadedAssetIds){
+  const dressing=new THREE.Group();dressing.name="restaurant-dining-table-food";let produceMaterial=null,mealMaterial=null,itemCount=0;
+  DINING_TABLE_FOOD.forEach(tableSpec=>{
+   const tableGroup=new THREE.Group();tableGroup.name=tableSpec.assetId;tableGroup.position.set(tableSpec.position.x,.78,tableSpec.position.z);
+   tableSpec.items.forEach(item=>{
+    const prototype=sourceScene(kit,item.sourceScene),itemGroup=new THREE.Group();itemGroup.name=item.assetId;
+    item.copies.forEach((copy,index)=>{
+     let art;
+     if(prototype){art=prototype.clone(true);art.scale.setScalar(item.scale);art.traverse(object=>{if(object.isMesh){object.castShadow=object.receiveShadow=true}})}
+     else{const produce=item.sourceScene==="food_ingredient_tomato";if(produce&&!produceMaterial)produceMaterial=new THREE.MeshStandardMaterial({color:0xd94343,roughness:.8});if(!produce&&!mealMaterial)mealMaterial=new THREE.MeshStandardMaterial({color:0xf0c978,roughness:.82});art=new THREE.Mesh(new THREE.BoxGeometry(.28,.2,.28),produce?produceMaterial:mealMaterial)}
+     art.position.set(copy.x,0,copy.z);art.userData={assetId:item.assetId,sourceScene:item.sourceScene,copyIndex:index,placeholder:!prototype};itemGroup.add(art);itemCount++;
+    });
+    itemGroup.userData={assetId:item.assetId,sourceScene:item.sourceScene,instanceCount:item.copies.length,placeholder:!prototype};tableGroup.add(itemGroup);if(prototype)loadedAssetIds.push(item.assetId);
+   });
+   tableGroup.userData={assetId:tableSpec.assetId,tableAssetId:ASSET_REGISTRY.T.assetId,foodAssetIds:tableSpec.items.map(item=>item.assetId)};dressing.add(tableGroup);
+  });
+  dressing.userData={assetId:"restaurant.dining.table-food",tableCount:DINING_TABLE_FOOD.length,itemCount,sourceScenes:[...new Set(DINING_TABLE_FOOD.flatMap(table=>table.items.map(item=>item.sourceScene)))]};group.add(dressing);return dressing;
+ }
  function addFrontArea(THREE,group,kit,extras,loadedAssetIds,mixers=[]){
   const front=new THREE.Group();front.name="restaurant-front-area";
   const deskPrototype=sourceScene(kit,CASH_DESK.sourceScene);
@@ -313,7 +345,7 @@
    placements.forEach((p,i)=>{matrix.makeTranslation(p.x,spec.height,p.z);batch.setMatrixAt(i,matrix)});batch.instanceMatrix.needsUpdate=true;batch.castShadow=batch.receiveShadow=true;
    batch.userData={assetId:spec.assetId,symbol,placeholder:true,instanceCount:placements.length};group.add(batch);
   }
-  const foodCounter=addKitchenFoodCounter(THREE,group,kit,loadedAssetIds);addFrontArea(THREE,group,kit,extras,loadedAssetIds,mixers);
+  const diningTableFood=addDiningTableFood(THREE,group,kit,loadedAssetIds),foodCounter=addKitchenFoodCounter(THREE,group,kit,loadedAssetIds);addFrontArea(THREE,group,kit,extras,loadedAssetIds,mixers);
   const CustomerSystem=customerSystemApi()?.RestaurantCustomerSystem,customerSystem=CustomerSystem?new CustomerSystem({maxActive:4,waitingFaceTarget:EXTRA_ASSETS.cashRegister.position,avatarFactory:createCustomerAvatarFactory(THREE,group,extras.cashierMerchant)}):null,eventDisposers=[];
   INITIAL_CUSTOMER_ORDERS.forEach(order=>customerSystem?.enqueue(order));
   if(customerSystem&&typeof globalThis.addEventListener==="function"){
@@ -322,8 +354,8 @@
    globalThis.addEventListener("restaurant-order-added",added);globalThis.addEventListener("restaurant-order-completed",completed);eventDisposers.push(()=>globalThis.removeEventListener("restaurant-order-added",added),()=>globalThis.removeEventListener("restaurant-order-completed",completed));
   }
   const urls=[KIT_URL,...Object.values(EXTRA_ASSETS).map(spec=>spec.url)],externalReady=Object.keys(EXTRA_ASSETS).every(key=>extras[key]?.scene),entranceReady=sourceScene(kit,FRONT_ENTRANCE.frameScene)&&sourceScene(kit,FRONT_ENTRANCE.doorScene);
-  const totalAssetBytes=549488+Object.values(EXTRA_ASSETS).reduce((sum,spec)=>sum+(spec.bytes||0),0),proximity={markerId:KITCHEN_FOOD_COUNTER.marker.id,range:KITCHEN_FOOD_COUNTER.marker.range,active:false,action:null};
-  group.userData={destination:"restaurant",rooms:rooms.map(room=>({id:room.room,width:room.width,depth:room.depth,layoutFile:ROOM_FILES[room.room]})),assetRegistry:ASSET_REGISTRY,assets:{url:KIT_URL,urls,status:kit&&externalReady&&entranceReady?"ready":"fallback",loadedAssetIds,totalBytes:totalAssetBytes,error:assetError},floor:{kitchen:KITCHEN_FLOOR},npcs:{count:1+(customerSystem?.customers?.length||0),cashier:{assetId:EXTRA_ASSETS.cashierMerchant.assetId,idleClip:EXTRA_ASSETS.cashierMerchant.idleClip,animated:mixers.length===1},customerQueue:customerSystem?.debug?.()||null},proximity,orders:{controller:"RestaurantCustomerSystem",completionMethod:"completeOrder(orderId)",maxActive:4},hud:false};
+  const totalAssetBytes=KIT_BYTES+Object.values(EXTRA_ASSETS).reduce((sum,spec)=>sum+(spec.bytes||0),0),proximity={markerId:KITCHEN_FOOD_COUNTER.marker.id,range:KITCHEN_FOOD_COUNTER.marker.range,active:false,action:null};
+  group.userData={destination:"restaurant",rooms:rooms.map(room=>({id:room.room,width:room.width,depth:room.depth,layoutFile:ROOM_FILES[room.room]})),assetRegistry:ASSET_REGISTRY,assets:{url:KIT_URL,urls,status:kit&&externalReady&&entranceReady?"ready":"fallback",loadedAssetIds,totalBytes:totalAssetBytes,error:assetError},floor:{kitchen:KITCHEN_FLOOR},diningFood:diningTableFood.userData,npcs:{count:1+(customerSystem?.customers?.length||0),cashier:{assetId:EXTRA_ASSETS.cashierMerchant.assetId,idleClip:EXTRA_ASSETS.cashierMerchant.idleClip,animated:mixers.length===1},customerQueue:customerSystem?.debug?.()||null},proximity,orders:{controller:"RestaurantCustomerSystem",completionMethod:"completeOrder(orderId)",maxActive:4},hud:false};
   scene.add(group);
   const spawns=Object.fromEntries(rooms.map(room=>[room.room,cellCenter(room,room.spawnCol,room.spawnRow)]));
   const cameraPoses={
@@ -337,6 +369,7 @@
    restaurantFrontDoor:{sceneId:"dining",name:"restaurant-front-door",target:{x:0,z:19.5},angle:0,height:4.5,distance:6},
    restaurantCashierNpc:{sceneId:"dining",name:"restaurant-cashier-npc",target:{x:0,z:13.5},angle:Math.PI,height:4.6,distance:6},
    restaurantCustomerLine:{sceneId:"dining",name:"restaurant-customer-line",target:{x:2.5,z:17.25},angle:Math.PI,height:6,distance:8},
+   restaurantFoodTables:{sceneId:"dining",name:"restaurant-food-tables",target:{x:.5,z:-9.5},angle:0,height:7.5,distance:12},
    kitchenFoodCounter:{sceneId:"kitchen",name:"kitchen-food-counter",target:{x:-8.6,z:-34.5},angle:Math.PI/2,height:5.8,distance:7}
    };
   return {group,rooms,spawns,spawn:spawns.dining,camera:{angle:.35,height:8.5,distance:8.8},cameraPoses,debugViews:DEBUG_VIEWS,floorSurfaceY:KITCHEN_FLOOR.surfaceY,customerSystem,enqueueOrder:order=>customerSystem?.enqueue(order)??false,completeOrder:orderId=>customerSystem?.completeOrder(orderId)??false,canWalk:(x,z)=>canWalk(rooms,x,z),update(dt,playerPosition){mixers.forEach(mixer=>mixer.update(dt));customerSystem?.update(dt);group.userData.npcs.customerQueue=customerSystem?.debug?.()||null;group.userData.npcs.count=1+(customerSystem?.customers?.length||0);const active=Boolean(playerPosition)&&Math.hypot(playerPosition.x-KITCHEN_FOOD_COUNTER.position.x,playerPosition.z-KITCHEN_FOOD_COUNTER.position.z)<=KITCHEN_FOOD_COUNTER.marker.range;foodCounter.marker.visible=active;proximity.active=active;if(globalThis.document?.body)document.body.dataset.restaurantProximityIcon=active?proximity.markerId:"";return active},dispose(){eventDisposers.forEach(dispose=>dispose());customerSystem?.dispose()}};
@@ -369,5 +402,5 @@
   return {geometries:geometries.size,materials:materials.size,textures:textures.size};
  }
  function destroy(){if(!runtime)return;const root=runtime.group;runtime.dispose?.();disposeRuntimeResources(root);root.parent?.remove(root);runtime=null}
- return {KIT_URL,BACKGROUND_COLOR,EXTRA_ASSETS,CASH_DESK,FRONT_ENTRANCE,INITIAL_CUSTOMER_ORDERS,KITCHEN_FOOD_COUNTER,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,WALL,KITCHEN_FLOOR,DEBUG_VIEWS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,wallCellCollision,doorwayCells,validateConnection,sourceScene,firstMesh,buildKitchenFloor,wallBoundaryLines,wallSegments,buildWalls,assetTransform,buildCashierFallback,customerSystemApi,createCustomerAvatarFactory,createProximityIcon,addKitchenFoodCounter,addFrontArea,buildRuntime,loadRooms,loadKit,loadExtraAssets,disposeRuntimeResources,ensure,destroy,get current(){return runtime}};
+ return {KIT_URL,KIT_BYTES,BACKGROUND_COLOR,EXTRA_ASSETS,CASH_DESK,FRONT_ENTRANCE,INITIAL_CUSTOMER_ORDERS,KITCHEN_FOOD_COUNTER,DINING_TABLE_FOOD,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,WALL,KITCHEN_FLOOR,DEBUG_VIEWS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,wallCellCollision,doorwayCells,validateConnection,sourceScene,firstMesh,buildKitchenFloor,wallBoundaryLines,wallSegments,buildWalls,assetTransform,buildCashierFallback,customerSystemApi,createCustomerAvatarFactory,createProximityIcon,addKitchenFoodCounter,addDiningTableFood,addFrontArea,buildRuntime,loadRooms,loadKit,loadExtraAssets,disposeRuntimeResources,ensure,destroy,get current(){return runtime}};
 });

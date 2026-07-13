@@ -10,7 +10,8 @@ const rooms=[dining,kitchen];
 const kitPath=path.join(__dirname,"..","assets","models","restaurant","kaykit-restaurant-kit.glb");
 const kitBuffer=fs.readFileSync(kitPath);
 assert.strictEqual(kitBuffer.toString("ascii",0,4),"glTF","KayKit restaurant kit must be a valid binary glTF");
-assert.strictEqual(kitBuffer.length,549488,"audited KayKit derivative size changed unexpectedly");
+assert.strictEqual(kitBuffer.length,Restaurant.KIT_BYTES,"audited KayKit derivative size changed unexpectedly");
+assert.strictEqual(Restaurant.KIT_BYTES,573880,"restaurant kit byte budget must include the two curated table-food scenes");
 assert(Restaurant.KIT_URL.endsWith("?v=__BUILD_VERSION__"),"restaurant GLB must be cache-versioned before Pages stamping");
 assert.strictEqual(Restaurant.BACKGROUND_COLOR,0x87ceeb,"restaurant must use a blue-sky background");
 for(const [key,spec] of Object.entries(Restaurant.EXTRA_ASSETS)){
@@ -32,6 +33,15 @@ assert(kitScenes.has(Restaurant.KITCHEN_FLOOR.sourceScene),"curated Restaurant B
 assert(kitScenes.has(Restaurant.FRONT_ENTRANCE.frameScene)&&kitScenes.has(Restaurant.FRONT_ENTRANCE.doorScene),"front entrance must reuse the matching Restaurant Bits doorway and door scenes");
 assert(kitScenes.has(Restaurant.KITCHEN_FOOD_COUNTER.sourceScene),"food display must reuse the authored blank Restaurant Bits prep table");
 Restaurant.KITCHEN_FOOD_COUNTER.food.forEach(food=>assert(kitScenes.has(food.sourceScene),`${food.assetId} must reuse an authored Restaurant Bits food scene`));
+const diningFoodIds=new Set(),diningFoodScenes=new Set();
+Restaurant.DINING_TABLE_FOOD.forEach(table=>{
+ assert(/^restaurant\.dining\.table-food\./.test(table.assetId),"food-dressed tables need stable asset IDs");
+ assert.strictEqual(Restaurant.symbolAtWorld(dining,table.position.x,table.position.z),"T",`${table.assetId} food must sit on an authored plain dining table`);
+ table.items.forEach(item=>{assert(/^restaurant\.dining\.food\./.test(item.assetId),"separately placed dining food needs a stable asset ID");assert(!diningFoodIds.has(item.assetId),`${item.assetId} must be unique`);diningFoodIds.add(item.assetId);diningFoodScenes.add(item.sourceScene);assert(kitScenes.has(item.sourceScene),`${item.assetId} references missing Restaurant Bits scene ${item.sourceScene}`)});
+});
+assert.strictEqual(Restaurant.DINING_TABLE_FOOD.length,6,"six existing plain tables should receive separate food dressing");
+assert(diningFoodScenes.has("food_ingredient_tomato"),"red tomato produce is the pack's closest available strawberry-like table dressing");
+assert(diningFoodScenes.has("food_stew")&&diningFoodScenes.has("food_burger")&&diningFoodScenes.has("food_dinner"),"table dressing should include varied authored meals");
 assert.strictEqual(gltf.materials.length,1,"curated Restaurant Bits scenes must share one material");
 assert.strictEqual(gltf.images.length,1,"curated Restaurant Bits scenes must share one texture atlas");
 assert.strictEqual(Restaurant.FRONT_ENTRANCE.doorOffsetX,-.8,"door leaf must offset its authored 0..1.6 footprint to center over the doorway opening");
@@ -151,7 +161,7 @@ assert(kitchenFloor,"restaurant kitchen must build a checkerboard floor");
 assert.deepStrictEqual([kitchenFloor.userData.surfaceY,kitchenFloor.userData.fixtureBaseY,kitchenFloor.userData.playerBaseY],[0,0,0],"floor surface, fixtures, and player must share the same base height");
 assert.strictEqual(kitchenFloor.userData.tileCount,625,"fallback checkerboard must cover every 1x1 kitchen cell");
 assert.strictEqual(kitchenFloor.children.reduce((sum,batch)=>sum+batch.count,0),625,"checkerboard batches must not leave floor gaps");
-for(const name of ["kitchen-overview","kitchen-fixtures","kitchen-doorway","kitchen-north-wall","kitchen-west-wall","kitchen-east-wall","kitchen-plain-stoves","restaurant-chair-table","restaurant-cash-register","restaurant-front-door","restaurant-cashier-npc","restaurant-customer-line","restaurant-sky-overview","kitchen-food-counter"]){
+for(const name of ["kitchen-overview","kitchen-fixtures","kitchen-doorway","kitchen-north-wall","kitchen-west-wall","kitchen-east-wall","kitchen-plain-stoves","restaurant-chair-table","restaurant-cash-register","restaurant-front-door","restaurant-cashier-npc","restaurant-customer-line","restaurant-sky-overview","restaurant-food-tables","kitchen-food-counter"]){
  assert(Restaurant.DEBUG_VIEWS[name],`screenshot QA needs stable ${name} view`);
 }
 for(const view of Object.values(Restaurant.DEBUG_VIEWS).filter(view=>!view.hidePlayer))assert(Restaurant.canWalk(rooms,view.position.x,view.position.z),"player-visible restaurant screenshot poses must remain walkable");
@@ -174,9 +184,12 @@ const authoredWalls=Restaurant.buildWalls({Group,BoxGeometry,MeshStandardMateria
 assert.strictEqual(authoredWalls.userData.placeholder,false,"available KayKit wall art must replace the procedural wall fallback");
 assert.strictEqual(authoredWalls.userData.sourceScene,"wall");assert.strictEqual(authoredWalls.count,segments.length,"authored walls must remain one instanced draw batch");
 assert.strictEqual(runtime.group.userData.npcs.count,5,"runtime must start with one cashier and a deterministic four-customer line");assert.strictEqual(runtime.group.userData.npcs.cashier.assetId,"restaurant.npc.cashier-merchant");assert.strictEqual(runtime.group.userData.npcs.customerQueue.maxActive,4);assert.deepStrictEqual(runtime.group.userData.npcs.customerQueue.active.map(customer=>customer.orderId),Restaurant.INITIAL_CUSTOMER_ORDERS.map(order=>order.id));assert.deepStrictEqual(runtime.group.userData.orders,{controller:"RestaurantCustomerSystem",completionMethod:"completeOrder(orderId)",maxActive:4});assert.strictEqual(runtime.group.userData.hud,false);
-assert.deepStrictEqual(Object.values(runtime.cameraPoses).map(pose=>pose.name),["kitchen-overview","kitchen-north-wall","kitchen-west-wall","kitchen-east-wall","kitchen-plain-stoves","restaurant-chair-table","restaurant-cash-register","restaurant-front-door","restaurant-cashier-npc","restaurant-customer-line","kitchen-food-counter"],"named restaurant camera poses must remain stable for screenshot QA");
+assert.deepStrictEqual(Object.values(runtime.cameraPoses).map(pose=>pose.name),["kitchen-overview","kitchen-north-wall","kitchen-west-wall","kitchen-east-wall","kitchen-plain-stoves","restaurant-chair-table","restaurant-cash-register","restaurant-front-door","restaurant-cashier-npc","restaurant-customer-line","restaurant-food-tables","kitchen-food-counter"],"named restaurant camera poses must remain stable for screenshot QA");
 assert(Object.values(runtime.cameraPoses).every(pose=>["kitchen","dining"].includes(pose.sceneId)&&Number.isFinite(pose.target.x)&&Number.isFinite(pose.target.z)),"restaurant screenshot poses need explicit scene targets");
 const foodCounter=runtime.group.children.find(child=>child.userData.assetId===Restaurant.KITCHEN_FOOD_COUNTER.assetId);assert(foodCounter,"kitchen must build the proximity-aware food counter even when art falls back");
+const diningFood=runtime.group.children.find(child=>child.userData.assetId==="restaurant.dining.table-food");assert(diningFood,"restaurant must build table food independently from plain dining tables");
+assert.deepStrictEqual(runtime.group.userData.diningFood,{assetId:"restaurant.dining.table-food",tableCount:6,itemCount:10,sourceScenes:["food_ingredient_tomato","food_stew","food_burger","food_dinner"]},"runtime diagnostics must expose stable table-food coverage");
+assert.strictEqual(diningFood.children.length,6,"each configured dining table should get its own food-dressing group");
 assert.strictEqual(Restaurant.canWalk(rooms,-11,-34.5),false,"food counter must use its measured collision footprint");
 assert.strictEqual(Restaurant.canWalk(rooms,-9.2,-34.5),true,"food counter collision must release beyond the visible prep table");
 assert.strictEqual(runtime.update(.016,{x:0,z:0}),false,"food counter icon must stay hidden outside its range");
