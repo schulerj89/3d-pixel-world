@@ -27,10 +27,11 @@ for(const spec of Object.values(Space.ASSET_REGISTRY)){
 assert(fs.existsSync(path.join(root,Space.ASSET_ROOT,"spacebits_texture.png")),"missing shared Space Base Bits texture atlas");
 assert.strictEqual(new Set(Object.values(Space.ASSET_REGISTRY).map(spec=>spec.file)).size,26,"asset registry should reuse twenty-six source models");
 const source=read("space-world.js");
-for(const pose of ["overview","landing","roads","cargo","aliens","alienExtraSmall","alienSmall"])assert(source.includes(`${pose}:{`),`missing named ${pose} screenshot pose`);
+for(const pose of ["overview","landing","roads","cargo","aliens","alienExtraSmall","alienSmall","quest","questCoins"])assert(source.includes(`${pose}:{`),`missing named ${pose} screenshot pose`);
 assert(source.includes("depthWrite:false,depthTest:true"),"starfield must respect scene depth instead of rendering through the floor and props");
 assert(source.includes("alienMixers.forEach(mixer=>mixer.update(dt))"),"Space Realm must advance authored alien idle clips");
 assert(source.includes("grounded:alienGrounding.every"),"alien ground-contact status must be exposed for QA");
+assert(source.includes("groundClearance:+instance.groundClearance.toFixed(4)"),"grounding debug must expose the authored animation clearance");
 assert(source.includes("space-alien-contact-shadows"),"aliens need an instanced ground-contact cue");
 assert(read("house-system.js").includes("dataset.spaceAlienGrounded"),"browser QA must expose alien ground-contact status");
 

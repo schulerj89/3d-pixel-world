@@ -1,0 +1,29 @@
+.coin-quest-hud {
+ position: fixed;
+ top: max(18px, env(safe-area-inset-top));
+ left: 50%;
+ z-index: 45;
+ min-width: 240px;
+ padding: 10px 18px 12px;
+ transform: translateX(-50%);
+ border: 2px solid #64e8ff;
+ border-radius: 10px;
+ background: linear-gradient(180deg, rgba(8, 17, 45, .94), rgba(18, 8, 46, .92));
+ box-shadow: 0 0 0 3px rgba(14, 7, 31, .7), 0 0 22px rgba(87, 219, 255, .36);
+ color: #f7fbff;
+ font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+ font-weight: 700;
+ text-align: center;
+ text-shadow: 0 2px 0 #101028;
+ pointer-events: none;
+}
+.coin-quest-title { color: #9af2ff; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
+.coin-quest-timer { margin: 1px 0 -2px; color: #ffe06a; font-size: 31px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.coin-quest-progress { font-size: 14px; letter-spacing: .04em; }
+.coin-quest-status { min-height: 18px; margin-top: 2px; color: #7fffb1; font-size: 14px; }
+.coin-quest-hud[data-phase="failed"] { border-color: #ff7189; }
+.coin-quest-hud[data-phase="failed"] .coin-quest-timer,
+.coin-quest-hud[data-phase="failed"] .coin-quest-status { color: #ff9bab; }
+.coin-quest-retry { margin-top: 5px; padding: 7px 14px; border: 1px solid #fff4a5; border-radius: 6px; background: #f4c43f; color: #24144d; font: inherit; cursor: pointer; pointer-events: auto; }
+.coin-quest-retry:hover, .coin-quest-retry:focus-visible { background: #fff08a; outline: 2px solid #fff; outline-offset: 2px; }
+@media (max-width: 600px) { .coin-quest-hud { top: max(8px, env(safe-area-inset-top)); min-width: 190px; padding: 7px 12px 8px; } .coin-quest-timer { font-size: 25px; } }

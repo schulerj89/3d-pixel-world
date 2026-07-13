@@ -148,7 +148,7 @@
  }
  function create(THREE){
   const group=new THREE.Group();group.name="space-world";group.userData={destination:"space",layout:{url:LEVEL_URL,status:"loading"},assets:{source:"KayKit: Space Base Bits",license:"CC0-1.0",status:"loading",loadedAssetIds:[],errors:[]},npcs:{aliens:0,nonAliens:0}};
-  const collisionBoxes=[],alienMixers=[],alienGrounding=[];let disposed=false,level=null,spacing=null,roadInfo={tiles:0,drawCalls:0},alienShadowInfo={instances:0,drawCalls:0};
+  const collisionBoxes=[],alienMixers=[],alienGrounding=[],alienObjects=[],placementObjects=[];let disposed=false,level=null,spacing=null,roadInfo={tiles:0,drawCalls:0},alienShadowInfo={instances:0,drawCalls:0};
   const debugPoses=Object.freeze({
    spawn:{x:2,z:34,angle:.25,height:15,distance:22},
    overview:{x:0,z:0,angle:.38,height:42,distance:52},
@@ -157,9 +157,12 @@
    cargo:{x:12,z:18,angle:.28,height:11,distance:16},
    aliens:{x:-14,z:-2,angle:.45,height:4.8,distance:6.5,hidePlayer:true},
    alienExtraSmall:{x:-14,z:-2,angle:.32,height:3.4,distance:4.8,hidePlayer:true},
-   alienSmall:{x:22,z:-2,angle:-.28,height:3.6,distance:5.1,hidePlayer:true}
+   alienSmall:{x:22,z:-2,angle:-.28,height:3.6,distance:5.1,hidePlayer:true},
+   quest:{x:-14,z:2,angle:.2,height:6.2,distance:8.5},
+   questCoins:{x:-2,z:1,angle:.34,height:18,distance:23}
   });
-  const world={group,bounds:{minX:-39.6,maxX:39.6,minZ:-39.6,maxZ:39.6},spawn:{x:2,z:34},camera:{angle:.25,height:15,distance:22},debugPoses,background:0x020316,name:"Starfall Spaceport",
+  const world={group,bounds:{minX:-39.6,maxX:39.6,minZ:-39.6,maxZ:39.6},spawn:{x:2,z:34},camera:{angle:.25,height:15,distance:22},debugPoses,background:0x020316,name:"Starfall Spaceport",aliens:alienObjects,placementObjects,
+   findObject(assetId){return placementObjects.find(entry=>entry.object.userData.assetId===assetId)?.object||null},
    canWalk(x,z){if(x<world.bounds.minX||x>world.bounds.maxX||z<world.bounds.minZ||z>world.bounds.maxZ)return false;return !collisionBoxes.some(box=>Math.abs(x-box.x)<box.halfX+PLAYER_RADIUS&&Math.abs(z-box.z)<box.halfZ+PLAYER_RADIUS)},
    update(dt,isActive=true){if(isActive)alienMixers.forEach(mixer=>mixer.update(dt))},
    debug(){return {layout:group.userData.layout,assets:group.userData.assets,npcs:group.userData.npcs,alienGrounding,alienShadows:alienShadowInfo,placements:placementsFromLevel(level||{map:[]}).length,collisionBoxes:collisionBoxes.length,minimumSpacing:spacing?.minimum??null,roads:roadInfo,background:{stars:BACKGROUND_STAR_COUNT,planets:2},spawn:world.spawn}},
@@ -179,13 +182,14 @@
      if(asset){
       const instance=globalThis.QuaterniusAlienAsset.createInstance(THREE,asset,aliens-1,0);object=instance.model;object.userData.placeholder=false;
       if(instance.mixer)alienMixers.push(instance.mixer);
-      alienGrounding.push({assetId:asset.spec.id,animation:instance.clipName,x:placement.x,z:placement.z,bottomY:+instance.bounds.min.y.toFixed(4),groundError:+instance.groundError.toFixed(4)});
+      alienGrounding.push({assetId:asset.spec.id,animation:instance.clipName,x:placement.x,z:placement.z,bottomY:+instance.bounds.min.y.toFixed(4),groundError:+instance.groundError.toFixed(4),groundClearance:+instance.groundClearance.toFixed(4),grounding:instance.grounding});
      }else alienGrounding.push({assetId:"fallback",animation:null,x:placement.x,z:placement.z,bottomY:0,groundError:0});
     }else{
      const prototype=assets.prototypes.get(placement.symbol);object=prototype?prototype.clone(true):placeholder(THREE,placement.spec);object.scale.setScalar(prototype?placement.spec.scale:1);
     }
     object.position.x=placement.x;object.position.z=placement.z;object.name=object.userData.assetId||placement.spec.assetId;object.userData.assetId=object.userData.assetId||placement.spec.assetId;object.userData.level={symbol:placement.symbol,col:placement.col,row:placement.row};
     object.traverse(child=>{if(child.isMesh){child.castShadow=false;child.receiveShadow=true}});group.add(object);
+    placementObjects.push({object,placement});if(placement.symbol==="a")alienObjects.push(object);
     if(placement.spec.collidable!==false)collisionBoxes.push({x:placement.x,z:placement.z,halfX:placement.spec.footprint[0]/2,halfZ:placement.spec.footprint[1]/2,assetId:placement.spec.assetId});
    }
    group.userData.layout={url:LEVEL_URL,status:"ready",size:`${level.width}x${level.depth}`,cell:level.cell,minimumSpacing:spacing.minimum,roadTiles:roadInfo.tiles};
