@@ -26,7 +26,7 @@
     navigation.appendChild(button);
   });
   catalog.querySelectorAll("[data-f]").forEach(button=>{
-    const label=button.dataset.f.replace(/^./,letter=>letter.toUpperCase());
+    const label=button.dataset.buildLabel||button.textContent.trim().replace(/^\S+\s*/,"")||button.dataset.f.replace(/^./,letter=>letter.toUpperCase());
     button.classList.add("buildItemCard");
     button.innerHTML=`<span class="buildItemIcon" aria-hidden="true">${button.dataset.buildIcon||"🏠"}</span><b>${label}</b><small>Tap to add</small>`;
   });
