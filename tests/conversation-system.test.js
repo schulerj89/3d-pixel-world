@@ -79,5 +79,8 @@ function makeView(){
  const source=fs.readFileSync(path.join(__dirname,"..","conversation-system.js"),"utf8");
  assert.match(source,/Number\.isFinite\(config\.targetHeight\)/,"animated actors can provide a stable root-relative camera target");
  assert.match(source,/const helper=camera\.clone\(\)/,"camera framing uses the camera's -Z forward axis");
+ assert.match(source,/prompt\.textContent=data\.label/,"touch prompt does not advertise an E key");
+ assert.match(source,/button\.textContent=action\.label/,"touch actions do not advertise number-key shortcuts");
+ assert.doesNotMatch(source,/Enter to continue|Esc to leave|conversation-hint/,"conversation UI has no keyboard instruction copy");
  console.log("conversation-system tests passed");
 })().catch(error=>{console.error(error);process.exitCode=1});

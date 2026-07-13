@@ -17,7 +17,6 @@
 .conversation-actions button{padding:9px 13px;border:2px solid #7289c7;border-radius:6px;background:#26345f;color:#fff;font:800 14px/1.1 inherit}
 .conversation-actions button:hover,.conversation-actions button:focus-visible{border-color:#74edff;background:#35477d;outline:none}
 .conversation-actions button:disabled{opacity:.5}
-.conversation-hint{margin:12px 0 0;color:#9dadce;font-size:11px;letter-spacing:.04em;text-align:right}
 .conversation-active #pad,.conversation-active #lookPad,.conversation-active #objectActionButton{opacity:.3;pointer-events:none}
 @media(max-width:520px){.conversation-panel{padding:15px}.conversation-text{font-size:16px}.conversation-actions button{flex:1 1 100%}}
 @media(prefers-reduced-motion:reduce){.conversation-panel,.conversation-prompt{scroll-behavior:auto}}

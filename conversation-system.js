@@ -184,17 +184,17 @@
   const settings=options||{},doc=settings.document||document,root=settings.root||doc.body;
   const prompt=doc.createElement("button");prompt.type="button";prompt.className="conversation-prompt";prompt.hidden=true;
   const panel=doc.createElement("section");panel.className="conversation-panel";panel.hidden=true;panel.setAttribute("role","dialog");panel.setAttribute("aria-live","polite");
-  const speaker=doc.createElement("h2"),text=doc.createElement("p"),actions=doc.createElement("div"),hint=doc.createElement("p");
-  speaker.className="conversation-speaker";text.className="conversation-text";actions.className="conversation-actions";hint.className="conversation-hint";hint.textContent="Enter to continue  /  Esc to leave";
-  panel.append(speaker,text,actions,hint);root.append(prompt,panel);
+  const speaker=doc.createElement("h2"),text=doc.createElement("p"),actions=doc.createElement("div");
+  speaker.className="conversation-speaker";text.className="conversation-text";actions.className="conversation-actions";
+  panel.append(speaker,text,actions);root.append(prompt,panel);
   let system=null;
   prompt.addEventListener("click",()=>system&&system.interact());
   actions.addEventListener("click",event=>{const button=event.target.closest("[data-conversation-action]");if(button&&system)system.choose(button.dataset.conversationAction)});
   return {
    bind(value){system=value},
-   showPrompt(data){prompt.textContent=`E  ${data.label}`;prompt.hidden=false;prompt.setAttribute("aria-label",data.label)},hidePrompt(){prompt.hidden=true},
+   showPrompt(data){prompt.textContent=data.label;prompt.hidden=false;prompt.setAttribute("aria-label",data.label)},hidePrompt(){prompt.hidden=true},
    showConversation(){panel.hidden=false},
-   renderNode(node){speaker.textContent=node.speaker;speaker.hidden=!node.speaker;text.textContent=node.text;actions.replaceChildren(...node.actions.map((action,index)=>{const button=doc.createElement("button");button.type="button";button.dataset.conversationAction=action.id;button.textContent=`${index+1}. ${action.label}`;return button}))},
+   renderNode(node){speaker.textContent=node.speaker;speaker.hidden=!node.speaker;text.textContent=node.text;actions.replaceChildren(...node.actions.map(action=>{const button=doc.createElement("button");button.type="button";button.dataset.conversationAction=action.id;button.textContent=action.label;return button}))},
    setBusy(busy){panel.setAttribute("aria-busy",String(Boolean(busy)));actions.querySelectorAll("button").forEach(button=>button.disabled=busy)},
    hideConversation(){panel.hidden=true;actions.replaceChildren()},destroy(){prompt.remove();panel.remove()}
   };
