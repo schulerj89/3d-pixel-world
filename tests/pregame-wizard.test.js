@@ -19,7 +19,14 @@ assert((html.match(/class="place" id="go/g)||[]).length===6,"world picker must r
 for(const file of ["pregame-wizard.css","pregame-wizard.js"])assert(html.includes(`${file}?v=__BUILD_VERSION__`),`${file} must be cache busted`);
 assert(flow.includes('show("worlds"')&&flow.includes('show("customize"'),"wizard must support both directions");
 assert(flow.includes("worldPickerHeading")&&flow.includes("customizeHeading"),"step changes must move focus to the new heading");
+for(const id of ["startHairColor","startSkin","startPants","startOutfitColor"]){
+ assert(flow.includes(`["${id}"`),`short landscape color cycler must include ${id}`);
+}
+assert(flow.includes('aria-label",`Previous ${label} color`')&&flow.includes('aria-label",`Next ${label} color`'),"color cyclers need accessible previous and next controls");
+assert(flow.includes("compactLandscape.matches")&&flow.includes("swatch.hidden=compact&&index!==active"),"only the selected swatch should remain visible in short landscape");
 assert(css.includes("orientation:landscape")&&css.includes("max-height:540px"),"wizard needs compact iPhone landscape rules");
+assert(css.includes("grid-template-columns:repeat(4,minmax(0,1fr))"),"wide short landscape should show four compact color controls in one row");
+assert(css.includes(".colorCycleButton")&&css.includes("width:40px")&&css.includes("height:40px"),"short-landscape arrows need compact touch targets");
 assert(!css.includes("min-height:430px"),"wizard must not inherit the old short-screen scroll trap");
 assert(css.includes("overflow:hidden"),"wizard viewport must remain scroll free");
 assert(avatar.includes("delete saved.characterType")&&avatar.includes("delete saved.outfit")&&avatar.includes("delete saved.shirt"),"obsolete persisted type/outfit choices must be retired");

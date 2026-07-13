@@ -161,9 +161,9 @@ body.house-mode #housePanelToggle{display:block}
 body.house-building #pad,body.house-building #lookPad{opacity:.45}
 body.house-building #houseAction{display:none!important}
 @media (orientation:landscape) and (max-height:820px){
- #housePanel{top:64px;max-height:calc(100vh - 76px)}
- #housePanelToggle{top:12px;left:112px}
- .housePanelHeader{font-size:16px}.houseTabs{margin:6px 0}
+ #housePanel{left:max(8px,env(safe-area-inset-left));top:60px;width:min(300px,calc(100vw - 16px));max-height:calc(100dvh - 68px);padding:8px;border-radius:15px}
+ #housePanelToggle{top:8px;left:max(104px,calc(env(safe-area-inset-left) + 96px));min-height:44px;padding:7px 11px}
+ .housePanelHeader{font-size:16px}.houseTabs{margin:5px 0;gap:5px}.houseTabs button{min-height:42px;padding:6px!important}.houseQuickActions button,.buildModeRow button{min-height:44px;padding:6px!important}
 }
 #top{display:none!important}
 #roomName{top:12px!important}

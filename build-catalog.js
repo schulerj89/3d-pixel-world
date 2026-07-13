@@ -9,7 +9,7 @@
   document.body.appendChild(tools);
   const header=document.createElement("div");
   header.className="buildCatalogHeader";
-  header.innerHTML='<div><b>Build & decorate</b><small>Choose an item, then place it in your room</small></div><button class="buildCatalogDone" type="button">✓ Done</button>';
+  header.innerHTML='<div><b>Build & decorate</b><small>Choose an item, then place it in your room</small></div><div class="buildCatalogHeaderActions"><button class="buildCatalogView" type="button" aria-expanded="true">View room</button><button class="buildCatalogDone" type="button">✓ Done</button></div>';
   const navigation=document.createElement("div");
   navigation.className="buildCatalogNav";
   navigation.setAttribute("role","tablist");
@@ -30,9 +30,29 @@
     button.classList.add("buildItemCard");
     button.innerHTML=`<span class="buildItemIcon" aria-hidden="true">${button.dataset.buildIcon||"🏠"}</span><b>${label}</b><small>Tap to add</small>`;
   });
+  const rail=document.createElement("div");
+  rail.className="buildCatalogRail";
+  const previous=document.createElement("button");
+  previous.type="button";previous.className="buildScrollButton";previous.setAttribute("aria-label","Previous furniture");previous.textContent="‹";
+  const next=document.createElement("button");
+  next.type="button";next.className="buildScrollButton";next.setAttribute("aria-label","Next furniture");next.textContent="›";
+  catalog.parentNode.insertBefore(rail,catalog);
+  rail.append(previous,catalog,next);
   tools.prepend(navigation);
   tools.prepend(header);
   tools.appendChild(editor);
+  const viewButton=header.querySelector(".buildCatalogView");
+  function setCollapsed(collapsed){
+    tools.classList.toggle("collapsed",collapsed);
+    document.body.classList.toggle("build-tray-collapsed",collapsed);
+    viewButton.setAttribute("aria-expanded",String(!collapsed));
+    viewButton.textContent=collapsed?"Show tools":"View room";
+  }
+  window.setBuildCatalogCollapsed=setCollapsed;
+  viewButton.addEventListener("click",()=>setCollapsed(!tools.classList.contains("collapsed")));
+  function scrollCatalog(direction){catalog.scrollBy({left:direction*Math.max(120,catalog.clientWidth*.72),behavior:"smooth"})}
+  previous.addEventListener("click",()=>scrollCatalog(-1));
+  next.addEventListener("click",()=>scrollCatalog(1));
   function selectCategory(category){
     navigation.querySelectorAll(".buildCategory").forEach(button=>{
       const selected=button.dataset.category===category;
@@ -44,4 +64,5 @@
   }
   navigation.addEventListener("click",event=>{const button=event.target.closest(".buildCategory");if(button)selectCategory(button.dataset.category)});
   header.querySelector(".buildCatalogDone").addEventListener("click",()=>originalDone.dispatchEvent(new PointerEvent("pointerdown",{bubbles:true,cancelable:true})));
+  setCollapsed(false);
 })();
