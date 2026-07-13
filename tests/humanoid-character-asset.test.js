@@ -12,7 +12,7 @@ const json=JSON.parse(bytes.toString("utf8",20,20+jsonLength).trim());
 const clips=(json.animations||[]).map(animation=>animation.name).sort();
 assert.deepStrictEqual(clips,["anim_crouch","anim_crouchiddle","anim_dying","anim_flip","anim_iddle","anim_iddle.001",
  "anim_jump","anim_push","anim_run","anim_uncrouch","anim_walk"]);
-for(const name of ["anim_iddle","anim_walk","anim_run"]){
+for(const name of ["anim_iddle","anim_walk","anim_run","anim_crouchiddle"]){
  const animation=json.animations.find(item=>item.name===name);
  const duration=Math.max(...animation.samplers.map(sampler=>json.accessors[sampler.input].max?.[0]||0));
  assert(duration>.1,`${name} must contain a non-empty animation timeline`);

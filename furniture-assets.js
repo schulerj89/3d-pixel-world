@@ -1,11 +1,11 @@
 (function(){
   const ROOT="assets/models/furniture-bits";
   const specs=Object.freeze({
-    sofa:{file:"couch_pillows"},
+    sofa:{file:"couch_pillows",seatAnchor:{x:0,y:.35,z:.13}},
     table:{file:"table_low"},
     bed:{file:"bed_double_A"},
     lamp:{file:"lamp_standing"},
-    chair:{file:"chair_A"},
+    chair:{file:"chair_A",seatAnchor:{x:0,y:.3,z:.03}},
     rug:{file:"rug_rectangle_stripes_A",castShadow:false},
     dresser:{file:"cabinet_medium_decorated"},
     plant:{file:"cactus_medium_A"},
@@ -62,6 +62,7 @@
       });
       group.add(model);
       if(group.userData.fallbackRoot)group.userData.fallbackRoot.visible=false;
+      if(spec.seatAnchor)group.userData.seatAnchor={...spec.seatAnchor};
       group.userData.assetRoot=model;
       group.userData.assetStatus="ready";
       loadedIds.add(id);

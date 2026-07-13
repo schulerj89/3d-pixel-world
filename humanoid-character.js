@@ -1,7 +1,7 @@
 // Animated, material-customizable Styloo chibi player with an automatic voxel fallback.
 (function(global){
  const ASSET_URL="assets/models/character/styloo-chibi-student.glb?v=__BUILD_VERSION__";
- const REQUIRED_CLIPS={idle:"anim_iddle",walk:"anim_walk",run:"anim_run"};
+ const REQUIRED_CLIPS={idle:"anim_iddle",walk:"anim_walk",run:"anim_run",sit:"anim_crouchiddle"};
  const ASSET_BYTES=3753900;
  const FACING=global.characterFacing;
  const MODEL_FORWARD_AXIS=FACING?.STYLOO_MODEL_FORWARD_AXIS||"+z";
@@ -103,7 +103,7 @@
  const preview=global.avatarPreviewRoot?new AnimatedHumanoidInstance(global.avatarPreviewRoot,{preview:true}):null;
  const system={
   update(dt,moving,inputStrength=0){
-   const state=moving?(inputStrength>.72?"run":"walk"):"idle";
+   const state=global.isPlayerSeated?.()?"sit":moving?(inputStrength>.72?"run":"walk"):"idle";
    world.update(dt,state);preview?.update(dt,"idle");debug.state=state;publishDebug();
   },
   applyCustomization(values){world.applyCustomization(values);preview?.applyCustomization(values)},
