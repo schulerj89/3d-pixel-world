@@ -541,6 +541,7 @@ document.querySelectorAll("[data-house-tab]").forEach(b=>b.addEventListener("poi
 
 function setBuildingMode(on){
  if(on&&houseArea!=="interior")return;
+ window.setBuildCatalogCollapsed?.(false);
  buildingMode=on;
  if(on&&furniture.length&&selectedFurnitureIndex<0)selectedFurnitureIndex=furniture.length-1;
  const movePad=document.getElementById("pad");
