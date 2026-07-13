@@ -100,32 +100,22 @@ blenderStation.position.set(KITCHEN_STATIONS.blender.x+3.8,0,KITCHEN_STATIONS.bl
 // The milkshake ingredients now live on the shared food-ingredient shelf.
 for(let i=5;i<blenderStation.children.length;i++) blenderStation.children[i].visible=false;
 
-// A short, prop-local blender effect. Web Audio keeps this playful sound tiny and
-// asset-free, while animating only the appliance leaves its counter and props still.
+// A short, prop-local blender effect. The single reusable audio element prevents
+// overlapping copies while animating only the appliance leaves its counter still.
 let blenderEffectRunning=false;
 function playBlenderSound(durationMs){
- const AudioContextClass=window.AudioContext||window.webkitAudioContext;
- if(!AudioContextClass)return;
- const context=playBlenderSound.context||(playBlenderSound.context=new AudioContextClass());
- if(context.state==="suspended")context.resume();
- const now=context.currentTime,duration=durationMs/1000;
- const output=context.createGain(),filter=context.createBiquadFilter();
- output.gain.setValueAtTime(.0001,now);
- output.gain.exponentialRampToValueAtTime(.075,now+.035);
- output.gain.setValueAtTime(.075,now+Math.max(.05,duration-.12));
- output.gain.exponentialRampToValueAtTime(.0001,now+duration);
- filter.type="lowpass";filter.frequency.value=950;filter.Q.value=2.5;
- filter.connect(output);output.connect(context.destination);
- [96,144].forEach((frequency,index)=>{
-  const oscillator=context.createOscillator(),gain=context.createGain();
-  oscillator.type=index?"sawtooth":"square";
-  oscillator.frequency.setValueAtTime(frequency,now);
-  oscillator.frequency.linearRampToValueAtTime(frequency*1.12,now+.18);
-  oscillator.frequency.setValueAtTime(frequency*1.12,now+Math.max(.2,duration-.18));
-  oscillator.frequency.linearRampToValueAtTime(frequency*.82,now+duration);
-  gain.gain.value=index?.18:.28;
-  oscillator.connect(gain);gain.connect(filter);oscillator.start(now);oscillator.stop(now+duration);
- });
+ const audio=document.getElementById("blenderSound");
+ if(!audio)return;
+ audio.pause();
+ audio.currentTime=0;
+ audio.volume=.28;
+ const playPromise=audio.play();
+ if(playPromise)playPromise.catch(()=>{});
+ clearTimeout(playBlenderSound.stopTimer);
+ playBlenderSound.stopTimer=setTimeout(()=>{
+  audio.pause();
+  audio.currentTime=0;
+ },durationMs);
 }
 function runBlenderEffect(durationMs=1900){
  if(blenderEffectRunning)return;
