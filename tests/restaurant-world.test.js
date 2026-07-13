@@ -14,6 +14,7 @@ assert.strictEqual(kitBuffer.length,503564,"audited KayKit derivative size chang
 assert(Restaurant.KIT_URL.endsWith("?v=__BUILD_VERSION__"),"restaurant GLB must be cache-versioned before Pages stamping");
 const jsonLength=kitBuffer.readUInt32LE(12),gltf=JSON.parse(kitBuffer.subarray(20,20+jsonLength).toString("utf8").replace(/\0+$/,""));
 const kitScenes=new Set(gltf.scenes.flatMap(scene=>scene.nodes.map(node=>gltf.nodes[node]?.name)));
+assert(kitScenes.has(Restaurant.KITCHEN_FLOOR.sourceScene),"curated Restaurant Bits GLB must include the authored kitchen floor");
 const html=read("index.html"),houseSystem=read("house-system.js"),styles=read("styles.css");
 assert(/id="goBakery"[^>]*>[^<]*<span>Restaurant<\/span>/.test(html),"Realm destination must display Restaurant");
 assert(!/id="goBakery">[^<]*<span>Bakery<\/span>/.test(html),"Bakery must not remain a visible Realm destination");
@@ -82,10 +83,23 @@ class BoxGeometry{constructor(...size){this.size=size}dispose(){this.disposed=tr
 class MeshStandardMaterial{constructor(options){Object.assign(this,options)}dispose(){this.disposed=true}}
 class Mesh extends Node3D{constructor(geometry,material){super();this.geometry=geometry;this.material=material}}
 class InstancedMesh extends Mesh{constructor(geometry,material,count){super(geometry,material);this.count=count;this.instanceMatrix={needsUpdate:false};this.matrices=[]}setMatrixAt(i,matrix){this.matrices[i]=matrix.translation}}
-class Matrix4{makeTranslation(x,y,z){this.translation=[x,y,z];return this}}
+class Matrix4{makeTranslation(x,y,z){this.translation=[x,y,z];return this}makeScale(x,y,z){this.scale=[x,y,z];return this}setPosition(x,y,z){this.translation=[x,y,z];return this}}
 const scene=new Group(),runtime=Restaurant.buildRuntime({Group,BoxGeometry,MeshStandardMaterial,Mesh,InstancedMesh,Matrix4},scene,rooms);
 assert.strictEqual(scene.children[0],runtime.group);
 assert.strictEqual(runtime.group.userData.destination,"restaurant");
+const kitchenFloor=runtime.group.children.find(child=>child.userData.assetId==="restaurant.floor.kitchen.checkerboard");
+assert(kitchenFloor,"restaurant kitchen must build a checkerboard floor");
+assert.deepStrictEqual([kitchenFloor.userData.surfaceY,kitchenFloor.userData.fixtureBaseY,kitchenFloor.userData.playerBaseY],[0,0,0],"floor surface, fixtures, and player must share the same base height");
+assert.strictEqual(kitchenFloor.userData.tileCount,625,"fallback checkerboard must cover every 1x1 kitchen cell");
+assert.strictEqual(kitchenFloor.children.reduce((sum,batch)=>sum+batch.count,0),625,"checkerboard batches must not leave floor gaps");
+assert.deepStrictEqual(Object.keys(Restaurant.DEBUG_VIEWS),["kitchen-overview","kitchen-fixtures","kitchen-doorway"],"screenshot QA needs stable named kitchen views");
+for(const view of Object.values(Restaurant.DEBUG_VIEWS))assert(Restaurant.canWalk(rooms,view.position.x,view.position.z),"kitchen screenshot pose must remain walkable");
+const floorRoot=Object.assign(new Node3D(),{name:Restaurant.KITCHEN_FLOOR.sourceScene,isMesh:true,geometry:{},material:{}}),floorScene=new Group();floorScene.add(floorRoot);
+const authoredFloor=Restaurant.buildKitchenFloor({Group,BoxGeometry,MeshStandardMaterial,InstancedMesh},kitchen,{scenes:[floorScene]},new Matrix4());
+assert.strictEqual(authoredFloor.userData.sourceReady,true,"available Restaurant Bits floor must replace the procedural fallback");
+assert.strictEqual(authoredFloor.userData.tileCount,49,"25x25 kitchen must use 49 fitted 4x4 authored tile modules");
+assert.strictEqual(authoredFloor.children[0].count,49,"authored checkerboard must remain a single instanced draw batch");
+assert.strictEqual(authoredFloor.children[0].matrices[0][1]+Restaurant.KITCHEN_FLOOR.thickness/2,Restaurant.KITCHEN_FLOOR.surfaceY,"authored tile top must land exactly at fixture/player base height");
 assert.strictEqual(runtime.group.userData.npcs,0);assert.strictEqual(runtime.group.userData.orders,false);assert.strictEqual(runtime.group.userData.hud,false);
 assert.strictEqual(runtime.group.children.filter(child=>child.userData.placeholder).length,symbols.size,"each asset symbol should create one instanced placeholder batch");
 assert(runtime.group.children.every(child=>!child.userData.bakeryCustomerId),"restaurant runtime must not create bakery NPCs");

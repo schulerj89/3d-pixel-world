@@ -10,6 +10,12 @@
  const ROOM_FILES={dining:"restaurant-main-level.txt",kitchen:"restaurant-kitchen-level.txt"};
  const WALKABLE=new Set([".","D"]);
  const PLAYER_RADIUS=.28;
+ const KITCHEN_FLOOR=Object.freeze({sourceScene:"floor_kitchen",tileSize:4,surfaceY:0,thickness:.5,fixtureBaseY:0,playerBaseY:0});
+ const DEBUG_VIEWS=Object.freeze({
+  "kitchen-overview":Object.freeze({room:"kitchen",position:Object.freeze({x:.5,z:-31.5}),camera:Object.freeze({angle:.35,height:15,distance:17})}),
+  "kitchen-fixtures":Object.freeze({room:"kitchen",position:Object.freeze({x:.5,z:-37.5}),camera:Object.freeze({angle:.15,height:8,distance:9})}),
+  "kitchen-doorway":Object.freeze({room:"kitchen",position:Object.freeze({x:.5,z:-23.5}),camera:Object.freeze({angle:.35,height:6.5,distance:8})})
+ });
  const ASSET_REGISTRY=Object.freeze({
   T:{assetId:"restaurant.table.round",sourceScene:"table_round_A",scale:.78,collision:[1.17,1.17],color:0xb87955,size:[1.35,.78,1.35],height:.39},
   C:{assetId:"restaurant.chair.dining",sourceScene:"chair_A",scale:.88,collision:[.34,.36],color:0xd79a78,size:[.72,1.05,.72],height:.525},
@@ -76,6 +82,37 @@
 
  let runtime=null,loading=null;
  function sourceScene(kit,name){return kit?.scenes?.find(scene=>scene.children?.[0]?.name===name)||null}
+ function firstMesh(root){let mesh=null;root?.traverse?.(object=>{if(!mesh&&object.isMesh)mesh=object});return mesh}
+ function buildKitchenFloor(THREE,room,kit,matrix){
+  const floorGroup=new THREE.Group();floorGroup.name="restaurant-kitchen-checkerboard";
+  const prototype=sourceScene(kit,KITCHEN_FLOOR.sourceScene),source=firstMesh(prototype);
+  if(source){
+   const columns=Math.ceil(room.width/KITCHEN_FLOOR.tileSize),rows=Math.ceil(room.depth/KITCHEN_FLOOR.tileSize);
+   const tiles=new THREE.InstancedMesh(source.geometry,source.material,columns*rows);let index=0;
+   for(let row=0;row<rows;row++)for(let col=0;col<columns;col++){
+    const width=Math.min(KITCHEN_FLOOR.tileSize,room.width-col*KITCHEN_FLOOR.tileSize);
+    const depth=Math.min(KITCHEN_FLOOR.tileSize,room.depth-row*KITCHEN_FLOOR.tileSize);
+    matrix.makeScale(width/2,KITCHEN_FLOOR.thickness*4,depth/2);
+    matrix.setPosition(room.originX+col*KITCHEN_FLOOR.tileSize+width/2,-KITCHEN_FLOOR.thickness/2,room.originZ+row*KITCHEN_FLOOR.tileSize+depth/2);
+    tiles.setMatrixAt(index++,matrix);
+   }
+   tiles.instanceMatrix.needsUpdate=true;tiles.receiveShadow=true;tiles.frustumCulled=false;
+   tiles.userData={assetId:"restaurant.floor.kitchen.checkerboard.instances",sourceScene:KITCHEN_FLOOR.sourceScene,instanceCount:index};
+   floorGroup.add(tiles);
+   floorGroup.userData={assetId:"restaurant.floor.kitchen.checkerboard",sourceScene:KITCHEN_FLOOR.sourceScene,tileSize:KITCHEN_FLOOR.tileSize,tileCount:index,surfaceY:KITCHEN_FLOOR.surfaceY,fixtureBaseY:KITCHEN_FLOOR.fixtureBaseY,playerBaseY:KITCHEN_FLOOR.playerBaseY,sourceReady:true};
+   return floorGroup;
+  }
+  const geometry=new THREE.BoxGeometry(room.cell,.18,room.cell),materials=[new THREE.MeshStandardMaterial({color:0xf1efe8,roughness:.94}),new THREE.MeshStandardMaterial({color:0x24272b,roughness:.94})];
+  const cells=[[],[]];
+  for(let row=0;row<room.depth/room.cell;row++)for(let col=0;col<room.width/room.cell;col++)cells[(row+col)%2].push(cellCenter(room,col,row));
+  cells.forEach((positions,color)=>{
+   const batch=new THREE.InstancedMesh(geometry,materials[color],positions.length);
+   positions.forEach((position,index)=>{matrix.makeTranslation(position.x,-.09,position.z);batch.setMatrixAt(index,matrix)});
+   batch.instanceMatrix.needsUpdate=true;batch.receiveShadow=true;batch.userData={assetId:`restaurant.floor.kitchen.checkerboard.${color?"dark":"light"}`,instanceCount:positions.length};floorGroup.add(batch);
+  });
+  floorGroup.userData={assetId:"restaurant.floor.kitchen.checkerboard",sourceScene:KITCHEN_FLOOR.sourceScene,tileSize:room.cell,tileCount:room.width/room.cell*room.depth/room.cell,surfaceY:KITCHEN_FLOOR.surfaceY,fixtureBaseY:KITCHEN_FLOOR.fixtureBaseY,playerBaseY:KITCHEN_FLOOR.playerBaseY,sourceReady:false};
+  return floorGroup;
+ }
  function assetTransform(room,symbol,col,row,position){
   let x=position.x,z=position.z,yaw=0;
   if(symbol==="C"){
@@ -89,16 +126,19 @@
   validateConnection(rooms[0],rooms[1]);
   const group=new THREE.Group();group.name="restaurant-world";group.visible=false;
   const materials={wall:new THREE.MeshStandardMaterial({color:0xf4d6cc,roughness:.92}),
-   diningFloor:new THREE.MeshStandardMaterial({color:0xd9ae86,roughness:1}),kitchenFloor:new THREE.MeshStandardMaterial({color:0xc6d0d3,roughness:1})};
-  const wallGeometry=new THREE.BoxGeometry(1,4,1),wallCells=[];
+   diningFloor:new THREE.MeshStandardMaterial({color:0xd9ae86,roughness:1})};
+  const wallGeometry=new THREE.BoxGeometry(1,4,1),wallCells=[],matrix=new THREE.Matrix4(),loadedAssetIds=[];
   rooms.forEach(room=>{
-   const floor=new THREE.Mesh(new THREE.BoxGeometry(room.width,.18,room.depth),room.room==="dining"?materials.diningFloor:materials.kitchenFloor);
-   floor.position.set(room.originX+room.width/2,-.09,room.originZ+room.depth/2);floor.receiveShadow=true;floor.userData.assetId=`restaurant.floor.${room.room}`;group.add(floor);
+   if(room.room==="kitchen"){
+    const floor=buildKitchenFloor(THREE,room,kit,matrix);group.add(floor);if(floor.userData.sourceReady)loadedAssetIds.push(floor.userData.assetId);
+   }else{
+    const floor=new THREE.Mesh(new THREE.BoxGeometry(room.width,.18,room.depth),materials.diningFloor);
+    floor.position.set(room.originX+room.width/2,-.09,room.originZ+room.depth/2);floor.receiveShadow=true;floor.userData.assetId=`restaurant.floor.${room.room}`;group.add(floor);
+   }
    room.map.forEach((row,r)=>[...row].forEach((symbol,c)=>{if(symbol==="#")wallCells.push(cellCenter(room,c,r))}));
   });
-  const walls=new THREE.InstancedMesh(wallGeometry,materials.wall,wallCells.length),matrix=new THREE.Matrix4();
+  const walls=new THREE.InstancedMesh(wallGeometry,materials.wall,wallCells.length);
   wallCells.forEach((p,i)=>{matrix.makeTranslation(p.x,2,p.z);walls.setMatrixAt(i,matrix)});walls.instanceMatrix.needsUpdate=true;walls.castShadow=walls.receiveShadow=true;walls.userData.assetId="restaurant.wall.segment";group.add(walls);
-  const loadedAssetIds=[];
   for(const [symbol,spec] of Object.entries(ASSET_REGISTRY)){
    const placements=[];rooms.forEach(room=>room.map.forEach((row,r)=>[...row].forEach((value,c)=>{if(value===symbol)placements.push({room,row:r,col:c,...cellCenter(room,c,r)})})));
    if(!placements.length)continue;
@@ -113,10 +153,10 @@
    placements.forEach((p,i)=>{matrix.makeTranslation(p.x,spec.height,p.z);batch.setMatrixAt(i,matrix)});batch.instanceMatrix.needsUpdate=true;batch.castShadow=batch.receiveShadow=true;
    batch.userData={assetId:spec.assetId,symbol,placeholder:true,instanceCount:placements.length};group.add(batch);
   }
-  group.userData={destination:"restaurant",rooms:rooms.map(room=>({id:room.room,width:room.width,depth:room.depth,layoutFile:ROOM_FILES[room.room]})),assetRegistry:ASSET_REGISTRY,assets:{url:KIT_URL,status:kit?"ready":"fallback",loadedAssetIds,error:assetError},npcs:0,orders:false,hud:false};
+  group.userData={destination:"restaurant",rooms:rooms.map(room=>({id:room.room,width:room.width,depth:room.depth,layoutFile:ROOM_FILES[room.room]})),assetRegistry:ASSET_REGISTRY,assets:{url:KIT_URL,status:kit?"ready":"fallback",loadedAssetIds,error:assetError},floor:{kitchen:KITCHEN_FLOOR},npcs:0,orders:false,hud:false};
   scene.add(group);
   const spawns=Object.fromEntries(rooms.map(room=>[room.room,cellCenter(room,room.spawnCol,room.spawnRow)]));
-  return {group,rooms,spawns,spawn:spawns.dining,camera:{angle:.35,height:8.5,distance:8.8},canWalk:(x,z)=>canWalk(rooms,x,z)};
+  return {group,rooms,spawns,spawn:spawns.dining,camera:{angle:.35,height:8.5,distance:8.8},debugViews:DEBUG_VIEWS,floorSurfaceY:KITCHEN_FLOOR.surfaceY,canWalk:(x,z)=>canWalk(rooms,x,z)};
  }
  async function loadRooms(fetchImpl=globalThis.fetch){
   if(typeof fetchImpl!=="function")throw new Error("Restaurant layouts require fetch");
@@ -142,5 +182,5 @@
   return {geometries:geometries.size,materials:materials.size,textures:textures.size};
  }
  function destroy(){if(!runtime)return;const root=runtime.group;disposeRuntimeResources(root);root.parent?.remove(root);runtime=null}
- return {KIT_URL,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,doorwayCells,validateConnection,sourceScene,assetTransform,buildRuntime,loadRooms,loadKit,disposeRuntimeResources,ensure,destroy,get current(){return runtime}};
+ return {KIT_URL,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,KITCHEN_FLOOR,DEBUG_VIEWS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,doorwayCells,validateConnection,sourceScene,firstMesh,buildKitchenFloor,assetTransform,buildRuntime,loadRooms,loadKit,disposeRuntimeResources,ensure,destroy,get current(){return runtime}};
 });
