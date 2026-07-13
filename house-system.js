@@ -21,7 +21,9 @@ const HOUSE_BOUNDS={
  maxZ:HOUSE_HALF_DEPTH-HOUSE_CONFIG.furnitureInset,
  step:HOUSE_CONFIG.furnitureStep
 };
+let houseArea="interior",houseCity=null;
 function canWalkInHouse(x,z){
+ if(houseArea==="exterior")return houseCity?.canWalk?houseCity.canWalk(x,z):x>=-18&&x<=18&&z>=7.9&&z<=35;
  return x>=-HOUSE_HALF_WIDTH+HOUSE_CONFIG.playerInset &&
   x<=HOUSE_HALF_WIDTH-HOUSE_CONFIG.playerInset &&
   z>=-HOUSE_HALF_DEPTH+HOUSE_CONFIG.playerInset &&
@@ -31,6 +33,32 @@ function hbox(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),n
 hbox(HOUSE_CONFIG.width,.25,HOUSE_CONFIG.depth,0xd7b08b,0,.03,0);
 hbox(HOUSE_CONFIG.width,HOUSE_CONFIG.wallHeight,HOUSE_CONFIG.wallThickness,0xddefff,0,HOUSE_CONFIG.wallHeight/2,-HOUSE_HALF_DEPTH+HOUSE_CONFIG.wallThickness/2);
 hbox(HOUSE_CONFIG.wallThickness,HOUSE_CONFIG.wallHeight,HOUSE_CONFIG.depth,0xffe5ef,-HOUSE_HALF_WIDTH+HOUSE_CONFIG.wallThickness/2,HOUSE_CONFIG.wallHeight/2,0);
+const houseExterior=window.createHouseExterior?.(THREE)||null;
+if(houseExterior)house.add(houseExterior.group);
+function registerHouseCity(city){
+ if(!city||city===houseCity)return houseCity;
+ if(houseCity?.group?.parent===house)house.remove(houseCity.group);
+ houseCity=city;if(city.group&&!city.group.parent)house.add(city.group);
+ return city;
+}
+if(window.createHouseCity)registerHouseCity(window.createHouseCity(THREE));
+window.houseWorldApi={
+ registerCity:registerHouseCity,
+ get area(){return houseArea},
+ isOutside:()=>houseArea==="exterior",
+ update:dt=>{if(currentPlace==="house"&&houseArea==="exterior")houseCity?.update?.(dt,P,C)},
+ enterInterior:()=>setHouseArea("interior"),
+ goOutside:()=>setHouseArea("exterior")
+};
+function setHouseArea(area){
+ houseArea=area==="exterior"?"exterior":"interior";
+ if(buildingMode&&houseArea!=="interior")setBuildingMode(false);
+ const spawn=houseArea==="exterior"?(houseCity?.exteriorSpawn||houseExterior?.exteriorSpawn||{x:0,z:10.1}):(houseExterior?.interiorSpawn||{x:0,z:5.25});
+ P.position.set(spawn.x,0,spawn.z);P.rotation.y=houseArea==="exterior"?0:Math.PI;
+ cameraHeight=houseArea==="exterior"?10:HOUSE_CONFIG.camera.height;
+ cameraDistance=houseArea==="exterior"?14:HOUSE_CONFIG.camera.distance;
+ setHousePanel(false);
+}
 function addFurniture(kind,loading=false,savedItem=null){
  if(kind==="remote")return null;
  let g=new THREE.Group(),n=furniture.length,x=-5+(n%6)*2,z=-4+Math.floor(n/6)*2;
@@ -159,6 +187,7 @@ function showHouse(){P.visible=true;
  setHudMenu(false);closeKitchenPanels();
  document.getElementById("roomTeleport").style.display="none";
  setBuildingMode(false);
+ houseArea="interior";
  P.position.set(HOUSE_CONFIG.spawn.x,0,HOUSE_CONFIG.spawn.z);
  cameraAngle=HOUSE_CONFIG.camera.angle;
  cameraHeight=HOUSE_CONFIG.camera.height;
@@ -302,7 +331,7 @@ function registerFurnitureAction(item){
    const point=target.userData.actionAnchor||{x:0,y:isSeat?(kind==="sofa"?2.05:1.9):2.75,z:0};
    out.set(point.x,point.y,point.z);return target.localToWorld(out);
   },
-  enabled:()=>currentPlace==="house"&&!buildingMode&&
+  enabled:()=>currentPlace==="house"&&houseArea==="interior"&&!buildingMode&&
    (isSeat?(!sitting||seatedFurniture===item):tvControlsPanelEl.style.display!=="block"),
   onAction:()=>{
    if(isSeat){if(sitting)leaveSeat();else takeSeat(item);return}
@@ -313,10 +342,22 @@ function registerFurnitureAction(item){
 }
 function registerPendingFurnitureActions(){furniture.forEach(registerFurnitureAction)}
 window.registerHouseFurnitureActions=registerPendingFurnitureActions;
+let doorActionRegistration=null;
+function registerHouseDoorAction(){
+ if(doorActionRegistration||!houseExterior?.door||!window.objectActions?.register)return;
+ doorActionRegistration=window.objectActions.register(houseExterior.door,{
+  icon:"🚪",label:()=>houseArea==="exterior"?"Enter house":"Go outside",range:3.1,priority:20,anchorOffset:0,world:"house",
+  getAnchor:(target,out)=>{const point=target.userData.actionAnchor;out.set(point.x,point.y,point.z);return target.localToWorld(out)},
+  enabled:()=>currentPlace==="house"&&!buildingMode,
+  onAction:()=>setHouseArea(houseArea==="exterior"?"interior":"exterior")
+ });
+}
+queueMicrotask(registerHouseDoorAction);
 function refreshHouseButtons(){
- const inHouse=currentPlace==="house";
+ const inHouse=currentPlace==="house"&&houseArea==="interior";
  if(!inHouse||buildingMode){if(sitting)leaveSeat();houseActionBtn.style.display="none";tvControlsPanelEl.style.display="none";return}
  registerPendingFurnitureActions();
+ registerHouseDoorAction();
  const fridge=nearFurniture("fridge");
  if(fridge){houseActionBtn.classList.remove("seat-action");houseActionBtn.style.display="block";houseActionBtn.textContent="🧊 OPEN FRIDGE";houseActionBtn.dataset.action="fridge"}
  else{houseActionBtn.classList.remove("seat-action");houseActionBtn.style.display="none"}
@@ -435,7 +476,7 @@ function updateFurnitureGuides(){
 }
 
 function setHousePanel(open){
- const show=Boolean(open&&currentPlace==="house"&&startPage.style.display==="none");
+ const show=Boolean(open&&currentPlace==="house"&&houseArea==="interior"&&startPage.style.display==="none");
  housePanel.classList.toggle("open",show);
  housePanel.setAttribute("aria-hidden",String(!show));
  housePanelToggle.setAttribute("aria-expanded",String(show));
@@ -449,6 +490,7 @@ closeHousePanel.addEventListener("pointerdown",e=>{e.preventDefault();setHousePa
 document.querySelectorAll("[data-house-tab]").forEach(b=>b.addEventListener("pointerdown",e=>{e.preventDefault();setHouseTab(b.dataset.houseTab)}));
 
 function setBuildingMode(on){
+ if(on&&houseArea!=="interior")return;
  buildingMode=on;
  if(on&&furniture.length&&selectedFurnitureIndex<0)selectedFurnitureIndex=furniture.length-1;
  const movePad=document.getElementById("pad");

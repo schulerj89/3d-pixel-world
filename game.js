@@ -1012,6 +1012,7 @@ if(canMove){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
 syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);
 // Sink the avatar slightly while wading and expose the state for future splash
 // effects. Deep water remains traversable but never lets the avatar leave bounds.
+window.houseWorldApi?.update?.(dt);
 if(currentPlace==="beach"){
  const wadeDepth=THREE.MathUtils.clamp((BEACH_CONFIG.waterEdgeZ-P.position.z)/5,0,1);
  P.userData.wading=wadeDepth>0;
