@@ -183,7 +183,7 @@ function setBakeryVisible(show){
 function showBakery(){P.visible=true;
  window.releaseLargeWorlds("bakery");
  currentPlace="bakery";
- document.body.classList.add("bakery-mode");document.body.classList.remove("house-mode","beach-mode","space-mode","forest-mode","castle-mode");
+ document.body.classList.add("bakery-mode");document.body.classList.remove("house-mode","beach-mode","space-mode","city-mode","castle-mode");
  S.background.set(0xffd7e6);
  startPage.style.display="none";
  setBakeryVisible(true);
@@ -204,7 +204,7 @@ async function showRestaurant(){
  const world=await window.RestaurantWorld.ensure(THREE,S);
  currentPlace="restaurant";P.visible=true;
  document.body.classList.add("restaurant-mode");
- document.body.classList.remove("bakery-mode","house-mode","beach-mode","space-mode","forest-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
+ document.body.classList.remove("bakery-mode","house-mode","beach-mode","space-mode","city-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(0xf4cfc4);startPage.style.display="none";
  setBakeryVisible(false);page5Group.visible=false;house.visible=false;beach.visible=false;hideSpaceWorld();
  if(castle)castle.visible=false;
@@ -222,7 +222,7 @@ async function showRestaurant(){
 function showHouse(){P.visible=true;
  window.releaseLargeWorlds("house");
  currentPlace="house";
- document.body.classList.add("house-mode");document.body.classList.remove("restaurant-mode","bakery-mode","beach-mode","space-mode","forest-mode","castle-mode");
+ document.body.classList.add("house-mode");document.body.classList.remove("restaurant-mode","bakery-mode","beach-mode","space-mode","city-mode","castle-mode");
  S.background.set(0xffd7e6);
  document.body.classList.remove("kitchen-clean","storage-mode");
  startPage.style.display="none";
@@ -250,7 +250,7 @@ function showHouse(){P.visible=true;
 function showBeach(){
  window.releaseLargeWorlds("beach");
  currentPlace="beach";P.visible=true;
- document.body.classList.add("beach-mode");document.body.classList.remove("restaurant-mode","bakery-mode","house-mode","space-mode","forest-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
+ document.body.classList.add("beach-mode");document.body.classList.remove("restaurant-mode","bakery-mode","house-mode","space-mode","city-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(0x9edfff);startPage.style.display="none";
  setBakeryVisible(false);house.visible=false;beach.visible=true;
  hideSpaceWorld();
@@ -267,10 +267,10 @@ function showBeach(){
  if(window.switchWorldMusic)window.switchWorldMusic("beach");
 }
 async function showSpace(){
- destroyForestWorld();
+  destroyCityWorld();
  if(castle)castle.visible=false;
  const world=ensureSpaceWorld();await world.ready;currentPlace="space";P.visible=true;
- document.body.classList.add("space-mode");document.body.classList.remove("restaurant-mode","bakery-mode","house-mode","beach-mode","forest-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
+ document.body.classList.add("space-mode");document.body.classList.remove("restaurant-mode","bakery-mode","house-mode","beach-mode","city-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(world.background);startPage.style.display="none";
  setBakeryVisible(false);house.visible=false;beach.visible=false;world.group.visible=true;
  inKitchen=false;inStorage=false;page5Group.visible=false;
@@ -283,26 +283,28 @@ async function showSpace(){
  document.body.dataset.spacePose=poseId;document.body.dataset.spaceAssetStatus=world.group.userData.assets.status;document.body.dataset.spaceAliens=String(world.group.userData.npcs.aliens);document.body.dataset.spaceOtherNpcs=String(world.group.userData.npcs.nonAliens);
  if(window.switchWorldMusic)window.switchWorldMusic("space");
 }
-function showForest(){
+async function showCity(){
  hideSpaceWorld();
  if(castle)castle.visible=false;
- const world=ensureForestWorld(),config=world.config;
- currentPlace="forest";P.visible=true;
- document.body.classList.add("forest-mode");document.body.classList.remove("restaurant-mode","bakery-mode","house-mode","beach-mode","space-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
- S.background.set(0xa9dcbd);startPage.style.display="none";
- setBakeryVisible(false);house.visible=false;beach.visible=false;world.root.visible=true;
+ const world=ensureCityWorld();await world.ready;currentPlace="city";P.visible=true;
+ document.body.classList.add("city-mode");document.body.classList.remove("restaurant-mode","bakery-mode","house-mode","beach-mode","space-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
+ S.background.set(world.background);startPage.style.display="none";
+ setBakeryVisible(false);house.visible=false;beach.visible=false;world.group.visible=true;
  inKitchen=false;inStorage=false;page5Group.visible=false;
  setHousePanel(false);setBuildingMode(false);setHudMenu(false);closeKitchenPanels();
  document.getElementById("orders").style.display="none";document.getElementById("recipePanel").style.display="none";
- document.getElementById("roomTeleport").style.display="none";roomName.style.display="block";roomName.textContent="Whimsy Forest";
- P.position.set(config.spawn.x,0,config.spawn.z);P.rotation.y=Math.PI;
- cameraAngle=config.camera.angle;cameraHeight=config.camera.height;cameraDistance=config.camera.distance;updateCamera();
- if(window.switchWorldMusic)window.switchWorldMusic("forest");
+ document.getElementById("roomTeleport").style.display="none";roomName.style.display="block";roomName.textContent=world.name;
+ const poseId=new URLSearchParams(location.search).get("cityPose")||"spawn",pose=world.debugPoses?.[poseId]||{...world.spawn,...world.camera};
+ world.prepareDebugPose?.(poseId);
+ P.position.set(pose.x,0,pose.z);P.rotation.y=Math.PI;P.visible=pose.hidePlayer!==true;
+ cameraAngle=pose.angle;cameraHeight=pose.height;cameraDistance=pose.distance;updateCamera();
+ document.body.dataset.cityPose=poseId;document.body.dataset.cityAssetStatus=world.group.userData.assets.status;
+ if(window.switchWorldMusic)window.switchWorldMusic("city");
 }
 function showCastle(){
- destroyForestWorld();hideSpaceWorld();
+ destroyCityWorld();hideSpaceWorld();
  const world=createCastleWorld();currentPlace="castle";P.visible=true;
- document.body.classList.add("castle-mode");document.body.classList.remove("restaurant-mode","bakery-mode","house-mode","beach-mode","space-mode","forest-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
+ document.body.classList.add("castle-mode");document.body.classList.remove("restaurant-mode","bakery-mode","house-mode","beach-mode","space-mode","city-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(0xa9cef0);startPage.style.display="none";
  setBakeryVisible(false);house.visible=false;beach.visible=false;world.visible=true;
  inKitchen=false;inStorage=false;page5Group.visible=false;
@@ -315,7 +317,7 @@ function showCastle(){
 }
 goBakery.onclick=()=>window.runWorldTransition("Setting the tables…","restaurant",showRestaurant);goHouse.onclick=showHouse;document.getElementById("goBeach").onclick=showBeach;
 document.getElementById("goSpace").onclick=()=>window.runWorldTransition("Launching Space…","space",showSpace);
-document.getElementById("goForest").onclick=()=>window.runWorldTransition("Growing the forest…","forest",showForest);
+document.getElementById("goCity").onclick=()=>window.runWorldTransition("Opening Chibi City…","city",showCity);
 document.getElementById("goCastle").onclick=()=>window.runWorldTransition("Raising the castle gates…","castle",showCastle);
 
 
@@ -638,7 +640,7 @@ window.getHouseFurnitureDebug=()=>({
 });
 
 document.getElementById("deleteFurniture").onclick=()=>{const item=selectedFurniture();if(!item)return;if(item===seatedFurniture)leaveSeat();unregisterFurnitureAction(item);house.remove(item);furniture.splice(selectedFurnitureIndex,1);selectedFurnitureIndex=Math.min(selectedFurnitureIndex,furniture.length-1);updateFurnitureLabel();saveWorld()};
-backPlaces.onclick=()=>{startPage.style.display="block";window.showWorldPicker?.();setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;hideSpaceWorld();destroyForestWorld();if(castle)castle.visible=false;window.RestaurantWorld?.destroy?.();setBakeryVisible(false)};
+backPlaces.onclick=()=>{startPage.style.display="block";window.showWorldPicker?.();setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;hideSpaceWorld();destroyCityWorld();if(castle)castle.visible=false;window.RestaurantWorld?.destroy?.();setBakeryVisible(false)};
 
 
 function restoreGameButtons(){
@@ -677,7 +679,7 @@ document.getElementById("goBakery").addEventListener("click",restoreGameButtons)
 document.getElementById("goHouse").addEventListener("click",restoreGameButtons);
 document.getElementById("goBeach").addEventListener("click",restoreGameButtons);
 document.getElementById("goSpace").addEventListener("click",restoreGameButtons);
-document.getElementById("goForest").addEventListener("click",restoreGameButtons);
+document.getElementById("goCity").addEventListener("click",restoreGameButtons);
 document.getElementById("goCastle").addEventListener("click",restoreGameButtons);
 
 document.getElementById("firstPageButton").addEventListener("pointerdown",function(event){
@@ -687,6 +689,6 @@ window.showPregameCustomization?.();
 setHousePanel(false);setBuildingMode(false);house.visible=false;setBakeryVisible(false);
 beach.visible=false;
 hideSpaceWorld();
-destroyForestWorld();if(castle)castle.visible=false;
+destroyCityWorld();if(castle)castle.visible=false;
 window.RestaurantWorld?.destroy?.();
 });

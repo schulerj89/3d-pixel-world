@@ -1,7 +1,7 @@
 const assert=require("assert");
 const facing=require("../character-facing.js");
 
-const places=["bakery","forest","castle","house","beach","space"];
+const places=["bakery","city","castle","house","beach","space"];
 const directions=[
  {name:"north",x:0,z:-1,yaw:Math.PI},
  {name:"south",x:0,z:1,yaw:0},

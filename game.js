@@ -593,12 +593,12 @@ window.runWorldTransition=(label,place,build)=>{
  },40))));
 };
 window.getGameDebug=()=>({
- sceneId:currentPlace,loadedWorlds:[...disposableWorlds.keys(),...(window.RestaurantWorld?.current?["restaurant"]:[]),...(spaceWorld?["space"]:[]),...(forestWorld?["forest"]:[]),...(castle?["castle"]:[])],
+ sceneId:currentPlace,loadedWorlds:[...disposableWorlds.keys(),...(window.RestaurantWorld?.current?["restaurant"]:[]),...(spaceWorld?["space"]:[]),...(cityWorld?["city"]:[]),...(castle?["castle"]:[])],
  player:{x:+P.position.x.toFixed(2),y:+P.position.y.toFixed(2),z:+P.position.z.toFixed(2)},
  render:{calls:R.info.render.calls,triangles:R.info.render.triangles},
  memory:{geometries:R.info.memory.geometries,textures:R.info.memory.textures},
  space:spaceWorld?.debug?.()||null,
- forest:forestWorld?.debug?.()||null,
+ city:cityWorld?.debug?.()||null,
  restaurant:window.RestaurantWorld?.current?.group?.userData||null
 });
 let inKitchen=false;
@@ -652,11 +652,11 @@ const hudMenuButton=document.getElementById("hudMenuButton"),hudDrawer=document.
 document.getElementById("menuGoCastle").hidden=false;
 const musicToggle=document.getElementById("musicToggle");
 const menuGoSpace=document.createElement("button");menuGoSpace.id="menuGoSpace";menuGoSpace.type="button";menuGoSpace.innerHTML='<img class="gameIcon" src="assets/ui/gvesster/rocket.png?v=__BUILD_VERSION__" alt=""> Go to Space';hudDrawer.insertBefore(menuGoSpace,musicToggle);
-const forestMenuButton=document.createElement("button");forestMenuButton.id="menuGoForest";forestMenuButton.type="button";forestMenuButton.textContent="🌲 Go to Forest";hudDrawer.insertBefore(forestMenuButton,musicToggle);
+const cityMenuButton=document.createElement("button");cityMenuButton.id="menuGoCity";cityMenuButton.type="button";cityMenuButton.innerHTML='<img class="gameIcon" src="assets/ui/city.svg?v=__BUILD_VERSION__" alt=""> Go to City';hudDrawer.insertBefore(cityMenuButton,musicToggle);
 document.getElementById("teleportBeach")?.remove();
 const bakeryMusicTracks=[document.getElementById("bakeryMusic"),document.getElementById("sprinkleMusic")];
 const beachMusicTracks=[document.getElementById("beachMusic")];
-const destinationMusicTracks={space:[document.getElementById("spaceMusic")],forest:[document.getElementById("forestMusic")],castle:[document.getElementById("castleMusic")]};
+const destinationMusicTracks={space:[document.getElementById("spaceMusic")],city:[document.getElementById("cityMusic")],castle:[document.getElementById("castleMusic")]};
 const musicTracks=[...bakeryMusicTracks,...beachMusicTracks,...Object.values(destinationMusicTracks).flat()];
 let musicTrackIndex=0,musicStarted=false,currentMusicWorld="bakery",currentMusicTrack=null,lastMusicError="",musicMuted=localStorage.getItem("bakeryMusicMuted")==="true";
 function tracksForWorld(world){return destinationMusicTracks[world]||(world==="beach"?beachMusicTracks:bakeryMusicTracks)}
@@ -719,7 +719,7 @@ document.getElementById("menuGoBakery").addEventListener("pointerdown",event=>{e
 document.getElementById("menuGoBeach").addEventListener("pointerdown",event=>{event.preventDefault();showBeach()});
 menuGoSpace.addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Launching Space…","space",showSpace)});
 document.getElementById("menuGoCastle").addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Raising the castle gates…","castle",showCastle)});
-forestMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Growing the forest…","forest",showForest)});
+cityMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Opening Chibi City…","city",showCity)});
 const kitchenPanelIds=["recipePanel","orders","inventoryBox"];
 function closeKitchenPanels(){
  kitchenPanelIds.forEach(id=>document.getElementById(id).classList.remove("hud-open"));
@@ -983,7 +983,7 @@ let inStorage=false;
 const perfState={fps:0,frameMs:0,drawCalls:0,triangles:0,pixelRatio:R.getPixelRatio()};
 let perfFrames=0,perfSampleStart=performance.now();
 window.getGamePerformance=()=>({...perfState});
-const perfOverlay=new URLSearchParams(location.search).has("perf")?Object.assign(document.createElement("div"),{textContent:"Measuring…"}):null;
+const perfOverlay=new URLSearchParams(location.search).has("perf")?Object.assign(document.createElement("div"),{id:"gamePerfOverlay",textContent:"Measuring…"}):null;
 if(perfOverlay){perfOverlay.style.cssText="position:fixed;right:8px;bottom:8px;z-index:9999;padding:5px 8px;border-radius:6px;background:#000b;color:#fff;font:12px monospace;pointer-events:none";document.body.appendChild(perfOverlay)}
 let walkStrength=0;
 function updatePlayerWalkAnimation(isMoving,dt){
@@ -1010,7 +1010,7 @@ function updatePlayerWalkAnimation(isMoving,dt){
  P.rotation.z=THREE.MathUtils.lerp(P.rotation.z,Math.sin(walk)*.035*walkStrength,easing);
  P.position.y=THREE.MathUtils.lerp(P.position.y,groundY+Math.abs(Math.sin(walk))*.06*walkStrength,easing);
 }
-let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);const worldShadows=currentPlace!=="beach";if(sun.castShadow!==worldShadows)sun.castShadow=worldShadows;moveCameraControl(dt);let playerMoved=false;if(!window.isPlayerSeated?.()&&Math.abs(vx)+Math.abs(vz)>.08){
+let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);const worldShadows=currentPlace!=="beach"&&currentPlace!=="city";if(sun.castShadow!==worldShadows){sun.castShadow=worldShadows;R.shadowMap.enabled=worldShadows}moveCameraControl(dt);let playerMoved=false;if(!window.isPlayerSeated?.()&&Math.abs(vx)+Math.abs(vz)>.08){
 // Movement is relative to the camera direction.
 const forwardX=-Math.sin(cameraAngle);
 const forwardZ=-Math.cos(cameraAngle);
@@ -1031,7 +1031,7 @@ const canMove=currentPlace==="bakery"?canWalkAt(nextX,nextZ):
  currentPlace==="house"?canWalkInHouse(nextX,nextZ):
  currentPlace==="beach"?canWalkOnBeach(nextX,nextZ):
  currentPlace==="space"?ensureSpaceWorld().canWalk(nextX,nextZ):
- currentPlace==="forest"?Boolean(forestWorld&&forestWorld.canWalk(nextX,nextZ)):
+ currentPlace==="city"?Boolean(cityWorld&&cityWorld.canWalk(nextX,nextZ)):
  currentPlace==="castle"?canWalkInCastle(nextX,nextZ):true;
 if(canMove){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
 syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);
@@ -1041,11 +1041,13 @@ updateCastleFloorPresentation();
 // effects. Deep water remains traversable but never lets the avatar leave bounds.
 window.houseWorldApi?.update?.(dt);
 window.beachTownApi?.update?.(dt,currentPlace==="beach",C);
+if(currentPlace==="city")cityWorld?.update?.(dt,P.position);
 if(currentPlace==="beach"){
  const wadeDepth=THREE.MathUtils.clamp((BEACH_CONFIG.waterEdgeZ-P.position.z)/5,0,1);
  P.userData.wading=wadeDepth>0;
  P.position.y-=wadeDepth*.18;
 }else P.userData.wading=false;
+const desiredCameraFar=currentPlace==="city"?220:100;if(C.far!==desiredCameraFar){C.far=desiredCameraFar;C.updateProjectionMatrix()}
 updateCamera();updateHeldItem();updateIngredientGrab();updateStoveButton();customers.forEach((q,i)=>{let u=q.userData,targetX,targetZ;
 // Everyone stands in one straight line at the same x position
 if(u.stage===0){targetX=3.8;targetZ=-1.8+i*1.15}
@@ -1076,15 +1078,15 @@ function destroySpaceWorld(){if(spaceWorld){spaceWorld.dispose();spaceWorld=null
 window.destroySpaceWorld=destroySpaceWorld;
 // Large destinations are lazy factories: entering creates only that world's
 // resources and leaving can release its geometry/materials immediately.
-let forestWorld=null;
-function ensureForestWorld(){
- if(!forestWorld){
-  if(!window.worldFactories?.forest)throw new Error("Forest world factory did not load");
-  forestWorld=window.worldFactories.forest.create(S);
+let cityWorld=null;
+function ensureCityWorld(){
+ if(!cityWorld){
+  if(!window.worldFactories?.city)throw new Error("City world factory did not load");
+  cityWorld=window.worldFactories.city(THREE);cityWorld.group.visible=false;S.add(cityWorld.group);
  }
- return forestWorld;
+ return cityWorld;
 }
-function destroyForestWorld(){if(forestWorld){forestWorld.destroy();forestWorld=null}}
+function destroyCityWorld(){if(cityWorld){cityWorld.dispose();cityWorld=null}}
 // Beach is a separate, deterministic destination. Repeated palms use instancing,
 // the water is intentionally unlit, and distant/repeated scenery does not cast
 // shadows so the iPad render budget stays focused on the player.
@@ -1264,7 +1266,7 @@ window.worldFactories.castle={create:createCastleWorld,destroy:destroyCastleWorl
 window.releaseLargeWorlds=except=>{
  if(except!=="restaurant")window.RestaurantWorld?.destroy?.();
  if(except!=="space")destroySpaceWorld();
- if(except!=="forest")destroyForestWorld();
+ if(except!=="city")destroyCityWorld();
  if(except!=="castle")destroyCastleWorld();
 };
 function canWalkInCastle(x,z){
