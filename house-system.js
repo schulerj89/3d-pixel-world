@@ -35,11 +35,31 @@ function addFurniture(kind,loading=false,savedItem=null){
  if(kind==="remote")return null;
  let g=new THREE.Group(),n=furniture.length,x=-5+(n%6)*2,z=-4+Math.floor(n/6)*2;
  function q(w,h,d,c,px,py,pz){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(px,py,pz);m.castShadow=true;g.add(m);return m}
- if(kind==="sofa"){q(2,.7,.8,0xe889ad,0,.55,0);q(2,.8,.25,0xd96f9a,0,1,-.3);q(.25,.7,.8,0xd96f9a,-1,.65,0);q(.25,.7,.8,0xd96f9a,1,.65,0)}
+ if(kind==="sofa"){
+   // A roomy three-seat voxel sofa. The group stays at floor level so old
+   // saved positions/rotations continue to load without migration.
+   q(3.1,.28,1.22,0xb95783,0,.35,0);
+   q(2.55,.35,.92,0xef9fbd,0,.67,.08);
+   for(const px of[-.86,0,.86])q(.78,.18,.84,0xf7b0ca,px,.88,.13);
+   q(2.75,.78,.28,0xd96f9a,0,1.28,-.47);
+   for(const px of[-.86,0,.86])q(.8,.64,.18,0xe889ad,px,1.3,-.3);
+   q(.34,.82,1.28,0xd96f9a,-1.48,.73,0);
+   q(.34,.82,1.28,0xd96f9a,1.48,.73,0);
+   g.userData.seatAnchor={x:0,y:-.3,z:.13};
+   g.userData.seatHeight=.88;
+   g.userData.exitAnchor={x:0,y:0,z:1.7};
+   g.userData.actionAnchor={x:0,y:2.05,z:0};
+ }
  if(kind==="table"){q(1.7,.18,1.1,0x9b6645,0,1,0);for(let a of[-.65,.65])for(let b of[-.35,.35])q(.14,1,.14,0x74472f,a,.5,b)}
  if(kind==="bed"){q(2.2,.45,1.3,0xffffff,0,.45,0);q(2.2,.25,1.3,0x8fc5ff,0,.72,0);q(.7,.18,1,0xffffff,-.6,.92,0)}
  if(kind==="lamp"){q(.55,.12,.55,0x555555,0,.08,0);q(.12,1.5,.12,0x777777,0,.8,0);q(.8,.65,.8,0xffe978,0,1.65,0)}
- if(kind==="chair"){q(.8,.18,.8,0x8f613f,0,.8,0);q(.8,1,.18,0x8f613f,0,1.3,-.3);q(.12,.8,.12,0x68442d,-.3,.4,0);q(.12,.8,.12,0x68442d,.3,.4,0)}
+ if(kind==="chair"){
+   q(.8,.18,.8,0x8f613f,0,.8,0);q(.8,1,.18,0x8f613f,0,1.3,-.3);q(.12,.8,.12,0x68442d,-.3,.4,0);q(.12,.8,.12,0x68442d,.3,.4,0);
+   g.userData.seatAnchor={x:0,y:-.3,z:.03};
+   g.userData.seatHeight=.8;
+   g.userData.exitAnchor={x:0,y:0,z:1.05};
+   g.userData.actionAnchor={x:0,y:2.05,z:0};
+ }
  if(kind==="fridge"){q(1.25,2.4,.9,0xdcecf2,0,1.2,0);q(.08,1,.08,0x777777,.48,1.55,.48)}
  if(kind==="tv"){q(2.5,1.5,.22,0x20232b,0,1.65,0);g.userData.tvScreen=q(2.15,1.15,.05,0x151923,0,1.65,.14);q(.2,.8,.2,0x555555,0,.65,0);q(1.3,.15,.55,0x555555,0,.2,0)}
  if(kind==="bookshelf"){
@@ -243,16 +263,17 @@ function leaveSeat(){
  const seat=seatedFurniture;
  sitting=false;seatedFurniture=null;P.userData.seated=false;
  if(seat){
-  const exitOffset=new THREE.Vector3(0,0,seat.userData.kind==="sofa"?1.35:1.05).applyQuaternion(seat.quaternion);
+  const anchor=seat.userData.exitAnchor||{x:0,y:0,z:seat.userData.kind==="sofa"?1.7:1.05};
+  const exitOffset=new THREE.Vector3(anchor.x,anchor.y,anchor.z).applyQuaternion(seat.quaternion);
   P.position.set(seat.position.x+exitOffset.x,0,seat.position.z+exitOffset.z);
  }else P.position.y=0;
 }
 function takeSeat(seat){
  if(!seat)return;
- const isSofa=seat.userData.kind==="sofa";
- const seatOffset=new THREE.Vector3(0,0,isSofa ? .08 : .03).applyQuaternion(seat.quaternion);
+ const anchor=seat.userData.seatAnchor||{x:0,y:-.3,z:seat.userData.kind==="sofa"?.13:.03};
+ const seatOffset=new THREE.Vector3(anchor.x,0,anchor.z).applyQuaternion(seat.quaternion);
  sitting=true;seatedFurniture=seat;P.userData.seated=true;
- P.position.set(seat.position.x+seatOffset.x,isSofa ? -.35 : -.3,seat.position.z+seatOffset.z);
+ P.position.set(seat.position.x+seatOffset.x,seat.position.y+anchor.y,seat.position.z+seatOffset.z);
  P.rotation.y=seat.rotation.y;
 }
 window.isPlayerSeated=()=>sitting;
