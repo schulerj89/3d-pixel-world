@@ -14,6 +14,8 @@ const quest = CoinQuestSystem.createCoinQuestSystem({
  loader: new THREE.GLTFLoader(),
  getPlayerPosition: () => player.position,
  onReward: dollars => addMoney(dollars),
+ completed: savedQuest?.completed === true,
+ completedAt: savedQuest?.completedAt,
  getRenderInfo: () => ({
   calls: renderer.info.render.calls,
   triangles: renderer.info.render.triangles,
@@ -36,6 +38,8 @@ quest.update(deltaSeconds, performance.now());
 ```
 
 The GLTF is loaded once and cloned with shared geometry/material resources. Until it is ready, or if loading fails, all pickups use a shared primitive fallback. Call `destroy()` when leaving a disposable world.
+
+The HUD is visible only during an active timed run. Idle, failed, and completed states stay out of gameplay; integrations can surface retry and completion copy through their quest-giver dialogue. Passing `completed: true` restores a one-time quest as successful with all pickups hidden and the reward already marked as granted, so loading a save cannot pay twice.
 
 ## API
 

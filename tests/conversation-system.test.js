@@ -54,6 +54,12 @@ function makeView(){
  assert.deepEqual({x:localPosition.x,y:localPosition.y,z:localPosition.z},{x:1,y:0,z:2},"world-position queries must not corrupt the target's local transform");
  portable.destroy();
 
+ const priorityView=makeView(),prioritySystem=createConversationSystem({view:priorityView,getTargetPosition:target=>target.position});
+ prioritySystem.register({position:{x:1,z:0},userData:{}},{id:"nearby-alien",range:4,priority:0,nodes:{hello:{text:"Hello"}}});
+ const novaEntry=prioritySystem.register({position:{x:3,z:0},userData:{}},{id:"nova",range:4.5,priority:30,nodes:{hello:{text:"Mission status"}}});
+ assert.equal(prioritySystem.updateInteraction({x:0,z:0}),novaEntry,"a quest giver's explicit priority wins while multiple NPC ranges overlap");
+ prioritySystem.destroy();
+
  const instantView=makeView(),events=[];
  const instant=createConversationSystem({view:instantView,camera:{capture:()=>({exact:true}),focus:()=>{},restore:()=>{}},onEvent:event=>events.push(event.type)});
  const consoleObject={position:{x:0,z:0},userData:{}};

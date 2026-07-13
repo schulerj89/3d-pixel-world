@@ -17,6 +17,10 @@ assert.match(house,/count:6,timeLimitSeconds:30,reward:10/,"Nova configures six 
 assert.match(house,/speaker:"Nova"/);assert.match(house,/action:"start-coin-task"/);assert.match(house,/action:"retry-coin-task"/);
 assert.match(house,/targetHeight:\.55/,"small aliens use a stable root-relative camera target");
 assert.match(house,/showRetryButton:false/,"failed missions must route retry through Nova rather than bypassing the NPC");
+assert.match(house,/SPACE_COIN_PROGRESS_KEY="spaceCoinSprint"/,"Space completion uses a stable saved-progress key");
+assert.match(house,/completed:progress\?\.completed===true,completedAt:progress\?\.completedAt/,"a completed sprint restores without showing pickups or the HUD");
+assert.match(house,/saveSpaceCoinCompletion\(event\.reward\)/,"successful completion is persisted immediately");
+assert.match(house,/localStorage\.setItem\("my3DWorld",JSON\.stringify\(saved\)\)/,"quest completion shares the existing world save");
 assert.match(house,/scratchPosition:new THREE\.Vector3\(\)/,"conversation proximity checks must reuse a scratch vector without mutating targets");
 assert.match(house,/world\.findObject\("space\.cargo\.stack-a"\)/,"portable conversations are also attached to a world object");
 assert.match(house,/pendingQuestStart="start"/,"the timer waits until the conversation camera has restored");
