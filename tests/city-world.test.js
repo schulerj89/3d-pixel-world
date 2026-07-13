@@ -27,12 +27,21 @@ for(const file of City.MODEL_FILES)for(const extension of ["gltf","bin"]){
 }
 assert(fs.existsSync(path.join(root,City.ASSET_ROOT,"citybits_texture.png")),"missing shared city atlas");
 assert(fs.existsSync(path.join(root,"assets/textures/city/patterned-paving-diffuse-1k.jpg")),"missing Poly Haven sidewalk texture");
-assert(read("assets/textures/city/SOURCE.md").includes("CC0"),"sidewalk texture needs source and license provenance");
+assert(fs.existsSync(path.join(root,"assets/textures/city/kloofendal-48d-partly-cloudy-puresky-1k.jpg")),"missing Poly Haven partly cloudy sky texture");
+const textureSource=read("assets/textures/city/SOURCE.md");
+assert(textureSource.includes("CC0")&&textureSource.includes("Kloofendal 48d Partly Cloudy"),"City textures need source and license provenance");
 assert.equal(new Set(City.MODEL_FILES).size,City.MODEL_FILES.length,"the city asset registry should load each source once");
+assert.equal(City.PROP_FACING_FLIP,Math.PI,"City props need the requested 180 degree facing correction");
+assert.equal(City.flipPropFacing(0),Math.PI,"north/south props must rotate 180 degrees");
+assert.equal(City.flipPropFacing(Math.PI/2),Math.PI*1.5,"east/west props must rotate 180 degrees");
+assert(City.SKY_RADIUS>=130&&City.SKY_RADIUS<280/2+1,"sky dome must enclose the overview camera without crossing the City far plane");
 const source=read("city-world.js");
 assert(source.includes('layout:"merged-cell-tops"'),"sidewalks must remain a single merged textured mesh");
 assert(source.includes("lightCount+=4")&&source.includes("trafficPlacements")&&source.includes("instancedAsset"),"every junction needs four cardinal signals batched into instances");
-for(const pose of ["overview","buildingsNorth","buildingsCenter","buildingsSouth","trafficLights","roadGrounding","sidewalkGrounding","carsEast","carsNorth"])assert(source.includes(`${pose}:{`),`missing named ${pose} QA pose`);
+assert(source.includes("createSkyDome")&&source.includes("BackSide")&&source.includes("drawCalls:1"),"City needs a one-draw inward-facing partly cloudy sky dome");
+assert(source.includes("rotation:flipPropFacing(rotation)")&&source.includes("lamp.rotation.y=flipPropFacing"),"stoplights and lamp posts must both use the 180 degree correction");
+assert(source.includes('["trafficLights","streetLights","skyStreet","overview"].includes(poseId)'),"static City QA poses must pause random traffic occlusion");
+for(const pose of ["overview","buildingsNorth","buildingsCenter","buildingsSouth","trafficLights","streetLights","skyStreet","roadGrounding","sidewalkGrounding","carsEast","carsNorth"])assert(source.includes(`${pose}:{`),`missing named ${pose} QA pose`);
 for(const type of "ABCDEFGH")assert(source.includes(`building${type}:{`),`missing building ${type} QA pose`);
 const html=read("index.html");
 assert(html.includes('id="goCity"')&&html.includes("assets/ui/city.svg"),"world picker needs the City button and icon");
