@@ -21,4 +21,3 @@ The official pack lists five rigged chibi characters, including the merchant, an
 - Uploaded vertices: 6,487
 - Textures: seven 256x256 WebP images
 - Runtime SHA-256: `38E6DFA990B57071E759E0682DC5CD0562DE4E41166B0E44BD2C75266852E194`
-
