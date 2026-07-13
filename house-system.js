@@ -10,7 +10,9 @@ const HOUSE_CONFIG={
  furnitureInset:.65,
  furnitureStep:.5,
  spawn:{x:0,z:2.5},
- camera:{angle:.35,height:8,distance:11}
+ // Frame the interior from inside the rear corner so the front wall never
+ // blocks the room immediately after entering My House.
+ camera:{angle:2.8,height:8,distance:11}
 };
 const HOUSE_HALF_WIDTH=HOUSE_CONFIG.width/2;
 const HOUSE_HALF_DEPTH=HOUSE_CONFIG.depth/2;
@@ -63,7 +65,10 @@ function setHouseArea(area){
 function addFurniture(kind,loading=false,savedItem=null){
  if(kind==="remote")return null;
  let g=new THREE.Group(),n=furniture.length,x=-5+(n%6)*2,z=-4+Math.floor(n/6)*2;
- function q(w,h,d,c,px,py,pz){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(px,py,pz);m.castShadow=true;g.add(m);return m}
+ const fallbackRoot=new THREE.Group();
+ fallbackRoot.name=`${kind}-primitive-fallback`;
+ g.add(fallbackRoot);g.userData.fallbackRoot=fallbackRoot;
+ function q(w,h,d,c,px,py,pz){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(px,py,pz);m.castShadow=true;fallbackRoot.add(m);return m}
  if(kind==="sofa"){
    // A roomy three-seat voxel sofa. The group stays at floor level so old
    // saved positions/rotations continue to load without migration.
@@ -132,15 +137,38 @@ function addFurniture(kind,loading=false,savedItem=null){
    q(.18,.18,.18,0xffe16b,-.45,1.1,.15);
    q(.18,.18,.18,0xff8fb1,.45,1.1,.15);
  }
+ if(kind==="armchair"){
+   q(1.7,.3,1.2,0xd66f9d,0,.5,0);q(1.45,.7,.28,0xec91b6,0,1.15,-.45);
+   q(.25,.8,1.2,0xc95c8f,-.72,.75,0);q(.25,.8,1.2,0xc95c8f,.72,.75,0);
+   g.userData.seatAnchor={x:0,y:-.3,z:.1};g.userData.seatHeight=.8;
+   g.userData.exitAnchor={x:0,y:0,z:1.35};g.userData.actionAnchor={x:0,y:2,z:0};
+ }
+ if(kind==="stool"){
+   q(.75,.2,.75,0xd68a58,0,.55,0);q(.14,.55,.14,0x70472f,-.25,.28,-.25);q(.14,.55,.14,0x70472f,.25,.28,.25);
+   g.userData.seatAnchor={x:0,y:-.45,z:0};g.userData.seatHeight=.5;
+   g.userData.exitAnchor={x:0,y:0,z:1};g.userData.actionAnchor={x:0,y:1.55,z:0};
+ }
+ if(kind==="diningTable"){q(3,.18,2,0x9b6645,0,1,0);for(const px of[-1.2,1.2])for(const pz of[-.7,.7])q(.15,1,.15,0x70472f,px,.5,pz)}
+ if(kind==="sideTable"){q(1,.16,1,0xb9845f,0,1,0);q(.18,1,.18,0x70472f,0,.5,0)}
+ if(kind==="tableLamp"){q(.6,.1,.6,0x666666,0,.08,0);q(.1,.7,.1,0x888888,0,.45,0);q(.75,.55,.75,0xffe978,0,.95,0)}
+ if(kind==="smallCactus"){q(.48,.38,.48,0xc57d55,0,.2,0);q(.2,.55,.2,0x62b956,0,.62,0)}
 
 
  g.position.set(savedItem?.x ?? x,0,savedItem?.z ?? z);
 g.rotation.y=savedItem?.rotation ?? 0;
-g.userData.kind=kind;house.add(g);furniture.push(g);constrainFurniture(g);
+ g.userData.kind=kind;g.userData.label={diningTable:"Dining Table",sideTable:"Side Table",tableLamp:"Table Lamp",smallCactus:"Small Cactus"}[kind]||kind.replace(/^./,c=>c.toUpperCase());
+ house.add(g);furniture.push(g);constrainFurniture(g);
+ const assetPromise=window.FurnitureAssets?.attach(g,kind);
+ if(assetPromise)assetPromise.then(()=>{
+   if(!g.parent)return;
+   constrainFurniture(g);
+   updateFurnitureLabel();
+ });
 // Saved furniture is constructed before the interaction declarations below are
 // initialized. A microtask registers it after this script has finished loading.
 queueMicrotask(()=>registerFurnitureAction(g));
-if(!loading)saveWorld()
+if(!loading)saveWorld();
+return g;
 }
 saved.furniture=(saved.furniture||[]).filter(item=>(typeof item==="string"?item:item?.kind)!=="remote");
 localStorage.setItem("my3DWorld",JSON.stringify(saved));
@@ -306,7 +334,7 @@ const shows={
 function hasFurniture(kind){return furniture.some(f=>f.userData.kind===kind)}
 function nearFurniture(kind,range=1.8){return furniture.find(f=>f.userData.kind===kind&&Math.hypot(f.position.x-P.position.x,f.position.z-P.position.z)<range)}
 function nearbySeat(range=2.25){
- return furniture.find(f=>(f.userData.kind==="chair"||f.userData.kind==="sofa")&&f.visible!==false&&Math.hypot(f.position.x-P.position.x,f.position.z-P.position.z)<range);
+ return furniture.find(f=>["chair","sofa","armchair","stool"].includes(f.userData.kind)&&f.visible!==false&&Math.hypot(f.position.x-P.position.x,f.position.z-P.position.z)<range);
 }
 function leaveSeat(){
  if(!sitting)return;
@@ -340,8 +368,8 @@ function unregisterFurnitureAction(item){
 function registerFurnitureAction(item){
  if(!item||item.userData.objectActionRegistration||!window.objectActions?.register)return;
  const kind=item.userData.kind;
- if(kind!=="sofa"&&kind!=="chair"&&kind!=="tv")return;
- const isSeat=kind==="sofa"||kind==="chair";
+ if(!["sofa","chair","armchair","stool","tv"].includes(kind))return;
+ const isSeat=["sofa","chair","armchair","stool"].includes(kind);
  const config={
   icon:()=>isSeat?(sitting?"🚶":"🛋️"):"📺",
   label:()=>isSeat?(sitting?"Stand up":"Sit down"):"TV controls",
@@ -549,7 +577,7 @@ function selectedFurniture(){
 }
 function updateFurnitureLabel(){
  const item=selectedFurniture();
- document.getElementById("selectedFurniture").textContent=item?"Selected: "+item.userData.kind.replace(/^./,c=>c.toUpperCase())+" · "+(selectedFurnitureIndex+1)+" of "+furniture.length:"No furniture selected";
+ document.getElementById("selectedFurniture").textContent=item?"Selected: "+item.userData.label+" · "+(selectedFurnitureIndex+1)+" of "+furniture.length:"No furniture selected";
  furniture.forEach((f,i)=>f.traverse(child=>{if(child.isMesh){if(!child.userData.baseEmissive)child.userData.baseEmissive=child.material.emissive.getHex();child.material.emissive.setHex(i===selectedFurnitureIndex&&buildingMode?0x24104a:child.userData.baseEmissive)} }));
  updateFurnitureGuides();
 }
@@ -589,6 +617,23 @@ document.getElementById("rotateF").onclick=()=>{
  updateFurnitureGuides();
  saveWorld();
 };
+
+window.getHouseFurnitureDebug=()=>({
+ sceneId:currentPlace,
+ area:houseArea,
+ buildingMode,
+ renderInfo:{calls:R.info.render.calls,triangles:R.info.render.triangles,geometries:R.info.memory.geometries,textures:R.info.memory.textures},
+ assets:window.FurnitureAssets?.debug?.()||null,
+ furniture:furniture.map(item=>({
+   kind:item.userData.kind,
+   label:item.userData.label,
+   assetId:item.userData.assetId||null,
+   assetStatus:item.userData.assetStatus||"primitive",
+   x:+item.position.x.toFixed(2),
+   z:+item.position.z.toFixed(2),
+   rotation:+item.rotation.y.toFixed(3)
+ }))
+});
 
 document.getElementById("deleteFurniture").onclick=()=>{const item=selectedFurniture();if(!item)return;if(item===seatedFurniture)leaveSeat();unregisterFurnitureAction(item);house.remove(item);furniture.splice(selectedFurnitureIndex,1);selectedFurnitureIndex=Math.min(selectedFurnitureIndex,furniture.length-1);updateFurnitureLabel();saveWorld()};
 backPlaces.onclick=()=>{startPage.style.display="block";window.showWorldPicker?.();setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;hideSpaceWorld();destroyForestWorld();if(castle)castle.visible=false;window.RestaurantWorld?.destroy?.();setBakeryVisible(false)};
