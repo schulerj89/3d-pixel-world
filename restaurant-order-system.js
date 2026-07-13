@@ -7,21 +7,25 @@
 
  const OrderStatus=Object.freeze({WAITING:"waiting",MADE:"made",COMPLETED:"completed",CANCELLED:"cancelled"});
  const DEFAULT_ORDER_DEFINITIONS=Object.freeze([
-  Object.freeze({id:"strawberry-plate",name:"Strawberry Plate",emoji:"🍓",reward:8}),
-  Object.freeze({id:"burger-meal",name:"Burger Meal",emoji:"🍔",reward:12}),
-  Object.freeze({id:"dinner-plate",name:"Dinner Plate",emoji:"🍽️",reward:16}),
-  Object.freeze({id:"sweet-treat",name:"Sweet Treat",emoji:"🧁",reward:10})
+  Object.freeze({id:"garden-plate",name:"Garden Plate",emoji:"🥗",reward:8,ingredients:Object.freeze([Object.freeze({id:"tomato",name:"Tomato",emoji:"🍅",sourceScene:"food_ingredient_tomato"}),Object.freeze({id:"carrot",name:"Carrot",emoji:"🥕",sourceScene:"food_ingredient_carrot"})])}),
+  Object.freeze({id:"burger-meal",name:"Burger Meal",emoji:"🍔",reward:12,ingredients:Object.freeze([Object.freeze({id:"bun",name:"Bun",emoji:"🥯",sourceScene:"food_ingredient_bun"}),Object.freeze({id:"patty",name:"Burger Patty",emoji:"🥩",sourceScene:"food_ingredient_burger_uncooked"})])}),
+  Object.freeze({id:"steak-dinner",name:"Steak Dinner",emoji:"🍽️",reward:16,ingredients:Object.freeze([Object.freeze({id:"steak",name:"Steak",emoji:"🥩",sourceScene:"food_ingredient_steak"}),Object.freeze({id:"potato",name:"Potato",emoji:"🥔",sourceScene:"food_ingredient_potato"})])}),
+  Object.freeze({id:"ham-cheese",name:"Ham & Cheese",emoji:"🍖",reward:10,ingredients:Object.freeze([Object.freeze({id:"ham",name:"Ham",emoji:"🍖",sourceScene:"food_ingredient_ham"}),Object.freeze({id:"cheese",name:"Cheese",emoji:"🧀",sourceScene:"food_ingredient_cheese"})])})
  ]);
 
  function requiredText(value,label){if(typeof value!=="string"||!value.trim())throw new Error(label+" must be a non-empty string");return value.trim()}
- function copyDefinition(value){return {id:value.id,name:value.name,emoji:value.emoji,reward:value.reward}}
+ function copyIngredient(value){return {id:value.id,name:value.name,emoji:value.emoji,sourceScene:value.sourceScene}}
+ function copyDefinition(value){return {id:value.id,name:value.name,emoji:value.emoji,reward:value.reward,ingredients:value.ingredients.map(copyIngredient)}}
 
  class OrderCatalog{
   constructor(definitions=DEFAULT_ORDER_DEFINITIONS){
    if(!Array.isArray(definitions)||!definitions.length)throw new Error("Order catalog needs at least one definition");
    this._items=new Map();
    definitions.forEach(raw=>{
-    const definition={id:requiredText(raw?.id,"Product id"),name:requiredText(raw?.name,"Product name"),emoji:requiredText(raw?.emoji,"Product emoji"),reward:Number(raw?.reward)};
+    const ingredients=Array.isArray(raw?.ingredients)?raw.ingredients.map(item=>Object.freeze({id:requiredText(item?.id,"Ingredient id"),name:requiredText(item?.name,"Ingredient name"),emoji:requiredText(item?.emoji,"Ingredient emoji"),sourceScene:requiredText(item?.sourceScene,"Ingredient source scene")})):[];
+    if(ingredients.length<1||ingredients.length>2)throw new Error("Restaurant recipes require one or two ingredients");
+    if(new Set(ingredients.map(item=>item.id)).size!==ingredients.length)throw new Error("Recipe ingredients must be unique");
+    const definition={id:requiredText(raw?.id,"Product id"),name:requiredText(raw?.name,"Product name"),emoji:requiredText(raw?.emoji,"Product emoji"),reward:Number(raw?.reward),ingredients:Object.freeze(ingredients)};
     if(!Number.isFinite(definition.reward)||definition.reward<0)throw new Error("Product reward must be a non-negative number");
     if(this._items.has(definition.id))throw new Error("Duplicate product definition: "+definition.id);
     this._items.set(definition.id,Object.freeze(definition));
@@ -86,11 +90,13 @@
   debug(){return this.snapshot()}
  }
 
+ function ingredientImageDataUrl(ingredient){const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#fff4db"/><text x="32" y="43" text-anchor="middle" font-size="36">${ingredient.emoji}</text></svg>`;return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg)}
+
  class RestaurantOrderMenu{
-  constructor({system,document:doc,collapsed=true,onFulfill}={}){
+  constructor({system,document:doc,collapsed=true,getProgress}={}){
    if(!(system instanceof RestaurantOrderSystem))throw new Error("RestaurantOrderMenu requires a RestaurantOrderSystem");
    if(!doc?.createElement)throw new Error("RestaurantOrderMenu requires a document");
-   this.system=system;this.document=doc;this.onFulfill=typeof onFulfill==="function"?onFulfill:(orderId,productId)=>system.fulfill(orderId,productId);
+   this.system=system;this.document=doc;this.getProgress=typeof getProgress==="function"?getProgress:()=>({added:[]});
    this.root=doc.createElement("section");this.root.id="restaurantOrderMenu";this.root.className="restaurantOrderMenu";this.root.setAttribute("aria-label","Restaurant orders");
    this.toggle=doc.createElement("button");this.toggle.type="button";this.toggle.className="restaurantOrderMenu__toggle";this.toggle.setAttribute("aria-controls","restaurantOrderList");
    this.list=doc.createElement("div");this.list.id="restaurantOrderList";this.list.className="restaurantOrderMenu__list";this.list.setAttribute("role","list");this.root.append(this.toggle,this.list);
@@ -102,7 +108,7 @@
   render(){
    const orders=this.system.snapshot().active;this.toggle.textContent=`📋 Orders (${orders.length})`;this.list.replaceChildren();
    if(!orders.length){const empty=this.document.createElement("p");empty.className="restaurantOrderMenu__empty";empty.textContent="No orders waiting";this.list.appendChild(empty);return}
-   orders.forEach((order,index)=>{const row=this.document.createElement("div");row.className="restaurantOrderMenu__order";row.setAttribute("role","listitem");row.dataset.orderId=order.id;const summary=this.document.createElement("span");summary.textContent=`${order.product.emoji} ${order.product.name}`;const reward=this.document.createElement("strong");reward.textContent=`$${order.product.reward}`;row.append(summary,reward);if(index===0){const made=order.status===OrderStatus.MADE,make=this.document.createElement("button");make.type="button";make.className="restaurantOrderMenu__make";make.textContent=made?"Serve order":"Make & serve";make.setAttribute("aria-label",`${made?"Serve":"Make"} ${order.product.name} for ${order.customerName}`);make.addEventListener("click",()=>made?this.system.complete(order.id):this.onFulfill(order.id,order.product.id));row.appendChild(make)}this.list.appendChild(row)});
+   orders.forEach((order,index)=>{const row=this.document.createElement("div");row.className="restaurantOrderMenu__order";row.setAttribute("role","listitem");row.dataset.orderId=order.id;const summary=this.document.createElement("span");summary.textContent=`${order.product.emoji} ${order.product.name}`;const reward=this.document.createElement("strong");reward.textContent=`$${order.product.reward}`;const recipe=this.document.createElement("div");recipe.className="restaurantOrderMenu__recipe";const progress=this.getProgress(order.id)||{added:[]},added=new Set(progress.added||[]);order.product.ingredients.forEach(ingredient=>{const step=this.document.createElement("span");step.className="restaurantOrderMenu__ingredient";step.dataset.complete=String(added.has(ingredient.id)||order.status===OrderStatus.MADE);const image=this.document.createElement("img");image.src=ingredientImageDataUrl(ingredient);image.alt=ingredient.name;image.width=image.height=30;const check=this.document.createElement("span");check.textContent=step.dataset.complete==="true"?"✓":"";check.setAttribute("aria-hidden","true");step.append(image,check);recipe.appendChild(step)});row.append(summary,reward,recipe);if(index===0){const action=this.document.createElement("button");action.type="button";action.className="restaurantOrderMenu__make";if(order.status===OrderStatus.MADE){action.textContent="✓ Serve cooked order";action.setAttribute("aria-label",`Serve cooked ${order.product.name} for ${order.customerName}`);action.addEventListener("click",()=>this.system.complete(order.id))}else{action.textContent="Cook at the kitchen stove";action.disabled=true}row.appendChild(action)}this.list.appendChild(row)});
   }
   destroy(){this.unsubscribe?.();this.root.remove()}
  }
@@ -111,13 +117,13 @@
  function createBrowserRuntime(root=globalThis){
   if(!root?.document)return null;
   const system=new RestaurantOrderSystem({maxActive:4,rewardSink:(amount,order)=>root.gameEconomy?.add?.(amount,"restaurant-order:"+order.id)});
-  const menu=new RestaurantOrderMenu({system,document:root.document}).mount();
+  const menu=new RestaurantOrderMenu({system,document:root.document,getProgress:orderId=>root.restaurantCooking?.progressFor?.(orderId)||{added:[]}}).mount();
   system.subscribe("*",event=>{const name=browserEventName(event.type);if(name&&typeof root.CustomEvent==="function"&&root.dispatchEvent)root.dispatchEvent(new root.CustomEvent(name,{detail:event}))});
-  const runtime=Object.freeze({system,menu,start:(requests=[])=>{requests.forEach(request=>system.enqueue(request));return system.snapshot()},enqueue:request=>system.enqueue(request),markMade:(orderId,productId)=>system.markMade(orderId,productId),completeOrder:orderId=>system.complete(orderId),completeFront:()=>system.completeFront(),fulfill:(orderId,productId)=>system.fulfill(orderId,productId),subscribe:(type,listener)=>system.subscribe(type,listener),snapshot:()=>system.snapshot(),debug:()=>system.debug()});
+  const runtime=Object.freeze({system,menu,start:(requests=[])=>{requests.forEach(request=>system.enqueue(request));return system.snapshot()},enqueue:request=>system.enqueue(request),markMade:(orderId,productId)=>system.markMade(orderId,productId),completeOrder:orderId=>system.complete(orderId),completeFront:()=>system.completeFront(),subscribe:(type,listener)=>system.subscribe(type,listener),refreshMenu:()=>menu.render(),snapshot:()=>system.snapshot(),debug:()=>system.debug()});
   root.restaurantOrders=runtime;return runtime;
  }
 
- return Object.freeze({OrderStatus,DEFAULT_ORDER_DEFINITIONS,OrderCatalog,RestaurantOrder,RestaurantOrderSystem,RestaurantOrderMenu,createBrowserRuntime});
+ return Object.freeze({OrderStatus,DEFAULT_ORDER_DEFINITIONS,OrderCatalog,RestaurantOrder,RestaurantOrderSystem,RestaurantOrderMenu,ingredientImageDataUrl,createBrowserRuntime});
 });
 
 if(typeof window!=="undefined"&&window.document){

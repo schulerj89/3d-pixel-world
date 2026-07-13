@@ -6,6 +6,8 @@ body.restaurant-mode #money{display:flex!important}
 .restaurantOrderMenu__list{margin-top:6px;padding:7px;border:2px solid #d5c4ec;border-radius:13px;background:#fffdf4f2;backdrop-filter:blur(5px)}
 .restaurantOrderMenu__order{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px 8px;min-height:30px;padding:6px;border-bottom:1px solid #e7def2}
 .restaurantOrderMenu__order:last-child{border-bottom:0}.restaurantOrderMenu__order strong{color:#267346}
+.restaurantOrderMenu__recipe{grid-column:1/-1;display:flex;gap:7px}.restaurantOrderMenu__ingredient{position:relative;display:inline-grid;width:34px;height:34px;place-items:center;border:1px solid #d9caad;border-radius:9px;background:#fff4db}.restaurantOrderMenu__ingredient img{display:block;width:30px;height:30px}.restaurantOrderMenu__ingredient>span{position:absolute;right:-4px;bottom:-4px;display:grid;width:16px;height:16px;place-items:center;border-radius:50%;background:#31875a;color:#fff;font-size:11px;font-weight:900}.restaurantOrderMenu__ingredient[data-complete="true"]{border-color:#51a874;background:#e9fff0}
 .restaurantOrderMenu__make{grid-column:1/-1;min-height:34px;border:1px solid #b69bd7;border-radius:9px;background:#eee5fb;color:#392a51;font-weight:700;cursor:pointer}
+.restaurantOrderMenu__make:disabled{border-color:#d8d0df;background:#f2eef5;color:#756c7c;cursor:default}
 .restaurantOrderMenu__empty{margin:3px 6px;color:#71677e;font-weight:500}.restaurantOrderMenu.is-collapsed{width:154px}
 @media (max-height:480px){.restaurantOrderMenu{top:max(58px,calc(env(safe-area-inset-top) + 48px));width:224px}.restaurantOrderMenu__list{max-height:190px;overflow:auto}}

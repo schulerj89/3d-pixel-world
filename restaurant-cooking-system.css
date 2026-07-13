@@ -1,0 +1,3 @@
+.restaurantCookingHud{display:none;position:fixed;left:max(12px,env(safe-area-inset-left));top:max(64px,calc(env(safe-area-inset-top) + 54px));z-index:23;box-sizing:border-box;width:min(210px,calc(100vw - 24px));padding:9px 11px;border:2px solid #a96832;border-radius:14px;background:#fff7e8ee;color:#3c2b20;font:700 13px/1.3 Arial,sans-serif;box-shadow:0 5px 14px #4a2b1830;pointer-events:none}.restaurantCookingHud strong,.restaurantCookingHud span{display:block}.restaurantCookingHud__held{margin-top:4px;color:#6e3d25}.restaurantCookingHud__stove{color:#8b5a21}
+body.restaurant-mode .restaurantCookingHud{display:block}
+@media(max-height:480px){.restaurantCookingHud{top:max(58px,calc(env(safe-area-inset-top) + 48px));width:184px;padding:7px 9px;font-size:12px}}

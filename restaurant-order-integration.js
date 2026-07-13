@@ -6,10 +6,10 @@
  "use strict";
 
  const DEFAULT_CUSTOMERS=Object.freeze([
-  Object.freeze({customerId:"restaurant-guest-001",customerName:"Ari",productId:"strawberry-plate"}),
+  Object.freeze({customerId:"restaurant-guest-001",customerName:"Ari",productId:"garden-plate"}),
   Object.freeze({customerId:"restaurant-guest-002",customerName:"Bea",productId:"burger-meal"}),
-  Object.freeze({customerId:"restaurant-guest-003",customerName:"Cal",productId:"dinner-plate"}),
-  Object.freeze({customerId:"restaurant-guest-004",customerName:"Dee",productId:"sweet-treat"})
+  Object.freeze({customerId:"restaurant-guest-003",customerName:"Cal",productId:"steak-dinner"}),
+  Object.freeze({customerId:"restaurant-guest-004",customerName:"Dee",productId:"ham-cheese"})
  ]);
  const CUSTOMER_NAMES=Object.freeze(["Ari","Bea","Cal","Dee","Emi","Finn","Gia","Hiro"]);
 
