@@ -498,7 +498,7 @@ function questConversationDefinition(quest){
  const state=()=>quest.controller.snapshot();
  return {
   id:"space-guide-nova",speaker:"Nova",prompt:"Talk to Nova",range:4.5,priority:30,
-  enabled:()=>currentPlace==="space",camera:{distance:3.7,height:2.1,duration:650,lookOffsetY:.12},start:"briefing",
+  enabled:()=>currentPlace==="space",camera:{distance:3.7,height:2.1,targetHeight:.55,duration:650},start:"briefing",
   nodes:{briefing:{
    text:()=>{
     const mission=state();
@@ -543,7 +543,7 @@ function ensureSpaceInteractionRuntime(world){
  const names=["Zed","Mori","Pip","Orbi","Luma"];
  world.aliens.forEach((alien,index)=>{
   if(alien===questGiver)return;const name=names[index]||`Explorer ${index+1}`;alien.userData.npcName=name;alien.userData.interactionType="npc";
-  conversation.register(alien,{id:`space-alien-${index}`,speaker:name,prompt:`Talk to ${name}`,range:4,enabled:()=>currentPlace==="space",camera:{distance:3.5,height:2,duration:650},nodes:{hello:{text:"The road lights lead back to the launch pads. Nova is tracking a beacon problem near the center crossing.",actions:[{id:"bye",label:"Safe travels",end:true}]}}});
+  conversation.register(alien,{id:`space-alien-${index}`,speaker:name,prompt:`Talk to ${name}`,range:4,enabled:()=>currentPlace==="space",camera:{distance:3.5,height:2,targetHeight:.55,duration:650},nodes:{hello:{text:"The road lights lead back to the launch pads. Nova is tracking a beacon problem near the center crossing.",actions:[{id:"bye",label:"Safe travels",end:true}]}}});
  });
  const cargo=world.findObject("space.cargo.stack-a");
  if(cargo){

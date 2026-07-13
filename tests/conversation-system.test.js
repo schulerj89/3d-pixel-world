@@ -1,5 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const path=require("node:path");
 const {STATES,createConversationSystem}=require("../conversation-system.js");
 
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no});return {promise,resolve,reject}}
@@ -66,5 +68,7 @@ function makeView(){
  assert.equal(instantView.calls.at(-1)[0],"destroy");
 
  assert.throws(()=>createConversationSystem().register({},{}),/at least one node/);
+ const source=fs.readFileSync(path.join(__dirname,"..","conversation-system.js"),"utf8");
+ assert.match(source,/Number\.isFinite\(config\.targetHeight\)/,"animated actors can provide a stable root-relative camera target");
  console.log("conversation-system tests passed");
 })().catch(error=>{console.error(error);process.exitCode=1});

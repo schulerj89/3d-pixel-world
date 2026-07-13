@@ -202,14 +202,15 @@
   function capture(){return {position:camera.position.clone(),quaternion:camera.quaternion.clone(),zoom:camera.zoom,target:controls&&controls.target?controls.target.clone():null}}
   function poseFor(target,config){
    const box=new THREE.Box3().setFromObject(target),center=new THREE.Vector3();
-   if(box.isEmpty())target.getWorldPosition(center);else box.getCenter(center);
+   if(Number.isFinite(config.targetHeight)){target.getWorldPosition(center);center.y+=config.targetHeight}
+   else if(box.isEmpty())target.getWorldPosition(center);else box.getCenter(center);
    center.y+=Number(config.lookOffsetY)||0;
    const front=new THREE.Vector3(0,0,1);
    if(config.front)front.set(config.front.x||0,config.front.y||0,config.front.z||0);
    else front.applyQuaternion(target.getWorldQuaternion(new THREE.Quaternion()));
    front.y=0;if(front.lengthSq()<.001)front.set(0,0,1);front.normalize();
    const height=Number.isFinite(config.height)?config.height:Math.max(1.4,box.isEmpty()?1.8:box.max.y-box.min.y);
-   const position=center.clone().addScaledVector(front,Number(config.distance)||3.5);position.y=center.y+height*.35;
+   const position=center.clone().addScaledVector(front,Number(config.distance)||3.5);position.y=center.y+height*.55;
    const quaternion=new THREE.Quaternion();new THREE.Object3D().position.copy(position);
    const helper=new THREE.Object3D();helper.position.copy(position);helper.lookAt(center);quaternion.copy(helper.quaternion);
    return {position,quaternion,zoom:camera.zoom,target:center};
