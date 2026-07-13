@@ -25,7 +25,9 @@ for(const id of ["startHairColor","startSkin","startPants","startOutfitColor"]){
 assert(flow.includes('aria-label",`Previous ${label} color`')&&flow.includes('aria-label",`Next ${label} color`'),"color cyclers need accessible previous and next controls");
 assert(flow.includes("compactLandscape.matches")&&flow.includes("swatch.hidden=compact&&index!==active"),"only the selected swatch should remain visible in short landscape");
 assert(css.includes("orientation:landscape")&&css.includes("max-height:540px"),"wizard needs compact iPhone landscape rules");
-assert(css.includes("grid-template-columns:repeat(4,minmax(0,1fr))"),"wide short landscape should show four compact color controls in one row");
+assert(css.includes("grid-template-columns:repeat(2,minmax(0,1fr))"),"short landscape should use a calmer two-by-two color-control grid");
+assert(css.includes("minmax(150px,220px) minmax(0,1fr)"),"short landscape must cap the avatar preview column");
+assert(css.includes(".customizeWorkbench>.wizardProgress")&&css.includes(".customizeStep>.buildVersion{display:none}"),"short landscape must hide progress, helper copy, and the build badge");
 assert(css.includes(".colorCycleButton")&&css.includes("width:40px")&&css.includes("height:40px"),"short-landscape arrows need compact touch targets");
 assert(!css.includes("min-height:430px"),"wizard must not inherit the old short-screen scroll trap");
 assert(css.includes("overflow:hidden"),"wizard viewport must remain scroll free");
