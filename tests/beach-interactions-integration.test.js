@@ -22,5 +22,8 @@ assert(positionBlock,"Beach token positions must be declared");
 const positions=[...positionBlock[1].matchAll(/x:([\-\d]+),y:0,z:([\-\d]+)/g)].map(match=>[Number(match[1]),Number(match[2])]);
 assert.equal(positions.length,6);assert.equal(new Set(positions.map(position=>position.join(","))).size,6,"All beach token positions must be unique");
 assert(positions.every(([x,z])=>Math.abs(x)<20&&z>-1&&z<20),"Token dash stays readable on the open sand");
+const nearBeachBuildings=[[-14,12],[14,12]],buildingHalfExtent=8;
+assert(positions.every(([x,z])=>nearBeachBuildings.every(([buildingX,buildingZ])=>Math.abs(x-buildingX)>buildingHalfExtent||Math.abs(z-buildingZ)>buildingHalfExtent)),"Every token must clear the full visual footprint of both near-beach buildings");
+assert(positions.every(([,z])=>z<=3),"Token dash pickups must remain on unobstructed shoreline-side sand");
 
 console.log("beach interactions: shared camera/textbox quest, six unique tokens, and $20 economy reward validated");
