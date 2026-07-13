@@ -31,7 +31,7 @@
  }
  function closeTitle(){
   global.startGameMusic?.();screen.hidden=true;screen.setAttribute("aria-hidden","true");dispose();
-  document.getElementById("continueToCustomize")?.focus({preventScroll:true});
+  document.getElementById("customizeHeading")?.focus({preventScroll:true});
  }
  start.addEventListener("click",closeTitle,{once:true});
 

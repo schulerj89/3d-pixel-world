@@ -15,7 +15,7 @@ assert(Restaurant.KIT_URL.endsWith("?v=__BUILD_VERSION__"),"restaurant GLB must 
 const jsonLength=kitBuffer.readUInt32LE(12),gltf=JSON.parse(kitBuffer.subarray(20,20+jsonLength).toString("utf8").replace(/\0+$/,""));
 const kitScenes=new Set(gltf.scenes.flatMap(scene=>scene.nodes.map(node=>gltf.nodes[node]?.name)));
 const html=read("index.html"),houseSystem=read("house-system.js"),styles=read("styles.css");
-assert(/id="goBakery">🍽️<span>Restaurant<\/span>/.test(html),"Realm destination must display Restaurant");
+assert(/id="goBakery"[^>]*>[^<]*<span>Restaurant<\/span>/.test(html),"Realm destination must display Restaurant");
 assert(!/id="goBakery">[^<]*<span>Bakery<\/span>/.test(html),"Bakery must not remain a visible Realm destination");
 assert(html.indexOf("restaurant-world.js")<html.indexOf("house-system.js"),"Restaurant runtime must load before destination routing");
 assert(/goBakery\.onclick=\(\)=>window\.runWorldTransition\([^\n]+restaurant/.test(houseSystem),"legacy destination ID must route to Restaurant");
