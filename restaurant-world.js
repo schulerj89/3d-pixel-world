@@ -12,7 +12,7 @@
   cashRegister:Object.freeze({assetId:"restaurant.front.cash-register",url:`assets/models/restaurant-extras/cash-register.glb?v=${BUILD_VERSION}`,position:Object.freeze({x:0,y:1.03,z:15.5}),scale:1.15,yaw:Math.PI})
  });
  const CASH_DESK=Object.freeze({assetId:"restaurant.front.cash-desk",sourceScene:"kitchencounter_straight_A_backsplash",position:Object.freeze({x:0,y:0,z:15.5}),scale:1,yaw:Math.PI,collision:Object.freeze([1,1.03])});
- const FRONT_ENTRANCE=Object.freeze({assetId:"restaurant.front.entrance",frameAssetId:"restaurant.front.entrance-frame",frameScene:"wall_doorway",doorAssetId:"restaurant.front.door",doorScene:"door_A",position:Object.freeze({x:0,y:0,z:20}),yaw:0,collision:Object.freeze([2,.25])});
+ const FRONT_ENTRANCE=Object.freeze({assetId:"restaurant.front.entrance",frameAssetId:"restaurant.front.entrance-frame",frameScene:"wall_doorway",doorAssetId:"restaurant.front.door",doorScene:"door_A",position:Object.freeze({x:0,y:0,z:20}),doorOffsetX:-.8,yaw:0,collision:Object.freeze([2,.25])});
  const ROOM_FILES={dining:"restaurant-main-level.txt",kitchen:"restaurant-kitchen-level.txt"};
  const WALKABLE=new Set([".","D","E"]);
  const PLAYER_RADIUS=.28;
@@ -223,13 +223,13 @@
   const entrance=new THREE.Group();entrance.name=FRONT_ENTRANCE.assetId;
   const framePrototype=sourceScene(kit,FRONT_ENTRANCE.frameScene),doorPrototype=sourceScene(kit,FRONT_ENTRANCE.doorScene);
   if(framePrototype&&doorPrototype){
-   [[framePrototype,FRONT_ENTRANCE.frameAssetId,FRONT_ENTRANCE.frameScene],[doorPrototype,FRONT_ENTRANCE.doorAssetId,FRONT_ENTRANCE.doorScene]].forEach(([prototype,assetId,source])=>{
-    const art=prototype.clone(true);art.position.set(FRONT_ENTRANCE.position.x,FRONT_ENTRANCE.position.y,FRONT_ENTRANCE.position.z);art.rotation.y=FRONT_ENTRANCE.yaw;art.userData={assetId,sourceScene:source,placeholder:false};art.traverse(object=>{if(object.isMesh){object.castShadow=object.receiveShadow=true}});entrance.add(art);loadedAssetIds.push(assetId);
+   [[framePrototype,FRONT_ENTRANCE.frameAssetId,FRONT_ENTRANCE.frameScene,0],[doorPrototype,FRONT_ENTRANCE.doorAssetId,FRONT_ENTRANCE.doorScene,FRONT_ENTRANCE.doorOffsetX]].forEach(([prototype,assetId,source,offsetX])=>{
+    const art=prototype.clone(true);art.position.set(FRONT_ENTRANCE.position.x+offsetX,FRONT_ENTRANCE.position.y,FRONT_ENTRANCE.position.z);art.rotation.y=FRONT_ENTRANCE.yaw;art.userData={assetId,sourceScene:source,offsetX,placeholder:false};art.traverse(object=>{if(object.isMesh){object.castShadow=object.receiveShadow=true}});entrance.add(art);loadedAssetIds.push(assetId);
    });
   }else{
    const frameMaterial=new THREE.MeshStandardMaterial({color:0xf4d6cc,roughness:.9}),doorMaterial=new THREE.MeshStandardMaterial({color:0x35a684,roughness:.75});
    [[.45,4,.5,-1.78,2],[.45,4,.5,1.78,2],[3.1,.45,.5,0,3.78]].forEach(([w,h,d,x,y])=>{const part=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),frameMaterial);part.position.set(x,y,FRONT_ENTRANCE.position.z);entrance.add(part)});
-   const door=new THREE.Mesh(new THREE.BoxGeometry(1.65,2.8,.22),doorMaterial);door.position.set(.8,1.4,FRONT_ENTRANCE.position.z);door.userData={assetId:FRONT_ENTRANCE.doorAssetId,placeholder:true};entrance.add(door);
+   const door=new THREE.Mesh(new THREE.BoxGeometry(1.65,2.8,.22),doorMaterial);door.position.set(0,1.4,FRONT_ENTRANCE.position.z);door.userData={assetId:FRONT_ENTRANCE.doorAssetId,offsetX:FRONT_ENTRANCE.doorOffsetX,placeholder:true};entrance.add(door);
   }
   entrance.userData={assetId:FRONT_ENTRANCE.assetId,frameScene:FRONT_ENTRANCE.frameScene,doorScene:FRONT_ENTRANCE.doorScene,placeholder:!(framePrototype&&doorPrototype)};front.add(entrance);
   front.userData={assetId:"restaurant.front-area",cashDesk:CASH_DESK,entrance:FRONT_ENTRANCE,props:EXTRA_ASSETS};group.add(front);return front;
