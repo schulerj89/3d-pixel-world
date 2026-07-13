@@ -278,22 +278,31 @@ box(2.85,.35,.35,0x8b5a3c,2.25,3.85,-5.35);
 // Kitchen stations follow a perimeter workflow and leave the middle of the room
 // open as a walking lane. Interaction checks below read from this same data.
 const KITCHEN_STATIONS={
- fridge:{x:6.8,z:-8.6},
+ fridge:{x:8.44,z:-9.1,rotation:-Math.PI/2},
  prep:{x:4.2,z:-8.7},
- stove:{x:5.5,z:-14.2},
+ stove:{x:8.35,z:-14.5,rotation:-Math.PI/2},
+ decorShelf:{x:-5.78,z:-9.6,rotation:Math.PI/2},
  blender:{x:-3.2,z:-14.2}
 };
 const kitchenFixtureGroup=new THREE.Group();
 kitchenFixtureGroup.name="kitchen-workflow-fixtures";S.add(kitchenFixtureGroup);
 function kitchenBox(w,h,d,color,x,y,z){return box(w,h,d,color,x,y,z,kitchenFixtureGroup)}
 const fridgeStation=KITCHEN_STATIONS.fridge;
-kitchenBox(1.4,2,.8,0xd8e8ef,fridgeStation.x,1,fridgeStation.z);
-kitchenBox(.08,.8,.06,0x777777,fridgeStation.x-.45,1.15,fridgeStation.z+.43);
+const fridgeGroup=new THREE.Group();fridgeGroup.name="kitchen-refrigerator";fridgeGroup.position.set(fridgeStation.x,0,fridgeStation.z);fridgeGroup.rotation.y=fridgeStation.rotation;kitchenFixtureGroup.add(fridgeGroup);
+box(2.05,2.85,1.08,0xd8e8ef,0,1.43,0,fridgeGroup);
+box(1.82,.06,.08,0xb9cdd7,0,1.78,.57,fridgeGroup);
+box(.09,.9,.07,0x65727b,-.72,1.17,.59,fridgeGroup);
+box(.09,.52,.07,0x65727b,-.72,2.22,.59,fridgeGroup);
+box(1.65,.28,.06,0xeaf6fa,0,2.38,.59,fridgeGroup);
 const prepStation=KITCHEN_STATIONS.prep;
 kitchenBox(2.4,1,.9,0xe0b184,prepStation.x,.53,prepStation.z);
 kitchenBox(.7,.2,.7,0xff8fb1,prepStation.x,1.15,prepStation.z+.1);
-kitchenBox(2.4,.15,.35,0x8c553e,prepStation.x,2.7,prepStation.z-.6);
-for(let i=0;i<3;i++)kitchenBox(.4,.35,.3,[0xffd36e,0xff8fb1,0x9fe3c1][i],prepStation.x-.7+i*.7,2.95,prepStation.z-.5);
+const decorShelfStation=KITCHEN_STATIONS.decorShelf;
+const decorShelfGroup=new THREE.Group();decorShelfGroup.name="kitchen-decoration-shelf";decorShelfGroup.position.set(decorShelfStation.x,0,decorShelfStation.z);decorShelfGroup.rotation.y=decorShelfStation.rotation;kitchenFixtureGroup.add(decorShelfGroup);
+box(3.2,.16,.42,0x8c553e,0,2.45,0,decorShelfGroup);
+box(3.2,.16,.42,0x8c553e,0,3.25,0,decorShelfGroup);
+box(.16,1.35,.42,0x8c553e,-1.5,2.72,0,decorShelfGroup);box(.16,1.35,.42,0x8c553e,1.5,2.72,0,decorShelfGroup);
+for(let i=0;i<4;i++)box(.42,.38,.3,[0xffd36e,0xff8fb1,0x9fe3c1,0xa9c8ff][i],-1.08+i*.72,2.75,.08,decorShelfGroup);
 
 // Ingredient shelf attached to the kitchen wall
 box(8.4,.22,.65,0x8b5a3c,-.1,2.45,-19.95);
@@ -337,6 +346,7 @@ box(4.5,.65,.18,0xfff0a8,1.2,3.65,-20.15);
 // Big 3D stove and oven in the kitchen
 const stoveGroup=new THREE.Group();
 stoveGroup.position.set(KITCHEN_STATIONS.stove.x,0,KITCHEN_STATIONS.stove.z);
+stoveGroup.rotation.y=KITCHEN_STATIONS.stove.rotation;
 S.add(stoveGroup);
 function stovePart(w,h,d,c,x,y,z){
  let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));
