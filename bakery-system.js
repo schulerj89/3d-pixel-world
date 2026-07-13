@@ -615,7 +615,7 @@ setInterval(()=>{
   let dragId=null;
   let lastX=0,lastY=0;
   let pinching=false;
-  let pinchDistance=0;
+  const pinchZoom=window.gameCameraGestures.createPinchZoomController();
 
   function interactiveTarget(el){
     return !!el.closest("button, #pad, #housePanel, #orders, #recipePanel, #avatarShop, #tvControlsPanel, #tvScreen, #furnitureMover");
@@ -628,7 +628,9 @@ setInterval(()=>{
     dragId=e.pointerId;
     lastX=e.clientX;
     lastY=e.clientY;
-    gameArea.setPointerCapture(e.pointerId);
+    // Capturing the first touch can prevent Safari/iPadOS from delivering the
+    // second touch to this surface. Touches already retain their start target.
+    if(e.pointerType!=="touch")gameArea.setPointerCapture(e.pointerId);
   });
 
   gameArea.addEventListener("pointermove",e=>{
@@ -660,25 +662,34 @@ setInterval(()=>{
   function touchDistance(touches){
     return Math.hypot(touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY);
   }
+  function cameraContext(){
+    return `${currentPlace}:${currentPlace==="house"?houseArea:""}:${currentPlace==="bakery"?`${inKitchen}:${inStorage}`:""}`;
+  }
   gameArea.addEventListener("touchstart",e=>{
-    if(e.touches.length!==2)return;
+    if(e.touches.length!==2){
+      if(pinching){pinching=false;pinchZoom.end()}
+      return;
+    }
     e.preventDefault();
     pinching=true;
     draggingCamera=false;
     dragId=null;
-    pinchDistance=touchDistance(e.touches);
+    pinchZoom.begin(touchDistance(e.touches),cameraDistance,cameraContext());
   },{passive:false});
   gameArea.addEventListener("touchmove",e=>{
-    if(!pinching||e.touches.length<2)return;
+    if(!pinching||e.touches.length!==2)return;
     e.preventDefault();
-    const distance=touchDistance(e.touches);
-    if(pinchDistance>0){
-      cameraDistance=THREE.MathUtils.clamp(cameraDistance+(pinchDistance-distance)*.035,4.5,20);
-    }
-    pinchDistance=distance;
+    cameraDistance=pinchZoom.update(touchDistance(e.touches));
   },{passive:false});
   function finishPinch(e){
-    if(e.touches.length<2){pinching=false;pinchDistance=0}
+    pinchZoom.end();
+    pinching=false;
+    // If a third finger interrupted the gesture, resume from the current
+    // camera distance once exactly two touches remain, without a zoom jump.
+    if(e.type!=="touchcancel"&&e.touches.length===2){
+      pinching=true;
+      pinchZoom.begin(touchDistance(e.touches),cameraDistance,cameraContext());
+    }
   }
   gameArea.addEventListener("touchend",finishPinch,{passive:true});
   gameArea.addEventListener("touchcancel",finishPinch,{passive:true});
