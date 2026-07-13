@@ -27,7 +27,7 @@
  });
 
  function finite(value,fallback){return Number.isFinite(Number(value))?Number(value):fallback}
- function isHudVisiblePhase(phase){return phase==="active"||phase==="failed"}
+ function isHudVisiblePhase(phase){return phase==="active"}
  function normalizeConfig(input){
   const source=input||{};
   const positions=Array.isArray(source.positions)?source.positions:DEFAULT_CONFIG.positions;
@@ -57,10 +57,15 @@
    this.onReward=options&&options.onReward||(()=>{});this.listeners=new Set();
    if(options&&typeof options.onEvent==="function")this.listeners.add(options.onEvent);
    this.run=0;this.rewardGranted=false;this.reset();
+   if(options&&options.completed)this.restoreCompletion(options.completedAt);
   }
   reset(){
    this.phase="idle";this.startedAt=null;this.finishedAt=null;this.remainingMs=this.config.timeLimitSeconds*1000;
    this.collected=new Array(this.config.count).fill(false);this.rewardGranted=false;return this.snapshot();
+  }
+  restoreCompletion(at){
+   this.phase="success";this.startedAt=null;this.finishedAt=finite(at,this.now());this.remainingMs=0;
+   this.collected.fill(true);this.rewardGranted=true;return this.snapshot();
   }
   emit(type,detail){
    const event=Object.assign({type,questId:this.config.id,snapshot:this.snapshot()},detail||{});
@@ -109,7 +114,7 @@
   if(!options||!options.THREE||!options.scene)throw new Error("Coin quest requires THREE and scene");
   const THREE=options.THREE,scene=options.scene,config=normalizeConfig(options.config);
   const now=options.now||(()=>performance.now());
-  const controller=new CoinQuestController(config,{now,onReward:options.onReward,onEvent:options.onEvent});
+  const controller=new CoinQuestController(config,{now,onReward:options.onReward,onEvent:options.onEvent,completed:options.completed,completedAt:options.completedAt});
   const group=new THREE.Group();group.name=`coin-quest:${config.id}`;scene.add(group);
   const getPlayerPosition=options.getPlayerPosition||(()=>null);
   const assetUrl=options.assetUrl||"assets/models/quaternius-platformer-coin/Coin.gltf";

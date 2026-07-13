@@ -17,6 +17,11 @@ assert.match(house,/count:6,timeLimitSeconds:30,reward:10/,"Nova configures six 
 assert.match(house,/speaker:"Nova"/);assert.match(house,/action:"start-coin-task"/);assert.match(house,/action:"retry-coin-task"/);
 assert.match(house,/targetHeight:\.55/,"small aliens use a stable root-relative camera target");
 assert.match(house,/showRetryButton:false/,"failed missions must route retry through Nova rather than bypassing the NPC");
+assert.match(house,/SPACE_COIN_PROGRESS_KEY="spaceCoinSprint"/,"Space completion uses a stable saved-progress key");
+assert.match(house,/completed:progress\?\.completed===true,completedAt:progress\?\.completedAt/,"a completed sprint restores without showing pickups or the HUD");
+assert.match(house,/saveSpaceCoinCompletion\(event\.reward\)/,"successful completion is persisted immediately");
+assert.match(house,/saved\.money=window\.gameEconomy\.getBalance\(\);[\s\S]*saved\.questProgress=Object\.assign/,"quest completion preserves the live reward balance in the same save transaction");
+assert.match(house,/localStorage\.setItem\("my3DWorld",JSON\.stringify\(saved\)\)/,"quest completion shares the existing world save");
 assert.match(house,/scratchPosition:new THREE\.Vector3\(\)/,"conversation proximity checks must reuse a scratch vector without mutating targets");
 assert.match(house,/world\.findObject\("space\.cargo\.stack-a"\)/,"portable conversations are also attached to a world object");
 assert.match(house,/pendingQuestStart="start"/,"the timer waits until the conversation camera has restored");
@@ -30,6 +35,9 @@ assert.doesNotMatch(house,/portrait|imageBox|image-box/i,"text conversations do 
 assert.match(game,/window\.isGameplayInputLocked\?\.\(\)/,"player movement respects the conversation input lock");
 assert.match(game,/window\.updateSpaceInteractions\?\.\(dt,currentPlace==="space"\)/,"quest and proximity logic update only through the game loop");
 assert.match(game,/window\.gameEconomy=\{[\s\S]*getBalance[\s\S]*add\(amount,reason=/,"the reward uses the shared game economy API");
+assert.match(game,/persistedEconomySave\.money/,"the shared economy restores its saved balance");
+assert.match(game,/worldSave\.money=money;localStorage\.setItem\("my3DWorld"/,"economy rewards persist immediately");
+assert.match(fs.readFileSync(path.join(root,"avatar-system.js"),"utf8"),/saved\.money=window\.gameEconomy\?\.getBalance/,"later world saves preserve the current economy balance");
 assert.match(game,/function hideSpaceWorld\(\)\{if\(spaceWorld\)\{window\.destroySpaceInteractionRuntime/,"leaving Space cleans up the portable interaction runtime");
 
 const positions=[[-10,-2],[-6,2],[-2,6],[2,2],[6,-2],[2,-8]];

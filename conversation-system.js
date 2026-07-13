@@ -157,7 +157,8 @@
     if(!position)continue;
     const dx=position.x-playerPosition.x,dz=position.z-playerPosition.z;
     const distance=Math.sqrt(dx*dx+dz*dz),range=Math.max(.1,Number(definition.range)||3);
-    if(distance<=range&&(distance<bestDistance||(distance===bestDistance&&(definition.priority||0)>(best&&best.definition.priority||0)))){best=entry;bestDistance=distance}
+    const priority=Number(definition.priority)||0,bestPriority=Number(best&&best.definition.priority)||0;
+    if(distance<=range&&(!best||priority>bestPriority||(priority===bestPriority&&distance<bestDistance))){best=entry;bestDistance=distance}
    }
    nearby=best;
    if(best)view.showPrompt({id:best.definition.id,label:best.definition.prompt||"Talk",target:best.target,distance:bestDistance});else view.hidePrompt();

@@ -543,6 +543,14 @@ const BEACH_TOKEN_POSITIONS=Object.freeze([
  Object.freeze({x:-13,y:0,z:1}),Object.freeze({x:-16,y:0,z:11}),Object.freeze({x:-9,y:0,z:16}),
  Object.freeze({x:1,y:0,z:4}),Object.freeze({x:7,y:0,z:1}),Object.freeze({x:7,y:0,z:13})
 ]);
+const SPACE_COIN_PROGRESS_KEY="spaceCoinSprint";
+function getSpaceCoinProgress(){return saved.questProgress?.[SPACE_COIN_PROGRESS_KEY]||null}
+function saveSpaceCoinCompletion(reward){
+ saved.money=window.gameEconomy.getBalance();
+ saved.questProgress=Object.assign({},saved.questProgress,{[SPACE_COIN_PROGRESS_KEY]:{completed:true,completedAt:Date.now(),reward}});
+ localStorage.setItem("my3DWorld",JSON.stringify(saved));
+ return saved.questProgress[SPACE_COIN_PROGRESS_KEY];
+}
 let spaceInteractionRuntime=null;
 function createSpaceConversationCamera(){
  const tween=window.createThreeConversationCameraAdapter({THREE,camera:C,duration:650});
@@ -587,10 +595,11 @@ function questConversationDefinition(quest){
 function ensureSpaceInteractionRuntime(world){
  if(spaceInteractionRuntime?.world===world)return spaceInteractionRuntime;
  if(spaceInteractionRuntime)destroySpaceInteractionRuntime();
- const view=window.createConversationDOMView({root:document.body}),camera=createSpaceConversationCamera();
+ const view=window.createConversationDOMView({root:document.body}),camera=createSpaceConversationCamera(),progress=getSpaceCoinProgress();
  const quest=window.CoinQuestSystem.createCoinQuestSystem({
   THREE,scene:world.group,loader:new window.ThreeGLTFLoader.GLTFLoader(),getPlayerPosition:()=>P.position,
   onReward:value=>window.gameEconomy.add(value,"space-coin-sprint"),showRetryButton:false,
+  completed:progress?.completed===true,completedAt:progress?.completedAt,
   getRenderInfo:()=>({calls:R.info.render.calls,triangles:R.info.render.triangles,geometries:R.info.memory.geometries,textures:R.info.memory.textures}),
   config:{id:"space-coin-sprint",title:"Cosmic Coin Sprint",count:6,timeLimitSeconds:30,reward:10,positions:SPACE_COIN_POSITIONS}
  });
@@ -629,7 +638,10 @@ function ensureSpaceInteractionRuntime(world){
    window.playGameSoundEffect?.("spaceCoinSound",.68);
    document.getElementById("msg").textContent=`Star coin collected: ${event.collectedCount} / ${state.count}`;
   }
-  if(event.type==="quest:success")document.getElementById("msg").textContent=`Mission complete! You earned $${event.reward}.`;
+  if(event.type==="quest:success"){
+   saveSpaceCoinCompletion(event.reward);
+   document.getElementById("msg").textContent=`Mission complete! You earned $${event.reward}.`;
+  }
   if(event.type==="quest:failed")document.getElementById("msg").textContent="Time expired. Talk to Nova to retry.";
  });
  const keyHandler=event=>conversation.handleInput(event);addEventListener("keydown",keyHandler);

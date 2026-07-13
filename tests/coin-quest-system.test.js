@@ -21,8 +21,15 @@ clock=8100;quest.update();assert.equal(quest.snapshot().phase,"failed");assert.e
 assert.ok(events.includes("quest:start"));assert.ok(events.includes("quest:success"));assert.ok(events.includes("quest:retry"));assert.ok(events.includes("quest:failed"));
 assert.equal(isHudVisiblePhase("idle"),false,"HUD stays out of the way before a mission starts");
 assert.equal(isHudVisiblePhase("active"),true,"active missions show timer and progress");
-assert.equal(isHudVisiblePhase("failed"),true,"timeout feedback remains visible until Nova is revisited");
+assert.equal(isHudVisiblePhase("failed"),false,"timed-out missions dismiss the sprint HUD and route retry through Nova");
 assert.equal(isHudVisiblePhase("success"),false,"completed missions dismiss the sprint HUD");
+
+let restoredRewards=0;
+const restored=new CoinQuestController(config,{now:()=>9000,onReward:value=>{restoredRewards+=value},completed:true,completedAt:8000});
+assert.equal(restored.snapshot().phase,"success","saved completion restores the one-time quest as complete");
+assert.equal(restored.snapshot().collectedCount,3,"restored completion keeps all pickups hidden");
+assert.equal(restored.snapshot().rewardGranted,true,"restored completion cannot grant the reward again");
+assert.equal(restoredRewards,0,"loading saved completion never replays the reward callback");
 
 assert.equal(DEFAULT_CONFIG.reward,10);assert.equal(DEFAULT_CONFIG.count,6);
 const source=fs.readFileSync(path.join(__dirname,"..","coin-quest-system.js"),"utf8");
