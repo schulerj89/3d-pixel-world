@@ -322,3 +322,26 @@ body.kitchen-clean #lookPad{opacity:.82}
 @keyframes tvSceneDrift{from{transform:scale(1) translateX(-2px)}to{transform:scale(1.035) translateX(2px)}}
 @keyframes tvActorBounce{from{transform:translateY(0)}to{transform:translateY(-5px)}}
 @keyframes tvTitlePulse{from{opacity:.82}to{opacity:1}}
+
+/* The game behaves like a touch app: quick taps should never select HUD labels. */
+body,
+body button,
+body label,
+#game,
+#game canvas,
+#pad,
+#lookPad,
+.buildCatalogTray,
+.buildCatalogTray *{
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* Keep editable controls accessible if a form is added to a menu later. */
+input,textarea,select,[contenteditable="true"]{
+  -webkit-user-select:text;
+  user-select:text;
+  -webkit-touch-callout:default;
+}
