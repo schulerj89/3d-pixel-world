@@ -606,7 +606,8 @@ window.getGameDebug=()=>({
  audio:{music:window.getMusicDebug?.()||null,effects:window.getSoundEffectDebug?.()||null}
 });
 let inKitchen=false;
-let money=100;
+const persistedEconomySave=JSON.parse(localStorage.getItem("my3DWorld")||"{}");
+let money=Number.isFinite(Number(persistedEconomySave.money))?Number(persistedEconomySave.money):100;
 let servedCount=0;
 const foods=["🧁 Cupcake","🍪 Cookies","🎂 Cake","🥐 Croissant","🍞 Sweet Bread","🍓 Strawberry Milkshake","🍫 Chocolate Milkshake"];
 function updateMoney(){document.getElementById("moneyValue").textContent="$"+money;document.body.dataset.money=String(money)}
@@ -615,7 +616,9 @@ window.gameEconomy={
  getBalance:()=>money,
  add(amount,reason="reward"){
   const value=Number(amount);if(!Number.isFinite(value))throw new Error("Economy rewards must be finite");
-  money+=value;updateMoney();document.body.dataset.lastMoneyReason=reason;return money;
+  money+=value;updateMoney();document.body.dataset.lastMoneyReason=reason;
+  const worldSave=JSON.parse(localStorage.getItem("my3DWorld")||"{}");worldSave.money=money;localStorage.setItem("my3DWorld",JSON.stringify(worldSave));
+  return money;
  }
 };
 function newOrders(){

@@ -210,7 +210,7 @@ if(saved.pants){materialColor(playerLeftLeg,saved.pants);materialColor(playerRig
 if(saved.skin){materialColor(pvHead,saved.skin);materialColor(pvArm1,saved.skin);materialColor(pvArm2,saved.skin)}
 materialColor(pvShirt,saved.outfitColor);
 if(saved.hair){materialColor(playerHairTop,saved.hair);materialColor(playerHairSide,saved.hair);materialColor(pvHairTop,saved.hair);materialColor(pvHairSide,saved.hair);playerPuffPieces.forEach(m=>materialColor(m,saved.hair));pvPuffPieces.forEach(m=>materialColor(m,saved.hair));playerLongPieces.forEach(m=>materialColor(m,saved.hair));pvLongPieces.forEach(m=>materialColor(m,saved.hair));playerShortCurlPieces.forEach(m=>materialColor(m,saved.hair));pvShortCurlPieces.forEach(m=>materialColor(m,saved.hair))}
-function saveWorld(){saved.furniture=furniture.filter(x=>x.userData.kind!=="remote").map(x=>({
+function saveWorld(){saved.money=window.gameEconomy?.getBalance?.()??saved.money;saved.furniture=furniture.filter(x=>x.userData.kind!=="remote").map(x=>({
  kind:x.userData.kind,
  x:x.position.x,
  z:x.position.z,

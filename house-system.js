@@ -546,6 +546,7 @@ const BEACH_TOKEN_POSITIONS=Object.freeze([
 const SPACE_COIN_PROGRESS_KEY="spaceCoinSprint";
 function getSpaceCoinProgress(){return saved.questProgress?.[SPACE_COIN_PROGRESS_KEY]||null}
 function saveSpaceCoinCompletion(reward){
+ saved.money=window.gameEconomy.getBalance();
  saved.questProgress=Object.assign({},saved.questProgress,{[SPACE_COIN_PROGRESS_KEY]:{completed:true,completedAt:Date.now(),reward}});
  localStorage.setItem("my3DWorld",JSON.stringify(saved));
  return saved.questProgress[SPACE_COIN_PROGRESS_KEY];
