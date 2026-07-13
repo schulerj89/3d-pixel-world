@@ -689,6 +689,7 @@ function startMusic(){
  if(musicMuted||musicStarted||musicToggle.disabled)return;
  playCurrentMusic();
 }
+window.startGameMusic=startMusic;
 window.switchWorldMusic=world=>{
  const nextWorld=world||currentPlace;
  if(nextWorld===currentMusicWorld&&musicStarted&&currentMusicTrack&&!currentMusicTrack.paused)return;
