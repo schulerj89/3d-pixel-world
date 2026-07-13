@@ -339,7 +339,7 @@ function nearbySeat(range=2.25){
 function leaveSeat(){
  if(!sitting)return;
  const seat=seatedFurniture;
- sitting=false;seatedFurniture=null;P.userData.seated=false;
+ sitting=false;seatedFurniture=null;P.userData.seated=false;delete P.userData.seatedY;
  if(seat){
   const anchor=seat.userData.exitAnchor||{x:0,y:0,z:seat.userData.kind==="sofa"?1.7:1.05};
   const exitOffset=new THREE.Vector3(anchor.x,anchor.y,anchor.z).applyQuaternion(seat.quaternion);
@@ -352,6 +352,7 @@ function takeSeat(seat){
  const seatOffset=new THREE.Vector3(anchor.x,0,anchor.z).applyQuaternion(seat.quaternion);
  sitting=true;seatedFurniture=seat;P.userData.seated=true;
  P.position.set(seat.position.x+seatOffset.x,seat.position.y+anchor.y,seat.position.z+seatOffset.z);
+ P.userData.seatedY=P.position.y;
  P.rotation.y=seat.rotation.y;
 }
 window.isPlayerSeated=()=>sitting;

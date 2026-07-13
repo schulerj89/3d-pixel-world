@@ -997,7 +997,7 @@ function updatePlayerWalkAnimation(isMoving,dt){
   playerLeftLeg.rotation.x=THREE.MathUtils.lerp(playerLeftLeg.rotation.x,-Math.PI/2,easing);
   playerRightLeg.rotation.x=THREE.MathUtils.lerp(playerRightLeg.rotation.x,-Math.PI/2,easing);
   P.rotation.z=THREE.MathUtils.lerp(P.rotation.z,0,easing);
-  P.position.y=THREE.MathUtils.lerp(P.position.y,groundY,easing);
+  P.position.y=THREE.MathUtils.lerp(P.position.y,P.userData.seatedY??groundY,easing);
   return;
  }
  walkStrength=THREE.MathUtils.lerp(walkStrength,isMoving?1:0,easing);

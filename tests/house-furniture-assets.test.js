@@ -47,7 +47,10 @@ assert(html.includes("furniture-assets.js?v=__BUILD_VERSION__"),"the furniture l
 assert(houseScript.includes("item.rotation.y+=Math.PI/4"),"placed furniture must retain 45-degree rotation");
 assert(houseScript.includes("window.FurnitureAssets?.attach(g,kind)"),"furniture groups must receive async art");
 assert(assetsScript.includes("fallbackRoot.visible=false"),"loaded art must replace its primitive fallback");
+assert(assetsScript.includes('sofa:{file:"couch_pillows",seatAnchor:{x:0,y:.35,z:.13}}'),"KayKit sofa must provide a rigged-avatar seat height");
+assert(assetsScript.includes('chair:{file:"chair_A",seatAnchor:{x:0,y:.3,z:.03}}'),"KayKit chair must provide a rigged-avatar seat height");
 assert(houseScript.includes("window.getHouseFurnitureDebug"),"browser QA must expose furniture and renderer state");
+assert(houseScript.includes("P.userData.seatedY=P.position.y"),"seating must preserve the furniture's vertical anchor");
 assert(fs.existsSync(path.join(assetRoot,"LICENSE-CC0.txt")),"the KayKit license must ship with the assets");
 assert(fs.existsSync(path.join(assetRoot,"SOURCE.md")),"asset provenance must be documented");
 

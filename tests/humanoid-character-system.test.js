@@ -8,7 +8,8 @@ global.characterFacing={STYLOO_MODEL_FORWARD_AXIS:"+z",STYLOO_MODEL_FORWARD_CORR
  attachVisual(visual,axis){facingAttachments++;assert.strictEqual(axis,"+z");visual.rotation.y=0;return 0}};
 function root(){return {children:[{visible:true}],userData:{},add(child){this.children.push(child)},remove(child){this.children=this.children.filter(item=>item!==child)}}}
 global.playerAvatarRoot=root();global.avatarPreviewRoot=root();
-const clips=["anim_iddle","anim_walk","anim_run"].map(name=>({name})),scenes=[];
+let seated=false;global.isPlayerSeated=()=>seated;
+const clips=["anim_iddle","anim_walk","anim_run","anim_crouchiddle"].map(name=>({name})),scenes=[];
 function material(name){return {name,color:{value:null,setHex(value){this.value=value}},clone(){return material(name)}}}
 function characterScene(){
  const meshes=["character","hairvariant","schooloutfit","schoolskirt"].map(name=>({isMesh:true,material:material(name)}));
@@ -44,5 +45,7 @@ setImmediate(()=>{
  customHumanoidCharacter.update(.016,true,.45);assert.strictEqual(getCharacterAssetDebug().state,"walk");
  customHumanoidCharacter.update(.016,true,1);assert.strictEqual(getCharacterAssetDebug().state,"run");
  customHumanoidCharacter.update(.016,false,0);assert.strictEqual(getCharacterAssetDebug().state,"idle");
- console.log("humanoid character system: synchronized four tints plus idle/walk/run state selection");
+ seated=true;customHumanoidCharacter.update(.016,false,0);assert.strictEqual(getCharacterAssetDebug().state,"sit");
+ seated=false;customHumanoidCharacter.update(.016,false,0);assert.strictEqual(getCharacterAssetDebug().state,"idle");
+ console.log("humanoid character system: synchronized tints plus idle/walk/run/seated state selection");
 });
