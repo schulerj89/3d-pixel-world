@@ -28,6 +28,14 @@
  function isBoundary(level,col,row){return col===0||row===0||col===level.width-1||row===level.depth-1}
  function isFixture(symbol,options){return options.fixtureSymbols.includes(symbol)}
  function isWalkable(symbol,options){return WALKABLE.has(symbol)||isFixture(symbol,options)}
+ function wallJunctions(level){
+  const result=[];
+  for(let row=0;row<level.depth;row++)for(let col=0;col<level.width;col++)if(at(level,col,row)==="#"){
+   const horizontal=at(level,col-1,row)==="#"||at(level,col+1,row)==="#",vertical=at(level,col,row-1)==="#"||at(level,col,row+1)==="#";
+   if(horizontal&&vertical)result.push([col,row]);
+  }
+  return result;
+ }
 
  function collectRuns(level,symbol){
   const seen=new Set(),runs=[];
@@ -118,6 +126,7 @@
    const verticalSeam=at(level,col,row-1)==="#"&&at(level,col,row+1)==="#"&&isWalkable(at(level,col-1,row),options)&&isWalkable(at(level,col+1,row),options);
    if(horizontalSeam||verticalSeam)add("unmarked-wall-gap",`Wall seam at (${col},${row}) uses floor instead of a 3-4 unit door run`,{col,row,orientation:horizontalSeam?"H":"V"});
   }
+  for(let row=0;row<level.depth-1;row++)for(let col=0;col<level.width-1;col++)if([[col,row],[col+1,row],[col,row+1],[col+1,row+1]].every(([c,r])=>at(level,c,r)==="#"))add("wall-block",`Wall cells form a double-thick 2x2 block at (${col},${row})`,{col,row});
 
   const rooms=Array.isArray(level.rooms)?level.rooms:[],roomIds=new Set();
   for(const required of options.requiredRooms)if(!rooms.some(room=>room.id===required))add("missing-room",`Required room '${required}' is not declared`,{room:required});
@@ -162,9 +171,54 @@
   return finish(level,issues,doorRuns,rooms,reachable);
  }
 
+ function wallBounds(wall){
+  if(wall.type==="cell")return {minX:wall.x-wall.width/2,maxX:wall.x+wall.width/2,minZ:wall.z-wall.depth/2,maxZ:wall.z+wall.depth/2};
+  return wall.orientation==="H"
+   ?{minX:wall.start,maxX:wall.end,minZ:wall.fixed-wall.thickness/2,maxZ:wall.fixed+wall.thickness/2}
+   :{minX:wall.fixed-wall.thickness/2,maxX:wall.fixed+wall.thickness/2,minZ:wall.start,maxZ:wall.end};
+ }
+ function auditWallGeometry(level,walls){
+  const issues=[],add=(code,message,details={})=>issues.push({code,message,...details}),epsilon=1e-7;
+  if(!Array.isArray(walls)||!walls.length)return {valid:false,issues:[{code:"wall-geometry-empty",message:"Rendered wall geometry is empty"}],metrics:{pieces:0,junctions:0,overlaps:0}};
+  const bounds=walls.map(wall=>wallBounds(wall)),expected=wallJunctions(level),actual=walls.filter(wall=>wall.type==="cell"&&wall.junction);
+  for(const wall of walls){
+   if((wall.heightOffset||0)!==0)add("wall-height-layer",`Wall '${wall.id}' uses a competing height layer`,{wall:wall.id,heightOffset:wall.heightOffset});
+   const box=wallBounds(wall);if(!(box.maxX>box.minX&&box.maxZ>box.minZ))add("wall-piece-size",`Wall '${wall.id}' has a non-positive footprint`,{wall:wall.id});
+  }
+  const expectedKeys=new Set(expected.map(([col,row])=>key(col,row))),actualKeys=new Set(actual.map(wall=>key(wall.junction.col,wall.junction.row)));
+  for(const id of expectedKeys)if(!actualKeys.has(id))add("wall-junction-missing",`Authored junction ${id} has no single owning geometry piece`,{junction:id});
+  for(const id of actualKeys)if(!expectedKeys.has(id))add("wall-junction-extra",`Geometry includes an unauthored junction at ${id}`,{junction:id});
+  for(const junction of actual){
+   const {col,row}=junction.junction,box=wallBounds(junction),centerX=(box.minX+box.maxX)/2,centerZ=(box.minZ+box.maxZ)/2;
+   const expectedBranches=new Set([["west",col-1,row],["east",col+1,row],["north",col,row-1],["south",col,row+1]].filter(([,c,r])=>at(level,c,r)==="#").map(([side])=>side));
+   const actualBranches=new Set();
+   for(const wall of walls)if(wall.type==="line"){
+    if(wall.orientation==="H"&&Math.abs(wall.fixed-centerZ)<=epsilon){
+     if(Math.abs(wall.end-box.minX)<=epsilon)actualBranches.add("west");
+     if(Math.abs(wall.start-box.maxX)<=epsilon)actualBranches.add("east");
+    }else if(wall.orientation==="V"&&Math.abs(wall.fixed-centerX)<=epsilon){
+     if(Math.abs(wall.end-box.minZ)<=epsilon)actualBranches.add("north");
+     if(Math.abs(wall.start-box.maxZ)<=epsilon)actualBranches.add("south");
+    }
+   }
+   const expectedList=[...expectedBranches].sort(),actualList=[...actualBranches].sort();
+   if(expectedList.join(",")!==actualList.join(","))add("wall-junction-branch",`Junction (${col},${row}) renders [${actualList}] but the TXT plan requires [${expectedList}]`,{junction:key(col,row),expected:expectedList,actual:actualList});
+  }
+  let overlaps=0;const adjacency=walls.map(()=>[]);
+  for(let i=0;i<walls.length;i++)for(let j=i+1;j<walls.length;j++){
+   const a=bounds[i],b=bounds[j],x=Math.min(a.maxX,b.maxX)-Math.max(a.minX,b.minX),z=Math.min(a.maxZ,b.maxZ)-Math.max(a.minZ,b.minZ);
+   if(x>epsilon&&z>epsilon){overlaps++;add("wall-layer-overlap",`Walls '${walls[i].id}' and '${walls[j].id}' occupy the same floor area`,{walls:[walls[i].id,walls[j].id],overlap:{x,z}})}
+   if(x>=-epsilon&&z>=-epsilon){adjacency[i].push(j);adjacency[j].push(i)}
+  }
+  const connected=new Set([0]),queue=[0];while(queue.length){for(const next of adjacency[queue.shift()])if(!connected.has(next)){connected.add(next);queue.push(next)}}
+  if(connected.size!==walls.length)add("wall-geometry-disconnected",`${walls.length-connected.size} rendered wall pieces do not meet the shell`,{disconnected:walls.length-connected.size});
+  return {valid:issues.length===0,issues,metrics:{pieces:walls.length,junctions:actual.length,overlaps}};
+ }
+ function validateWallGeometry(level,walls){const report=auditWallGeometry(level,walls);if(!report.valid)throw new HouseLayoutValidationError(report);return report}
+
  function finish(level,issues,doorRuns,rooms,reachable){
-  return {valid:issues.length===0,issues,metrics:{width:level?.width||0,depth:level?.depth||0,rooms:rooms.length,doorRuns:doorRuns.length,reachableCells:reachable.size}};
+  return {valid:issues.length===0,issues,metrics:{width:level?.width||0,depth:level?.depth||0,rooms:rooms.length,doorRuns:doorRuns.length,reachableCells:reachable.size,wallJunctions:Array.isArray(level?.map)?wallJunctions(level).length:0}};
  }
  function validate(level,options){const report=audit(level,options);if(!report.valid)throw new HouseLayoutValidationError(report);return report}
- return {DEFAULTS,HouseLayoutValidationError,audit,validate,collectRuns};
+ return {DEFAULTS,HouseLayoutValidationError,audit,validate,collectRuns,auditWallGeometry,validateWallGeometry,wallJunctions};
 });

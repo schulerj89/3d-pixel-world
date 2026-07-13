@@ -37,7 +37,7 @@ function canWalkInHouse(x,z){
   z>=HOUSE_CONFIG.origin.z+HOUSE_CONFIG.playerInset &&
   z<=HOUSE_CONFIG.origin.z+HOUSE_CONFIG.depth-HOUSE_CONFIG.playerInset;
 }
-function hbox(w,h,d,c,x,y,z,parent=house){let material=c?.isMaterial?c:new THREE.MeshStandardMaterial({color:c});let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;parent.add(m);return m}
+function hbox(w,h,d,c,x,y,z,parent=house){let material=Array.isArray(c)||c?.isMaterial?c:new THREE.MeshStandardMaterial({color:c});let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;parent.add(m);return m}
 const houseLayoutShell=new THREE.Group();houseLayoutShell.name="house-layout-shell";house.add(houseLayoutShell);
 function applyHouseLayout(layout){
  activeHouseLayout=layout;houseLayoutStatus="ready";houseLayoutError=null;
@@ -52,14 +52,21 @@ function applyHouseLayout(layout){
  }
  for(const wall of layout.walls){
   const length=wall.end-wall.start;
-  const renderedHeight=layout.wallHeight+(wall.heightOffset||0);
+  const renderedHeight=layout.wallHeight;
   const wallWidth=wall.type==="cell"?wall.width:length;
   const interiorMaterial=window.HouseWallMaterials?.create("interior",{width:wallWidth,height:renderedHeight,renderer:R})||0xf2e8dc;
+  const outwardFaces=wall.outwardFaces||[wall.outward].filter(Boolean);
+  let wallMaterial=interiorMaterial;
+  if(outwardFaces.length&&interiorMaterial?.isMaterial){
+   const exteriorMaterial=window.HouseWallMaterials?.create("exterior",{width:wallWidth,height:renderedHeight,renderer:R})||interiorMaterial;
+   const faceIndex={east:0,west:1,south:4,north:5};
+   wallMaterial=Array(6).fill(interiorMaterial);for(const face of outwardFaces)wallMaterial[faceIndex[face]]=exteriorMaterial;
+  }
   const mesh=wall.type==="cell"
-   ?hbox(wall.width,renderedHeight,wall.depth,interiorMaterial,wall.x,renderedHeight/2,wall.z,houseLayoutShell)
+   ?hbox(wall.width,renderedHeight,wall.depth,wallMaterial,wall.x,renderedHeight/2,wall.z,houseLayoutShell)
    :wall.orientation==="H"
-    ?hbox(length,renderedHeight,wall.thickness||layout.wallThickness,interiorMaterial,(wall.start+wall.end)/2,renderedHeight/2,wall.fixed,houseLayoutShell)
-    :hbox(wall.thickness||layout.wallThickness,renderedHeight,length,interiorMaterial,wall.fixed,renderedHeight/2,(wall.start+wall.end)/2,houseLayoutShell);
+    ?hbox(length,renderedHeight,wall.thickness||layout.wallThickness,wallMaterial,(wall.start+wall.end)/2,renderedHeight/2,wall.fixed,houseLayoutShell)
+    :hbox(wall.thickness||layout.wallThickness,renderedHeight,length,wallMaterial,wall.fixed,renderedHeight/2,(wall.start+wall.end)/2,houseLayoutShell);
   mesh.name=`house-wall-${wall.id}`;mesh.userData.wallId=wall.id;
  }
  document.body.dataset.houseLayoutStatus="ready";

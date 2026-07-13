@@ -59,3 +59,11 @@ bounded by walls. It also checks the exterior perimeter and corners, wall/door
 connectivity, unmarked seams, room bounds and reachability, fixture anchors,
 overlaps, and fixture approach clearance. `HouseSpaceSpec.validatePlan(level)`
 exposes the same reusable contract to other Node or browser QA tools.
+
+The CLI also adapts the TXT plan into rendered wall footprints and runs
+`HouseLayoutValidator.validateWallGeometry(level, walls)`. This second gate
+requires one common wall height, one owning square per corner/T-junction,
+branches that exactly match neighboring `#` cells, a connected shell, and zero
+positive-area overlaps between wall pieces. A 2x2 `#` block is rejected as a
+double-thick wall, and exterior cladding is assigned to the outward faces of
+the structural shell instead of being rendered as a second wall layer.
