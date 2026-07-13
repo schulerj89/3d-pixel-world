@@ -1,96 +1,141 @@
-(function(){
-  window.worldFactories=window.worldFactories||{};
-  window.worldFactories.space=function(THREE){
-    const group=new THREE.Group();group.name="space-world";
-    const resources=[];const geometry=(g)=>{resources.push(g);return g};const material=(m)=>{resources.push(m);return m};
-    const mats={ground:material(new THREE.MeshStandardMaterial({color:0x322d59,roughness:.92})),metal:material(new THREE.MeshStandardMaterial({color:0x8793aa,metalness:.45,roughness:.55})),dark:material(new THREE.MeshStandardMaterial({color:0x22263a,roughness:.75})),glow:material(new THREE.MeshBasicMaterial({color:0x70f4ff})),purple:material(new THREE.MeshStandardMaterial({color:0x8b5cf6,roughness:.7})),alien:material(new THREE.MeshStandardMaterial({color:0x72e38c,roughness:.8})),skin:material(new THREE.MeshStandardMaterial({color:0xd7a77f,roughness:.85})),white:material(new THREE.MeshStandardMaterial({color:0xe9f4ff,roughness:.5})),visor:material(new THREE.MeshStandardMaterial({color:0x5bcce8,metalness:.25,roughness:.25}))};
-    const box=geometry(new THREE.BoxGeometry(1,1,1)),sphere=geometry(new THREE.SphereGeometry(.5,10,8)),cylinder=geometry(new THREE.CylinderGeometry(.5,.5,1,10)),cone=geometry(new THREE.ConeGeometry(.5,1,10));
-    const rockGeometry=geometry(new THREE.DodecahedronGeometry(.5,0)),craterGeometry=geometry(new THREE.TorusGeometry(.5,.13,5,16));
-    function mesh(g,m,x,y,z,sx=1,sy=1,sz=1,parent=group){const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=o.receiveShadow=false;parent.add(o);return o}
-    const floor=mesh(box,mats.ground,0,-.15,0,70,.3,70);floor.receiveShadow=true;
-    // Large landmarks break the 70x70 moon field into readable districts.
-    [[-23,-22,7],[22,21,6],[-21,20,5],[22,-19,5]].forEach(([x,z,size],i)=>{
-      mesh(cylinder,i%2?mats.dark:mats.metal,x,.12,z,size,.25,size);
-      mesh(cylinder,mats.glow,x,.27,z,size*.72,.035,size*.72);
-    });
-    const dome=mesh(sphere,mats.visor,0,1.1,-25,7,3.1,7);dome.material=mats.visor;
+// Data-driven Space Realm built from KayKit: Space Base Bits.
+(function(root,factory){
+ const parser=root?.levelTemplateParser||(typeof module!=="undefined"&&module.exports?require("./level-template-parser.js"):null);
+ const api=factory(parser);
+ if(typeof module!=="undefined"&&module.exports)module.exports=api;
+ if(root){root.SpaceWorld=api;root.worldFactories=root.worldFactories||{};root.worldFactories.space=api.create}
+})(typeof globalThis!=="undefined"?globalThis:this,function(levelParser){
+ "use strict";
+ const BUILD_VERSION="__BUILD_VERSION__";
+ const LEVEL_URL=`levels/space-80.txt?v=${BUILD_VERSION}`;
+ const ASSET_ROOT="assets/models/space-base-bits/";
+ const MIN_SPACING=2;
+ const PLAYER_RADIUS=.32;
+ const ASSET_REGISTRY=Object.freeze({
+  R:{assetId:"space.rocks.cluster-a",file:"rocks_A",scale:2,footprint:[2.6,3.2],size:[2.6,.8,3.2],color:0x596174},
+  Q:{assetId:"space.rocks.cluster-b",file:"rocks_B",scale:2,footprint:[3.8,3.4],size:[3.8,2.2,3.4],color:0x485063},
+  L:{assetId:"space.landing-pad.large",file:"landingpad_large",scale:2.4,footprint:[6,6],size:[6,1.2,6],color:0x7f8da1},
+  p:{assetId:"space.landing-pad.small",file:"landingpad_small",scale:2,footprint:[3.8,3.8],size:[3.8,1,3.8],color:0x8b98aa},
+  A:{assetId:"space.lander.a",file:"lander_A",scale:2.4,footprint:[3.4,3.4],size:[3.4,2.9,3.4],color:0xe8edf2},
+  B:{assetId:"space.lander.b",file:"lander_B",scale:2.4,footprint:[3.4,3.4],size:[3.4,2.7,3.4],color:0xdde5ec},
+  D:{assetId:"space.mining.drill",file:"drill_structure",scale:2,footprint:[3.6,3.6],size:[3.6,5.8,3.6],color:0xe09a45},
+  S:{assetId:"space.power.solar-panel",file:"solarpanel",scale:2,footprint:[1.8,.8],size:[1.8,.8,.8],color:0x516c9b},
+  W:{assetId:"space.power.wind-turbine",file:"windturbine_low",scale:2,footprint:[2.2,2.6],size:[2.2,2.4,2.6],color:0xe7edf1},
+  T:{assetId:"space.vehicle.truck",file:"spacetruck",scale:2.5,footprint:[1.3,2.3],size:[1.3,1.5,2.3],color:0xe4a044},
+  t:{assetId:"space.vehicle.trailer",file:"spacetruck_trailer",scale:2.5,footprint:[1.3,2.5],size:[1.3,.8,2.5],color:0xc77b3a},
+  C:{assetId:"space.cargo.stack-a",file:"cargo_A_stacked",scale:2,footprint:[2,2],size:[2,2,2],color:0xa86f4d},
+  c:{assetId:"space.cargo.pack-b",file:"cargo_B_packed",scale:2,footprint:[1,1],size:[1,1,1],color:0xb98255},
+  N:{assetId:"space.container.a",file:"containers_A",scale:2,footprint:[1,1],size:[1,.5,1],color:0xbfc9d1},
+  n:{assetId:"space.container.c",file:"containers_C",scale:2,footprint:[1,1],size:[1,.5,1],color:0x91a3b2},
+  I:{assetId:"space.light.cluster",file:"lights",scale:1.5,footprint:[1.1,1.1],size:[1.1,1.5,1.1],color:0x78efff}
+ });
+ const ALIEN_SPEC=Object.freeze({assetId:"space.npc.alien",footprint:[1.4,1.4]});
+ const WALKABLE=new Set([".","X"]);
 
-    // Repeated surface details are instanced to keep draw calls low on tablets.
-    const matrix=new THREE.Matrix4(),rotation=new THREE.Quaternion(),scale=new THREE.Vector3();
-    const rocks=new THREE.InstancedMesh(rockGeometry,mats.dark,72);
-    for(let i=0;i<72;i++){
-      const a=i*2.399963,r=8+(i*13%27),x=Math.cos(a)*r,z=Math.sin(a)*r,s=.35+(i%7)*.13;
-      rotation.setFromEuler(new THREE.Euler((i%5)*.17,(i%11)*.31,(i%3)*.12));scale.set(s*1.35,s,s);
-      matrix.compose(new THREE.Vector3(x,s*.32,z),rotation,scale);rocks.setMatrixAt(i,matrix)
-    }rocks.instanceMatrix.needsUpdate=true;rocks.castShadow=rocks.receiveShadow=false;group.add(rocks);
-    const craters=new THREE.InstancedMesh(craterGeometry,mats.dark,20);
-    for(let i=0;i<20;i++){
-      const a=i*1.73,r=10+(i*9%23),s=1.2+(i%5)*.42;
-      rotation.setFromEuler(new THREE.Euler(Math.PI/2,0,(i%4)*.25));scale.set(s,1,s*.72);
-      matrix.compose(new THREE.Vector3(Math.cos(a)*r,.025,Math.sin(a)*r),rotation,scale);craters.setMatrixAt(i,matrix)
-    }craters.instanceMatrix.needsUpdate=true;craters.castShadow=craters.receiveShadow=false;group.add(craters);
-    [mats.glow,mats.purple].forEach((crystalMaterial,colorIndex)=>{
-      const crystals=new THREE.InstancedMesh(cone,crystalMaterial,18);
-      for(let i=0;i<18;i++){
-        const n=i*2+colorIndex,a=n*2.17,r=12+(n*7%21),s=.5+(n%4)*.13;
-        rotation.setFromEuler(new THREE.Euler(0,a,(n%3-1)*.14));scale.set(s,1.3+s,s);
-        matrix.compose(new THREE.Vector3(Math.cos(a)*r,.65,Math.sin(a)*r),rotation,scale);crystals.setMatrixAt(i,matrix)
-      }crystals.instanceMatrix.needsUpdate=true;crystals.castShadow=crystals.receiveShadow=false;group.add(crystals)
-    });
-    // Beacon lights mark the outer traversal ring.
-    const beaconPosts=new THREE.InstancedMesh(cylinder,mats.metal,16),beaconLights=new THREE.InstancedMesh(sphere,mats.glow,16);
-    for(let i=0;i<16;i++){
-      const a=i/16*Math.PI*2,x=Math.cos(a)*30,z=Math.sin(a)*30;
-      rotation.identity();matrix.compose(new THREE.Vector3(x,.8,z),rotation,new THREE.Vector3(.16,1.6,.16));beaconPosts.setMatrixAt(i,matrix);
-      matrix.compose(new THREE.Vector3(x,1.7,z),rotation,new THREE.Vector3(.24,.24,.24));beaconLights.setMatrixAt(i,matrix)
-    }beaconPosts.instanceMatrix.needsUpdate=true;beaconLights.instanceMatrix.needsUpdate=true;group.add(beaconPosts,beaconLights);
-    // Simple satellites and communication dishes add distinct silhouettes.
-    [[-11,-17],[13,-13],[-16,8],[15,12]].forEach(([x,z],i)=>{
-      mesh(cylinder,mats.metal,x,1,z,.3,2,.3);const dish=mesh(sphere,mats.white,x,2.15,z,1.4,.18,1.4);dish.rotation.x=.35;dish.rotation.y=i*1.4;
-      mesh(box,mats.purple,x-1.15,1.1,z,1.8,.08,.8);mesh(box,mats.purple,x+1.15,1.1,z,1.8,.08,.8)
-    });
-    // Decorative stars hover above the central route.
-    const stars=new THREE.InstancedMesh(sphere,mats.glow,28);
-    for(let i=0;i<28;i++){const a=i/28*Math.PI*2,r=17+(i%4)*3;rotation.identity();matrix.compose(new THREE.Vector3(Math.cos(a)*r,3+(i%4)*.75,Math.sin(a)*r),rotation,new THREE.Vector3(.08,.08,.08));stars.setMatrixAt(i,matrix)}stars.instanceMatrix.needsUpdate=true;group.add(stars);
-    const alienFallbacks=[];let disposed=false,alienAsset=null;
-    group.userData.alienAsset={status:"primitive-fallback",source:"Quaternius Animated Alien Pack",license:"CC0-1.0"};
-    function npc(kind,x,z,sitting=false,turn=0){const n=new THREE.Group(),visual=new THREE.Group(),isAlien=kind==="alien",body=isAlien?mats.purple:mats.white,face=isAlien?mats.alien:mats.skin;n.add(visual);
-      mesh(box,body,0,sitting?1:1.45,0,.78,.9,.48,visual);mesh(sphere,face,0,sitting?1.72:2.2,0,.86,.92,.82,visual);
-      if(isAlien){mesh(sphere,mats.dark,-.16,sitting?1.82:2.3,.39,.12,.18,.08,visual);mesh(sphere,mats.dark,.16,sitting?1.82:2.3,.39,.12,.18,.08,visual);mesh(cone,mats.alien,-.2,sitting?2.3:2.78,0,.15,.55,.15,visual);mesh(cone,mats.alien,.2,sitting?2.3:2.78,0,.15,.55,.15,visual)}
-      else mesh(box,mats.visor,0,sitting?1.8:2.28,.39,.58,.28,.08,visual);
-      [-.48,.48].forEach(ax=>mesh(box,body,ax,sitting?1.15:1.42,0,.2,.75,.22,visual));
-      [-.22,.22].forEach(lx=>{const leg=mesh(box,body,lx,sitting?.58:.55,sitting?.35:0,.25,.82,.28,visual);if(sitting)leg.rotation.x=Math.PI/2});
-      if(sitting)mesh(box,mats.metal,0,.42,0,1.25,.14,.7,n);
-      n.position.set(x,0,z);n.rotation.y=turn;n.userData.npcType=kind;group.add(n);if(isAlien)alienFallbacks.push({visual,sitting})
-    }
-    [{k:"alien",x:-6,z:-5},{k:"alien",x:7,z:-6,s:true,t:2.5},{k:"alien",x:-18,z:16,t:1},{k:"astronaut",x:5,z:7},{k:"astronaut",x:20,z:17,s:true,t:-2},{k:"astronaut",x:-19,z:-18,t:2.8},{k:"alien",x:2,z:-2,s:true},{k:"astronaut",x:12,z:-21,t:.8},{k:"alien",x:23,z:-10,t:-1.2},{k:"astronaut",x:-24,z:5,s:true,t:2}].forEach(v=>npc(v.k,v.x,v.z,v.s,v.t));
-    if(window.QuaterniusAlienAsset){
-      group.userData.alienAsset.status="loading";
-      window.QuaterniusAlienAsset.load(THREE).then(asset=>{
-        if(disposed){asset.dispose();return}
-        alienAsset=asset;
-        const grounding=[];
-        alienFallbacks.forEach(({visual,sitting},index)=>{
-          visual.clear();const model=new THREE.Mesh(asset.geometry,asset.material);
-          const modelScale=sitting?.72:.9,surfaceY=sitting?.49:0;
-          model.scale.setScalar(modelScale);
-          model.position.y=window.QuaterniusAlienAsset.groundedY(asset.bounds,modelScale,surfaceY);
-          model.userData.grounding={surfaceY,modelMinY:asset.bounds.min.y,scale:modelScale};
-          model.castShadow=model.receiveShadow=false;visual.add(model)
-          grounding.push({index,sitting:!!sitting,surfaceY,worldBottomY:model.position.y+asset.bounds.min.y*modelScale})
-        });
-        group.userData.alienAsset.status="loaded";
-        group.userData.alienAsset.instances=alienFallbacks.length;
-        group.userData.alienAsset.bounds=asset.bounds;
-        group.userData.alienAsset.grounding=grounding;
-      }).catch(error=>{if(!disposed){group.userData.alienAsset.status="fallback-error";console.warn("Using primitive alien fallback",error)}})
-    }
-    const structures=window.spaceStructureFactory?window.spaceStructureFactory(THREE):null;
-    if(structures)group.add(structures.group);
-    const bounds={minX:-34.3,maxX:34.3,minZ:-34.3,maxZ:34.3};
-    const collisionBoxes=structures?.collisionBoxes||[];
-    return {group,bounds,spawn:{x:0,z:29},camera:{angle:.25,height:15,distance:22},background:0x090b24,name:"Moonlight Space Station",
-      canWalk(x,z){const radius=.32;if(x<bounds.minX||x>bounds.maxX||z<bounds.minZ||z>bounds.maxZ)return false;return !collisionBoxes.some(box=>x>box.minX-radius&&x<box.maxX+radius&&z>box.minZ-radius&&z<box.maxZ+radius)},
-      dispose(){disposed=true;alienAsset?.dispose();structures?.dispose();group.parent?.remove(group);resources.forEach(r=>r.dispose?.())}};
+ function parseLevel(text){
+  if(!levelParser?.parse)throw new Error("Space level parser is unavailable");
+  const level=levelParser.parse(text),known=new Set([...Object.keys(ASSET_REGISTRY),"a",...WALKABLE]);
+  const unknown=new Set(level.map.join("").split("").filter(symbol=>!known.has(symbol)));
+  if(unknown.size)throw new Error(`Unknown space level symbols: ${[...unknown].join(",")}`);
+  const spawnSymbols=[];level.map.forEach((row,r)=>[...row].forEach((symbol,c)=>{if(symbol==="X")spawnSymbols.push([c,r])}));
+  if(spawnSymbols.length!==1||spawnSymbols[0][0]!==level.spawnCol||spawnSymbols[0][1]!==level.spawnRow)throw new Error("Space level spawn metadata must point to its single X symbol");
+  validateSpacing(level);
+  return level;
+ }
+ function cellCenter(level,col,row){return {x:-level.width/2+(col+.5)*level.cell,z:-level.depth/2+(row+.5)*level.cell}}
+ function placementsFromLevel(level){
+  const placements=[];level.map.forEach((line,row)=>[...line].forEach((symbol,col)=>{
+   const spec=ASSET_REGISTRY[symbol]||(symbol==="a"?ALIEN_SPEC:null);if(spec)placements.push({symbol,col,row,...cellCenter(level,col,row),spec});
+  }));return placements;
+ }
+ function footprintDistance(a,b){
+  const dx=Math.max(0,Math.abs(a.x-b.x)-(a.spec.footprint[0]+b.spec.footprint[0])/2);
+  const dz=Math.max(0,Math.abs(a.z-b.z)-(a.spec.footprint[1]+b.spec.footprint[1])/2);
+  return Math.hypot(dx,dz);
+ }
+ function spacingReport(level){
+  const placements=placementsFromLevel(level);let minimum=Infinity,pair=null;
+  for(let i=0;i<placements.length;i++)for(let j=i+1;j<placements.length;j++){
+   const distance=footprintDistance(placements[i],placements[j]);if(distance<minimum){minimum=distance;pair=[placements[i],placements[j]]}
+  }
+  return {minimum:Number.isFinite(minimum)?minimum:Infinity,pair,count:placements.length};
+ }
+ function validateSpacing(level){
+  const report=spacingReport(level);if(report.minimum+1e-6<MIN_SPACING){const [a,b]=report.pair;throw new Error(`Space placements ${a.symbol}@${a.col},${a.row} and ${b.symbol}@${b.col},${b.row} are only ${report.minimum.toFixed(2)} units apart`)}
+  return report;
+ }
+ function loadLevel(fetchImpl=globalThis.fetch){
+  if(typeof fetchImpl!=="function")return Promise.reject(new Error("Space layout requires fetch"));
+  return fetchImpl(LEVEL_URL).then(response=>{if(!response.ok)throw new Error(`Space level request failed (${response.status})`);return response.text()}).then(parseLevel);
+ }
+ function loadGLTF(loader,url){return new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject))}
+ async function loadAssets(Loader=globalThis.ThreeGLTFLoader?.GLTFLoader){
+  if(!Loader)return {prototypes:new Map(),loadedAssetIds:[],errors:["Space GLTF loader is unavailable"],texture:null};
+  const loader=new Loader(),prototypes=new Map(),errors=[];
+  await Promise.all(Object.entries(ASSET_REGISTRY).map(async([symbol,spec])=>{
+   try{const gltf=await loadGLTF(loader,`${ASSET_ROOT}${spec.file}.gltf?v=${BUILD_VERSION}`);prototypes.set(symbol,gltf.scene)}
+   catch(error){errors.push(`${spec.file}: ${error?.message||error}`)}
+  }));
+  let sharedTexture=null;
+  for(const prototype of prototypes.values())prototype.traverse(object=>{
+   if(!object.isMesh)return;const materials=Array.isArray(object.material)?object.material:[object.material];
+   materials.filter(Boolean).forEach(material=>{if(!material.map)return;if(!sharedTexture)sharedTexture=material.map;else if(material.map!==sharedTexture){material.map.dispose?.();material.map=sharedTexture;material.needsUpdate=true}});
+  });
+  return {prototypes,loadedAssetIds:[...prototypes.keys()].map(symbol=>ASSET_REGISTRY[symbol].assetId),errors,texture:sharedTexture};
+ }
+ function placeholder(THREE,spec){
+  const geometry=new THREE.BoxGeometry(...spec.size),material=new THREE.MeshStandardMaterial({color:spec.color,roughness:.82});
+  const mesh=new THREE.Mesh(geometry,material);mesh.position.y=spec.size[1]/2;mesh.userData.placeholder=true;return mesh;
+ }
+ function alienFallback(THREE){
+  const group=new THREE.Group(),bodyMaterial=new THREE.MeshStandardMaterial({color:0x72e38c,roughness:.8}),darkMaterial=new THREE.MeshStandardMaterial({color:0x172232,roughness:.7});
+  const body=new THREE.Mesh(new THREE.BoxGeometry(.78,1.05,.5),bodyMaterial);body.position.y=1.1;group.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.5,10,8),bodyMaterial);head.scale.set(.85,.9,.8);head.position.y=1.95;group.add(head);
+  [-.16,.16].forEach(x=>{const eye=new THREE.Mesh(new THREE.SphereGeometry(.5,8,6),darkMaterial);eye.scale.set(.12,.18,.08);eye.position.set(x,2.04,.4);group.add(eye)});
+  group.userData.placeholder=true;return group;
+ }
+ function disposeResources(root){
+  const geometries=new Set(),materials=new Set(),textures=new Set();root?.traverse(object=>{
+   if(object.geometry)geometries.add(object.geometry);const list=Array.isArray(object.material)?object.material:[object.material];list.filter(Boolean).forEach(material=>{materials.add(material);Object.values(material).forEach(value=>{if(value?.isTexture)textures.add(value)})});
+  });textures.forEach(texture=>texture.dispose?.());materials.forEach(material=>material.dispose?.());geometries.forEach(geometry=>geometry.dispose?.());
+  return {geometries:geometries.size,materials:materials.size,textures:textures.size};
+ }
+ function create(THREE){
+  const group=new THREE.Group();group.name="space-world";group.userData={destination:"space",layout:{url:LEVEL_URL,status:"loading"},assets:{source:"KayKit: Space Base Bits",license:"CC0-1.0",status:"loading",loadedAssetIds:[],errors:[]},npcs:{aliens:0,nonAliens:0}};
+  const collisionBoxes=[];let disposed=false,level=null,spacing=null;
+  const debugPoses=Object.freeze({
+   spawn:{x:2,z:34,angle:.25,height:15,distance:22},
+   overview:{x:0,z:0,angle:.38,height:38,distance:48},
+   landing:{x:-14,z:-22,angle:.32,height:13,distance:19},
+   cargo:{x:-4,z:16,angle:.28,height:11,distance:16},
+   aliens:{x:-14,z:30,angle:.45,height:4.8,distance:6.5,hidePlayer:true}
+  });
+  const world={group,bounds:{minX:-39.6,maxX:39.6,minZ:-39.6,maxZ:39.6},spawn:{x:2,z:34},camera:{angle:.25,height:15,distance:22},debugPoses,background:0x090b24,name:"Starfall Spaceport",
+   canWalk(x,z){if(x<world.bounds.minX||x>world.bounds.maxX||z<world.bounds.minZ||z>world.bounds.maxZ)return false;return !collisionBoxes.some(box=>Math.abs(x-box.x)<box.halfX+PLAYER_RADIUS&&Math.abs(z-box.z)<box.halfZ+PLAYER_RADIUS)},
+   debug(){return {layout:group.userData.layout,assets:group.userData.assets,npcs:group.userData.npcs,placements:collisionBoxes.length,minimumSpacing:spacing?.minimum??null,spawn:world.spawn}},
+   dispose(){disposed=true;group.parent?.remove(group);disposeResources(group)}
   };
-})();
+  world.ready=Promise.all([loadLevel(),loadAssets(),globalThis.QuaterniusAlienAsset?.load?.(THREE).catch(error=>({error}))||Promise.resolve(null)]).then(([loadedLevel,assets,alienAsset])=>{
+   if(disposed)return world;level=loadedLevel;spacing=validateSpacing(level);world.name=level.name||world.name;world.bounds={minX:-level.width/2+PLAYER_RADIUS,maxX:level.width/2-PLAYER_RADIUS,minZ:-level.depth/2+PLAYER_RADIUS,maxZ:level.depth/2-PLAYER_RADIUS};world.spawn=cellCenter(level,level.spawnCol,level.spawnRow);
+   const floor=new THREE.Mesh(new THREE.BoxGeometry(level.width,.3,level.depth),new THREE.MeshStandardMaterial({color:0x322d59,roughness:.94}));floor.position.y=-.15;floor.receiveShadow=true;floor.userData.assetId="space.terrain.floor";group.add(floor);
+   let aliens=0;
+   for(const placement of placementsFromLevel(level)){
+    let object;
+    if(placement.symbol==="a"){
+     aliens++;object=alienFallback(THREE);
+     if(alienAsset&&!alienAsset.error){object.clear();const model=new THREE.Mesh(alienAsset.geometry,alienAsset.material);const scale=.9;model.scale.setScalar(scale);model.position.y=globalThis.QuaterniusAlienAsset.groundedY(alienAsset.bounds,scale,0);model.userData.placeholder=false;object.add(model);object.userData.placeholder=false}
+    }else{
+     const prototype=assets.prototypes.get(placement.symbol);object=prototype?prototype.clone(true):placeholder(THREE,placement.spec);object.scale.setScalar(prototype?placement.spec.scale:1);
+    }
+    object.position.x=placement.x;object.position.z=placement.z;object.name=placement.spec.assetId;object.userData.assetId=placement.spec.assetId;object.userData.level={symbol:placement.symbol,col:placement.col,row:placement.row};
+    object.traverse(child=>{if(child.isMesh){child.castShadow=false;child.receiveShadow=true}});group.add(object);
+    collisionBoxes.push({x:placement.x,z:placement.z,halfX:placement.spec.footprint[0]/2,halfZ:placement.spec.footprint[1]/2,assetId:placement.spec.assetId});
+   }
+   group.userData.layout={url:LEVEL_URL,status:"ready",size:`${level.width}x${level.depth}`,cell:level.cell,minimumSpacing:spacing.minimum};
+   group.userData.assets={source:"KayKit: Space Base Bits",license:"CC0-1.0",status:assets.errors.length?(assets.loadedAssetIds.length?"partial":"fallback"):"ready",loadedAssetIds:assets.loadedAssetIds,errors:assets.errors};
+   group.userData.npcs={aliens,nonAliens:0,alienAsset:alienAsset?.error?"fallback":"ready"};return world;
+  }).catch(error=>{group.userData.layout.status="error";group.userData.layout.error=String(error?.message||error);throw error});
+  return world;
+ }
+ return {LEVEL_URL,ASSET_ROOT,ASSET_REGISTRY,ALIEN_SPEC,MIN_SPACING,PLAYER_RADIUS,WALKABLE,parseLevel,cellCenter,placementsFromLevel,footprintDistance,spacingReport,validateSpacing,loadLevel,loadAssets,disposeResources,create};
+});
