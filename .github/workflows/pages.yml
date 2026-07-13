@@ -26,7 +26,8 @@ jobs:
       - name: Stamp asset cache version
         shell: bash
         run: |
-          sed -i "s/__BUILD_VERSION__/${GITHUB_SHA}/g" index.html
+          grep -rlZ --include='*.html' --include='*.js' '__BUILD_VERSION__' . \
+            | xargs -0 -r sed -i "s/__BUILD_VERSION__/${GITHUB_SHA}/g"
           sed -i "s/__DISPLAY_VERSION__/${GITHUB_SHA::8}/g" index.html
       - uses: actions/upload-pages-artifact@v3
         with:
