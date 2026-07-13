@@ -10,7 +10,9 @@ assert(css.includes("env(safe-area-inset-left)")&&css.includes("env(safe-area-in
 assert(css.includes("min-height:44px")&&css.includes("width:44px"),"primary build and scroll controls must retain touch targets");
 assert(css.includes("build-tray-collapsed")&&css.includes("#lookPad"),"collapsed room view must restore camera controls");
 assert(/body\.house-building\.build-tray-collapsed #lookPad\{[^}]*visibility:visible!important;[^}]*pointer-events:auto!important/.test(css),"collapsed room view must override the legacy hidden, non-interactive look pad cascade");
+assert(/body\.house-building\.build-tray-collapsed #lookPad\{[^}]*bottom:max\(78px/.test(css),"collapsed room view must lift the look pad above the compact build dock");
 assert(/\.buildCatalogTray\.collapsed\{[^}]*grid-template-rows:44px;[^}]*max-height:62px/.test(css),"collapsed short-landscape dock must fit its 44px row, 12px vertical padding, and 6px border without clipping");
+assert(css.includes("(orientation:landscape) and (min-height:501px)")&&css.includes("max-height:min(250px,32dvh)")&&css.includes(".buildCatalogTray .moveGrid{display:flex"),"tablet landscape editor controls must stay in a capped, single-row dock instead of overflowing into the header");
 assert(catalog.includes('aria-label","Previous furniture')&&catalog.includes('aria-label","Next furniture'),"catalog must offer explicit previous/next controls");
 assert(catalog.includes('aria-expanded')&&catalog.includes('window.setBuildCatalogCollapsed'),"build dock collapse state must be accessible and resettable");
 assert(house.includes('window.setBuildCatalogCollapsed?.(false)'),"build sessions must reopen with tools available");
