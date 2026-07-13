@@ -185,9 +185,10 @@ async function showRestaurant(){
  document.getElementById("orders").style.display="none";document.getElementById("recipePanel").style.display="none";
  document.getElementById("inventoryBox").style.display="none";document.getElementById("roomTeleport").style.display="none";
  document.getElementById("msg").textContent="";
- const debugRoom=new URLSearchParams(location.search).get("restaurantRoom"),spawn=world.spawns?.[debugRoom]||world.spawn;
+ const debugParams=new URLSearchParams(location.search),debugRoom=debugParams.get("restaurantRoom"),debugPose=world.cameraPoses?.[debugParams.get("restaurantView")];
+ const spawn=debugPose?.target||world.spawns?.[debugRoom]||world.spawn,camera=debugPose||world.camera;
  P.position.set(spawn.x,0,spawn.z);P.rotation.y=Math.PI;
- cameraAngle=world.camera.angle;cameraHeight=world.camera.height;cameraDistance=world.camera.distance;updateCamera();
+ cameraAngle=camera.angle;cameraHeight=camera.height;cameraDistance=camera.distance;updateCamera();
  window.switchWorldMusic?.("restaurant");
 }
 function showHouse(){P.visible=true;

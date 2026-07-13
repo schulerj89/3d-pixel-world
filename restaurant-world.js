@@ -17,8 +17,8 @@
   H:{assetId:"restaurant.host.stand",sourceScene:"menu",scale:1.35,collision:[.35,.24],color:0x8f5d45,size:[.9,1.25,.7],height:.625},
   P:{assetId:"restaurant.plant.potted",collision:[.38,.38],color:0x5da56c,size:[.75,1.35,.75],height:.675},
   K:{assetId:"restaurant.kitchen.prep",sourceScene:"kitchencounter_straight_A_backsplash",collision:[1,1.03],color:0xb9c6cf,size:[.92,1,.92],height:.5},
-  S:{assetId:"restaurant.kitchen.stove",sourceScene:"stove_multi_decorated",collision:[1.1,1.15],color:0x555d66,size:[.92,1,.92],height:.5},
-  F:{assetId:"restaurant.kitchen.fridge",sourceScene:"fridge_A_decorated",collision:[1,1.12],color:0xdce8ed,size:[.92,2.2,.92],height:1.1},
+  S:{assetId:"restaurant.kitchen.stove",sourceScene:"oven",collision:[1,1.174],color:0x555d66,size:[2,2.02,2.348],height:1.01},
+  F:{assetId:"restaurant.kitchen.fridge",sourceScene:"fridge_A_decorated",scale:1.4,collision:[1.4,1.568],color:0xdce8ed,size:[2.8,3.5,3.136],height:1.75},
   W:{assetId:"restaurant.kitchen.sink",sourceScene:"kitchencounter_sink_backsplash",collision:[1,1.03],color:0x76aab8,size:[.92,1,.92],height:.5},
   R:{assetId:"restaurant.kitchen.rack",sourceScene:"kitchencabinet",collision:[1,.53],color:0x9b765a,size:[.92,1.8,.92],height:.9}
  });
@@ -56,7 +56,8 @@
    if(symbol==="#"){
     const half=room.cell/2+PLAYER_RADIUS;if(Math.abs(x-center.x)<half&&Math.abs(z-center.z)<half)return false;continue;
    }
-   const spec=ASSET_REGISTRY[symbol],transform=assetTransform(room,symbol,col,row,center),half=spec?.collision||[room.cell/2,room.cell/2];
+   const spec=ASSET_REGISTRY[symbol],transform=assetTransform(room,symbol,col,row,center),baseHalf=spec?.collision||[room.cell/2,room.cell/2];
+   const half=Math.abs(Math.sin(transform.yaw))>.5?[baseHalf[1],baseHalf[0]]:baseHalf;
    if(Math.abs(x-transform.x)<half[0]+PLAYER_RADIUS&&Math.abs(z-transform.z)<half[1]+PLAYER_RADIUS)return false;
   }
   return true;
@@ -76,6 +77,7 @@
 
  let runtime=null,loading=null;
  function sourceScene(kit,name){return kit?.scenes?.find(scene=>scene.children?.[0]?.name===name)||null}
+ const WALL_FIXTURES=new Set(["S","F","W","R"]);
  function assetTransform(room,symbol,col,row,position){
   let x=position.x,z=position.z,yaw=0;
   if(symbol==="C"){
@@ -83,6 +85,13 @@
    else if(room.map[row]?.[col-1]==="T"){x+=.58;yaw=Math.PI/2}
   }
   if(symbol==="B")yaw=Math.abs(x)<room.width*.25?0:(x<room.originX+room.width/2?Math.PI/2:-Math.PI/2);
+  if(room.room==="kitchen"&&WALL_FIXTURES.has(symbol)){
+   const halfDepth=ASSET_REGISTRY[symbol].collision[1];
+   if(row<=1){z=room.originZ+room.cell+halfDepth;yaw=0}
+   else if(row>=room.map.length-2){z=room.originZ+room.depth-room.cell-halfDepth;yaw=Math.PI}
+   else if(col<=1){x=room.originX+room.cell+halfDepth;yaw=Math.PI/2}
+   else if(col>=room.map[row].length-2){x=room.originX+room.width-room.cell-halfDepth;yaw=-Math.PI/2}
+  }
   return {x,z,yaw};
  }
  function buildRuntime(THREE,scene,rooms,kit=null,assetError=""){
@@ -116,7 +125,13 @@
   group.userData={destination:"restaurant",rooms:rooms.map(room=>({id:room.room,width:room.width,depth:room.depth,layoutFile:ROOM_FILES[room.room]})),assetRegistry:ASSET_REGISTRY,assets:{url:KIT_URL,status:kit?"ready":"fallback",loadedAssetIds,error:assetError},npcs:0,orders:false,hud:false};
   scene.add(group);
   const spawns=Object.fromEntries(rooms.map(room=>[room.room,cellCenter(room,room.spawnCol,room.spawnRow)]));
-  return {group,rooms,spawns,spawn:spawns.dining,camera:{angle:.35,height:8.5,distance:8.8},canWalk:(x,z)=>canWalk(rooms,x,z)};
+  const cameraPoses={
+   kitchenOverview:{sceneId:"kitchen",name:"kitchen-overview",target:{x:0,z:-30},angle:0,height:11,distance:15},
+   kitchenNorthWall:{sceneId:"kitchen",name:"kitchen-north-wall",target:{x:0,z:-39},angle:0,height:6.5,distance:10},
+   kitchenWestWall:{sceneId:"kitchen",name:"kitchen-west-wall",target:{x:-8.5,z:-34},angle:Math.PI/2,height:6.5,distance:10},
+   kitchenEastWall:{sceneId:"kitchen",name:"kitchen-east-wall",target:{x:8.5,z:-34},angle:-Math.PI/2,height:6.5,distance:10}
+  };
+  return {group,rooms,spawns,spawn:spawns.dining,camera:{angle:.35,height:8.5,distance:8.8},cameraPoses,canWalk:(x,z)=>canWalk(rooms,x,z)};
  }
  async function loadRooms(fetchImpl=globalThis.fetch){
   if(typeof fetchImpl!=="function")throw new Error("Restaurant layouts require fetch");

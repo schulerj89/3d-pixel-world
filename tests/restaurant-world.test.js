@@ -54,8 +54,31 @@ assert.strictEqual(Restaurant.symbolAtWorld(dining,table.x,table.z),"T");
 assert.strictEqual(Restaurant.canWalk(rooms,table.x,table.z),false,"placeholder fixtures must collide");
 assert.strictEqual(Restaurant.canWalk(rooms,table.x,table.z+.9),false,"collision must cover the visible KayKit table footprint, not only its symbol cell");
 assert.strictEqual(Restaurant.canWalk(rooms,table.x,table.z+1.6),true,"table collision must release beyond the measured footprint");
-const fridge=Restaurant.cellCenter(kitchen,3,1);
+const fridge=Restaurant.cellCenter(kitchen,2,1);
 assert.strictEqual(Restaurant.canWalk(rooms,fridge.x,fridge.z+.9),false,"large kitchen appliances need measured collision footprints");
+
+const kitchenPlacements=[];
+kitchen.map.forEach((row,r)=>[...row].forEach((symbol,c)=>{if(Restaurant.ASSET_REGISTRY[symbol])kitchenPlacements.push({symbol,row:r,col:c,position:Restaurant.cellCenter(kitchen,c,r)})}));
+const prepCounters=kitchenPlacements.filter(item=>item.symbol==="K");
+assert.strictEqual(prepCounters.length,3,"kitchen must have exactly three prep counters");
+assert(prepCounters.every(item=>item.row===prepCounters[0].row),"prep counters must form one free-standing island run");
+assert(prepCounters.slice(1).every((item,index)=>item.col-prepCounters[index].col>=3),"prep counters need at least three world units center-to-center");
+assert.strictEqual(Restaurant.ASSET_REGISTRY.F.scale,1.4,"refrigerators must be scaled up by 40%");
+assert.strictEqual(Restaurant.ASSET_REGISTRY.S.sourceScene,"oven","stove must use the undecorated appliance scene with no food on top");
+for(const item of kitchenPlacements.filter(item=>["S","F","W","R"].includes(item.symbol))){
+ const transform=Restaurant.assetTransform(kitchen,item.symbol,item.col,item.row,item.position);
+ if(item.row===1){
+  assert.strictEqual(transform.yaw,0,`${item.symbol} on the north wall must face into the kitchen`);
+  assert(transform.z>item.position.z,`${item.symbol} must be offset out of the north wall by its measured depth`);
+ }else if(item.col===1){
+  assert.strictEqual(transform.yaw,Math.PI/2,`${item.symbol} on the west wall must face into the kitchen`);
+ }else if(item.col===kitchen.map[item.row].length-2){
+  assert.strictEqual(transform.yaw,-Math.PI/2,`${item.symbol} on the east wall must face into the kitchen`);
+ }else assert.fail(`${item.symbol} must be placed against a kitchen wall`);
+}
+const westRack=kitchenPlacements.find(item=>item.symbol==="R"&&item.col===1),westRackTransform=Restaurant.assetTransform(kitchen,"R",westRack.col,westRack.row,westRack.position);
+assert.strictEqual(Restaurant.canWalk(rooms,westRackTransform.x+.9,westRackTransform.z),true,"rotated side-wall collision must release along the cabinet depth axis");
+assert.strictEqual(Restaurant.canWalk(rooms,westRackTransform.x,westRackTransform.z+.7),false,"rotated side-wall collision must cover the cabinet width axis");
 
 const symbols=new Set(rooms.flatMap(room=>room.map).join("").replace(/[.#D]/g,"").split(""));
 for(const symbol of symbols){
@@ -87,6 +110,8 @@ const scene=new Group(),runtime=Restaurant.buildRuntime({Group,BoxGeometry,MeshS
 assert.strictEqual(scene.children[0],runtime.group);
 assert.strictEqual(runtime.group.userData.destination,"restaurant");
 assert.strictEqual(runtime.group.userData.npcs,0);assert.strictEqual(runtime.group.userData.orders,false);assert.strictEqual(runtime.group.userData.hud,false);
+assert.deepStrictEqual(Object.values(runtime.cameraPoses).map(pose=>pose.name),["kitchen-overview","kitchen-north-wall","kitchen-west-wall","kitchen-east-wall"],"named kitchen camera poses must remain stable for screenshot QA");
+assert(Object.values(runtime.cameraPoses).every(pose=>pose.sceneId==="kitchen"&&Number.isFinite(pose.target.x)&&Number.isFinite(pose.target.z)),"kitchen screenshot poses need explicit scene targets");
 assert.strictEqual(runtime.group.children.filter(child=>child.userData.placeholder).length,symbols.size,"each asset symbol should create one instanced placeholder batch");
 assert(runtime.group.children.every(child=>!child.userData.bakeryCustomerId),"restaurant runtime must not create bakery NPCs");
 assert(runtime.canWalk(runtime.spawn.x,runtime.spawn.z));
