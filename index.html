@@ -107,10 +107,13 @@
    </div>
    <div class="furnitureEditor">
     <div id="selectedFurniture" aria-live="polite">No furniture selected</div>
-    <button id="selectFurniture">Select next item</button>
+    <button id="selectFurniture" aria-label="Select next furniture item">Next item</button>
     <div class="moveGrid"><span></span><button id="moveFUp" aria-label="Move forward">↑</button><span></span><button id="moveFLeft" aria-label="Move left">←</button><button id="rotateF" aria-label="Rotate">↻</button><button id="moveFRight" aria-label="Move right">→</button><span></span><button id="moveFDown" aria-label="Move backward">↓</button><span></span></div>
-    <button id="deleteFurniture" class="danger">🗑 Delete</button>
-    <button id="clearAllFurniture" class="danger" type="button" aria-describedby="clearFurnitureStatus" aria-disabled="true" disabled>Clear all furniture</button>
+    <button id="buildRemoveToggle" type="button" aria-expanded="false" aria-controls="buildDangerActions">Remove…</button>
+    <div id="buildDangerActions" class="buildDangerActions" hidden>
+     <button id="deleteFurniture" class="danger">🗑 Delete item</button>
+     <button id="clearAllFurniture" class="danger" type="button" aria-describedby="clearFurnitureStatus" aria-disabled="true" disabled>Clear all furniture</button>
+    </div>
     <p id="clearFurnitureStatus" class="sr-only" role="status" aria-live="polite"></p>
    </div>
   </div>

@@ -81,6 +81,8 @@
   const viewButton=header.querySelector(".buildCatalogView");
   const editTab=modeTabs.querySelector("#buildEditTab");
   const categoryToggle=addPanelHeader.querySelector(".buildCategoryToggle");
+  const removeToggle=editor.querySelector("#buildRemoveToggle");
+  const dangerActions=editor.querySelector("#buildDangerActions");
   const shortLandscape=window.matchMedia("(orientation: landscape) and (max-height: 500px)");
   let activeMode="add";
   let categoryPreference=null;
@@ -88,6 +90,13 @@
   function hasSelection(){
     const text=selectedLabel.textContent.trim();
     return text.startsWith("Selected:");
+  }
+
+  function setDangerExpanded(expanded){
+    editor.classList.toggle("danger-open",expanded);
+    dangerActions.hidden=!expanded;
+    removeToggle.setAttribute("aria-expanded",String(expanded));
+    removeToggle.textContent=expanded?"Back":"Remove…";
   }
 
   function setMode(mode,{focus=false}={}){
@@ -103,6 +112,7 @@
     addPanel.hidden=mode!=="add";
     editor.hidden=mode!=="edit";
     tools.dataset.mode=mode;
+    if(mode!=="edit")setDangerExpanded(false);
   }
 
   function refreshSelectionState(){
@@ -138,6 +148,7 @@
     setMode(activeMode==="add"&&!editTab.disabled?"edit":"add",{focus:true});
   });
   categoryToggle.addEventListener("click",()=>setCategoriesExpanded(categoryToggle.getAttribute("aria-expanded")!=="true",{remember:true}));
+  removeToggle.addEventListener("click",()=>setDangerExpanded(removeToggle.getAttribute("aria-expanded")!=="true"));
 
   function scrollCatalog(direction){catalog.scrollBy({left:direction*Math.max(120,catalog.clientWidth*.72),behavior:"smooth"})}
   previous.addEventListener("click",()=>scrollCatalog(-1));
@@ -164,7 +175,7 @@
     buttons[index].focus();
   });
   catalog.addEventListener("click",event=>{
-    if(event.target.closest("[data-f]"))queueMicrotask(()=>{refreshSelectionState();setMode("edit")});
+    if(event.target.closest("[data-f]"))queueMicrotask(()=>{refreshSelectionState();setDangerExpanded(false);setMode("edit")});
   });
   header.querySelector(".buildCatalogDone").addEventListener("click",()=>originalDone.dispatchEvent(new PointerEvent("pointerdown",{bubbles:true,cancelable:true})));
 
