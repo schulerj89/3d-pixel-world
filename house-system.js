@@ -300,12 +300,13 @@ function showHouse(){P.visible=true;
  C.lookAt(P.position.x,1,P.position.z);
  if(window.switchWorldMusic)window.switchWorldMusic("house");
 }
-function showBeach(){
+async function showBeach(){
  window.releaseLargeWorlds("beach");
+ const world=ensureBeachWorld();await world.ready;
  currentPlace="beach";P.visible=true;
  document.body.classList.add("beach-mode");document.body.classList.remove("restaurant-mode","bakery-mode","house-mode","space-mode","city-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(0x9edfff);startPage.style.display="none";
- setBakeryVisible(false);house.visible=false;beach.visible=true;
+ setBakeryVisible(false);house.visible=false;beach.visible=true;world.group.visible=true;
  hideSpaceWorld();
  if(castle)castle.visible=false;
  inKitchen=false;inStorage=false;page5Group.visible=false;
@@ -314,9 +315,11 @@ function showBeach(){
  document.getElementById("recipePanel").style.display="none";
  document.getElementById("roomTeleport").style.display="none";
  roomName.style.display="block";roomName.textContent="Sunny Beach";
- P.position.set(BEACH_CONFIG.spawn.x,0,BEACH_CONFIG.spawn.z);P.rotation.y=Math.PI;
- cameraAngle=BEACH_CONFIG.camera.angle;cameraHeight=BEACH_CONFIG.camera.height;cameraDistance=BEACH_CONFIG.camera.distance;
+ const poseId=new URLSearchParams(location.search).get("beachPose")||"spawn",pose=world.debugPoses?.[poseId]||{...world.spawn,...world.camera};
+ P.position.set(pose.x,0,pose.z);P.rotation.y=Math.PI;P.visible=pose.hidePlayer!==true;
+ cameraAngle=pose.angle;cameraHeight=pose.height;cameraDistance=pose.distance;
  updateCamera();
+ document.body.dataset.beachPose=poseId;document.body.dataset.beachAssetStatus=world.group.userData.assets.status;
  if(window.switchWorldMusic)window.switchWorldMusic("beach");
 }
 async function showSpace(){
@@ -369,7 +372,7 @@ function showCastle(){
  cameraAngle=CASTLE_CONFIG.camera.angle;cameraHeight=CASTLE_CONFIG.camera.height;cameraDistance=CASTLE_CONFIG.camera.distance;updateCamera();
  if(window.switchWorldMusic)window.switchWorldMusic("castle");
 }
-goBakery.onclick=()=>window.runWorldTransition("Setting the tables…","restaurant",showRestaurant);goHouse.onclick=showHouse;document.getElementById("goBeach").onclick=showBeach;
+goBakery.onclick=()=>window.runWorldTransition("Setting the tables…","restaurant",showRestaurant);goHouse.onclick=showHouse;document.getElementById("goBeach").onclick=()=>window.runWorldTransition("Opening Sunny Beach…","beach",showBeach);
 document.getElementById("goSpace").onclick=()=>window.runWorldTransition("Launching Space…","space",showSpace);
 document.getElementById("goCity").onclick=()=>window.runWorldTransition("Opening Chibi City…","city",showCity);
 document.getElementById("goCastle").onclick=()=>window.runWorldTransition("Raising the castle gates…","castle",showCastle);
