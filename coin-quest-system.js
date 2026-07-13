@@ -27,6 +27,7 @@
  });
 
  function finite(value,fallback){return Number.isFinite(Number(value))?Number(value):fallback}
+ function isHudVisiblePhase(phase){return phase==="active"||phase==="failed"}
  function normalizeConfig(input){
   const source=input||{};
   const positions=Array.isArray(source.positions)?source.positions:DEFAULT_CONFIG.positions;
@@ -148,7 +149,7 @@
   }
   function renderHud(){
    if(!hud)return;const state=controller.snapshot(),seconds=Math.max(0,state.remainingMs/1000);
-   hud.hidden=state.phase==="idle";
+   hud.hidden=!isHudVisiblePhase(state.phase);
    titleNode.textContent=config.title;timerNode.textContent=`${seconds.toFixed(seconds<10?1:0)}s`;
    progressNode.textContent=`${state.collectedCount} / ${state.count} coins`;
    hud.dataset.phase=state.phase;retryButton.hidden=state.phase!=="failed"||options.showRetryButton===false;
@@ -226,5 +227,5 @@
   return {config,group,coins,controller,assetReady,start,retry,collect,update,destroy,subscribe:listener=>controller.subscribe(listener),debugSnapshot,debugCollect:(index,at)=>collect(index,at),debugFail:(reason,at)=>{const result=controller.fail(reason,at);syncCoinVisibility();renderHud();return result},hud};
  }
 
- return {DEFAULT_CONFIG,normalizeConfig,CoinQuestController,createCoinQuestSystem};
+ return {DEFAULT_CONFIG,normalizeConfig,isHudVisiblePhase,CoinQuestController,createCoinQuestSystem};
 });
