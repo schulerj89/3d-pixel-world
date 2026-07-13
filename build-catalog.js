@@ -33,6 +33,7 @@
     button.dataset.category=key;
     button.setAttribute("role","tab");
     button.setAttribute("aria-selected",String(index===0));
+    button.tabIndex=index===0?0:-1;
     button.innerHTML=`<span aria-hidden="true">${icon}</span>${label}`;
     navigation.appendChild(button);
   });
@@ -82,6 +83,7 @@
   const categoryToggle=addPanelHeader.querySelector(".buildCategoryToggle");
   const shortLandscape=window.matchMedia("(orientation: landscape) and (max-height: 500px)");
   let activeMode="add";
+  let categoryPreference=null;
 
   function hasSelection(){
     const text=selectedLabel.textContent.trim();
@@ -109,7 +111,8 @@
     if(editTab.disabled&&activeMode==="edit")setMode("add");
   }
 
-  function setCategoriesExpanded(expanded){
+  function setCategoriesExpanded(expanded,{remember=false}={}){
+    if(remember)categoryPreference=expanded;
     addPanel.classList.toggle("categories-collapsed",!expanded);
     navigation.hidden=!expanded;
     categoryToggle.setAttribute("aria-expanded",String(expanded));
@@ -134,7 +137,7 @@
     event.preventDefault();
     setMode(activeMode==="add"&&!editTab.disabled?"edit":"add",{focus:true});
   });
-  categoryToggle.addEventListener("click",()=>setCategoriesExpanded(categoryToggle.getAttribute("aria-expanded")!=="true"));
+  categoryToggle.addEventListener("click",()=>setCategoriesExpanded(categoryToggle.getAttribute("aria-expanded")!=="true",{remember:true}));
 
   function scrollCatalog(direction){catalog.scrollBy({left:direction*Math.max(120,catalog.clientWidth*.72),behavior:"smooth"})}
   previous.addEventListener("click",()=>scrollCatalog(-1));
@@ -145,25 +148,41 @@
       const selected=button.dataset.category===category;
       button.classList.toggle("active",selected);
       button.setAttribute("aria-selected",String(selected));
+      button.tabIndex=selected?0:-1;
     });
     catalog.querySelectorAll("[data-f]").forEach(button=>button.hidden=category!=="all"&&button.dataset.buildCategory!==category);
     catalog.scrollTo({left:0,behavior:"smooth"});
   }
   navigation.addEventListener("click",event=>{const button=event.target.closest(".buildCategory");if(button)selectCategory(button.dataset.category)});
+  navigation.addEventListener("keydown",event=>{
+    if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key))return;
+    const buttons=[...navigation.querySelectorAll(".buildCategory")];
+    const current=Math.max(0,buttons.indexOf(document.activeElement));
+    const index=event.key==="Home"?0:event.key==="End"?buttons.length-1:(current+(event.key==="ArrowRight"?1:-1)+buttons.length)%buttons.length;
+    event.preventDefault();
+    selectCategory(buttons[index].dataset.category);
+    buttons[index].focus();
+  });
   catalog.addEventListener("click",event=>{
     if(event.target.closest("[data-f]"))queueMicrotask(()=>{refreshSelectionState();setMode("edit")});
   });
   header.querySelector(".buildCatalogDone").addEventListener("click",()=>originalDone.dispatchEvent(new PointerEvent("pointerdown",{bubbles:true,cancelable:true})));
 
   new MutationObserver(refreshSelectionState).observe(selectedLabel,{childList:true,characterData:true,subtree:true});
+  let wasEnabled=tools.classList.contains("enabled");
   new MutationObserver(()=>{
-    if(tools.classList.contains("enabled")){
+    const enabled=tools.classList.contains("enabled");
+    if(enabled&&!wasEnabled){
+      categoryPreference=null;
       setMode("add");
       setCategoriesExpanded(!shortLandscape.matches);
       refreshSelectionState();
     }
+    wasEnabled=enabled;
   }).observe(tools,{attributes:true,attributeFilter:["class"]});
-  shortLandscape.addEventListener?.("change",event=>setCategoriesExpanded(!event.matches));
+  shortLandscape.addEventListener?.("change",event=>{
+    if(categoryPreference===null)setCategoriesExpanded(!event.matches);
+  });
 
   setMode("add");
   setCategoriesExpanded(!shortLandscape.matches);

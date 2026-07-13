@@ -9,7 +9,10 @@ assert(css.includes("max-height:150px"),"expanded short-landscape dock must rema
 assert(css.includes("max-height:min(220px,29dvh)"),"tablet dock must preserve room visibility with a proportional height budget");
 assert(css.includes("env(safe-area-inset-left)")&&css.includes("env(safe-area-inset-right)"),"build dock must respect landscape safe areas");
 assert(css.includes("min-height:44px")&&css.includes("width:44px"),"primary, paging, and edit controls must retain touch targets");
+assert(!css.includes("min-height:40px!important")&&!css.includes("min-height:30px!important"),"short-landscape overrides must not shrink interactive controls below 44px");
+assert(/\.buildCatalogView,\.buildCatalogDone\{min-height:44px!important/.test(css)&&/\.buildCategoryToggle\{min-height:44px!important/.test(css)&&/\.buildCategory\{min-height:44px!important/.test(css),"header and category controls must remain 44px in short landscape");
 assert(css.includes("var(--ui-surface,#fffdf8f5)")&&css.includes("var(--ui-accent,#7452bd)"),"dock must consume shared UI tokens with standalone fallbacks");
+assert(css.includes('button:focus-visible')&&css.includes('var(--ui-focus,#365fc7)'),"build tools must expose a shared keyboard focus state");
 assert(css.includes("build-tray-collapsed")&&css.includes("#lookPad"),"collapsed room view must restore camera controls");
 assert(/body\.house-building\.build-tray-collapsed #lookPad\{[^}]*visibility:visible!important;[^}]*pointer-events:auto!important/.test(css),"collapsed room view must override the legacy hidden, non-interactive look pad cascade");
 assert(/body\.house-building\.build-tray-collapsed #lookPad\{[^}]*bottom:max\(78px/.test(css),"collapsed room view must lift the look pad above the compact build dock");
@@ -21,7 +24,10 @@ assert(catalog.includes('id="buildAddPanel"')&&catalog.includes('id="buildEditPa
 assert(catalog.includes('editor.hidden=mode!=="edit"')&&catalog.includes('addPanel.hidden=mode!=="add"'),"Add and Edit controls must never be displayed together");
 assert(catalog.includes('editTab.disabled=!hasSelection()')&&catalog.includes('aria-disabled'),"Edit mode must be disabled when no furniture is selected");
 assert(catalog.includes('aria-controls="buildCategoryList"')&&catalog.includes("setCategoriesExpanded"),"furniture categories must be collapsible with an accessible state");
+assert(css.includes('.buildCatalogNav[hidden]{display:none!important}'),"collapsed categories must override the navigation flex display");
 assert(catalog.includes('setCategoriesExpanded(!shortLandscape.matches)'),"short landscape sessions must start with compact categories");
+assert(catalog.includes('categoryPreference=null')&&catalog.includes('if(categoryPreference===null)'),"rotation must preserve an explicit category-collapse choice");
+assert(catalog.includes('["ArrowLeft","ArrowRight","Home","End"]')&&catalog.includes('buttons[index].focus()'),"category tabs must support keyboard navigation and roving focus");
 assert(catalog.includes('aria-label","Previous furniture')&&catalog.includes('aria-label","Next furniture'),"catalog must preserve explicit furniture paging controls");
 assert(catalog.includes('aria-expanded')&&catalog.includes('window.setBuildCatalogCollapsed'),"room-view collapse state must remain accessible and resettable");
 assert(house.includes('window.setBuildCatalogCollapsed?.(false)'),"build sessions must reopen with tools available");

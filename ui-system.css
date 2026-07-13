@@ -12,6 +12,16 @@
   --game-hud-ink: #273a63;
   --game-hud-focus: #365fc7;
   --game-hud-shadow: 0 3px 10px #321c5a2e;
+
+  /* Semantic aliases let overlays share one visual language without coupling to HUD markup. */
+  --ui-accent: var(--game-hud-border-active);
+  --ui-surface: var(--game-hud-surface);
+  --ui-border: var(--game-hud-border);
+  --ui-text: var(--game-hud-ink);
+  --ui-focus: var(--game-hud-focus);
+  --ui-radius-md: var(--game-hud-radius);
+  --ui-shadow: var(--game-hud-shadow);
+  --ui-touch-target: var(--game-hud-touch-target);
 }
 
 /* Reusable HUD controls: stable touch sizing, shared surfaces, and keyboard focus. */

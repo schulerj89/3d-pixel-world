@@ -16,7 +16,12 @@ for (const token of ["--game-hud-safe-top", "--game-hud-safe-left", "--game-hud-
   assert(css.includes(token), `${token} must be defined in the HUD token layer`);
 }
 
+for (const alias of ["--ui-accent", "--ui-surface", "--ui-border", "--ui-text", "--ui-focus", "--ui-touch-target"]) {
+  assert(css.includes(alias), `${alias} must connect overlays to the shared token layer`);
+}
+
 assert(css.includes("env(safe-area-inset-top)") && css.includes("env(safe-area-inset-left)") && css.includes("env(safe-area-inset-right)"), "HUD edges must respect device safe areas");
+assert(html.includes("viewport-fit=cover"), "the viewport must expose notch safe areas in full-bleed landscape");
 assert(/\.gameHudButton:focus-visible\s*\{[^}]*outline: 3px solid/.test(css), "HUD buttons must expose a strong keyboard focus state");
 assert(/#hudMenuButton\.gameHudButton--menu\s*\{[^}]*left: var\(--game-hud-safe-left\)/.test(css), "Menu must anchor the compact landscape cluster");
 assert(/#housePanelToggle\.gameHudButton--house\s*\{[^}]*left: calc\(var\(--game-hud-safe-left\) \+ 92px \+ var\(--game-hud-gap\)\)/.test(css), "House must join Menu at the shared cluster gap");
