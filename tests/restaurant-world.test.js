@@ -41,6 +41,10 @@ assert.strictEqual(Restaurant.canWalk(rooms,-12.6,-30),false,"outside both rooms
 const table=Restaurant.cellCenter(dining,8,8);
 assert.strictEqual(Restaurant.symbolAtWorld(dining,table.x,table.z),"T");
 assert.strictEqual(Restaurant.canWalk(rooms,table.x,table.z),false,"placeholder fixtures must collide");
+assert.strictEqual(Restaurant.canWalk(rooms,table.x,table.z+.9),false,"collision must cover the visible KayKit table footprint, not only its symbol cell");
+assert.strictEqual(Restaurant.canWalk(rooms,table.x,table.z+1.6),true,"table collision must release beyond the measured footprint");
+const fridge=Restaurant.cellCenter(kitchen,3,1);
+assert.strictEqual(Restaurant.canWalk(rooms,fridge.x,fridge.z+.9),false,"large kitchen appliances need measured collision footprints");
 
 const symbols=new Set(rooms.flatMap(room=>room.map).join("").replace(/[.#D]/g,"").split(""));
 for(const symbol of symbols){
@@ -48,6 +52,7 @@ for(const symbol of symbols){
  assert(asset,`missing asset registry entry for ${symbol}`);
  assert(/^restaurant\./.test(asset.assetId),`${symbol} needs a stable restaurant asset ID`);
  assert(Array.isArray(asset.size)&&asset.size.length===3,`${symbol} needs placeholder dimensions`);
+ assert(Array.isArray(asset.collision)&&asset.collision.length===2,`${symbol} needs a measured X/Z collision footprint`);
 }
 for(const symbol of ["T","C","B","H","K","S","F","W","R"]){
  const source=Restaurant.ASSET_REGISTRY[symbol].sourceScene;

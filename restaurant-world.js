@@ -9,17 +9,18 @@
  const KIT_URL=`assets/models/restaurant/kaykit-restaurant-kit.glb?v=${BUILD_VERSION}`;
  const ROOM_FILES={dining:"restaurant-main-level.txt",kitchen:"restaurant-kitchen-level.txt"};
  const WALKABLE=new Set([".","D"]);
+ const PLAYER_RADIUS=.28;
  const ASSET_REGISTRY=Object.freeze({
-  T:{assetId:"restaurant.table.round",sourceScene:"table_round_A",scale:.78,color:0xb87955,size:[1.35,.78,1.35],height:.39},
-  C:{assetId:"restaurant.chair.dining",sourceScene:"chair_A",scale:.88,color:0xd79a78,size:[.72,1.05,.72],height:.525},
-  B:{assetId:"restaurant.booth.single",sourceScene:"chair_stool",scale:1.15,color:0xc75f87,size:[.9,1.15,1.5],height:.575},
-  H:{assetId:"restaurant.host.stand",sourceScene:"menu",scale:1.35,color:0x8f5d45,size:[.9,1.25,.7],height:.625},
-  P:{assetId:"restaurant.plant.potted",color:0x5da56c,size:[.75,1.35,.75],height:.675},
-  K:{assetId:"restaurant.kitchen.prep",sourceScene:"kitchencounter_straight_A_backsplash",color:0xb9c6cf,size:[.92,1,.92],height:.5},
-  S:{assetId:"restaurant.kitchen.stove",sourceScene:"stove_multi_decorated",color:0x555d66,size:[.92,1,.92],height:.5},
-  F:{assetId:"restaurant.kitchen.fridge",sourceScene:"fridge_A_decorated",color:0xdce8ed,size:[.92,2.2,.92],height:1.1},
-  W:{assetId:"restaurant.kitchen.sink",sourceScene:"kitchencounter_sink_backsplash",color:0x76aab8,size:[.92,1,.92],height:.5},
-  R:{assetId:"restaurant.kitchen.rack",sourceScene:"kitchencabinet",color:0x9b765a,size:[.92,1.8,.92],height:.9}
+  T:{assetId:"restaurant.table.round",sourceScene:"table_round_A",scale:.78,collision:[1.17,1.17],color:0xb87955,size:[1.35,.78,1.35],height:.39},
+  C:{assetId:"restaurant.chair.dining",sourceScene:"chair_A",scale:.88,collision:[.34,.36],color:0xd79a78,size:[.72,1.05,.72],height:.525},
+  B:{assetId:"restaurant.booth.single",sourceScene:"chair_stool",scale:1.15,collision:[.44,.44],color:0xc75f87,size:[.9,1.15,1.5],height:.575},
+  H:{assetId:"restaurant.host.stand",sourceScene:"menu",scale:1.35,collision:[.35,.24],color:0x8f5d45,size:[.9,1.25,.7],height:.625},
+  P:{assetId:"restaurant.plant.potted",collision:[.38,.38],color:0x5da56c,size:[.75,1.35,.75],height:.675},
+  K:{assetId:"restaurant.kitchen.prep",sourceScene:"kitchencounter_straight_A_backsplash",collision:[1,1.03],color:0xb9c6cf,size:[.92,1,.92],height:.5},
+  S:{assetId:"restaurant.kitchen.stove",sourceScene:"stove_multi_decorated",collision:[1.1,1.15],color:0x555d66,size:[.92,1,.92],height:.5},
+  F:{assetId:"restaurant.kitchen.fridge",sourceScene:"fridge_A_decorated",collision:[1,1.12],color:0xdce8ed,size:[.92,2.2,.92],height:1.1},
+  W:{assetId:"restaurant.kitchen.sink",sourceScene:"kitchencounter_sink_backsplash",collision:[1,1.03],color:0x76aab8,size:[.92,1,.92],height:.5},
+  R:{assetId:"restaurant.kitchen.rack",sourceScene:"kitchencabinet",collision:[1,.53],color:0x9b765a,size:[.92,1.8,.92],height:.9}
  });
 
  function parseLevel(text){
@@ -46,7 +47,20 @@
   const col=Math.floor((x-room.originX)/room.cell),row=Math.floor((z-room.originZ)/room.cell);
   return room.map[row]?.[col];
  }
- function canWalk(rooms,x,z){const room=roomAt(rooms,x,z);return Boolean(room&&WALKABLE.has(symbolAtWorld(room,x,z)))}
+ function canWalk(rooms,x,z){
+  const room=roomAt(rooms,x,z);if(!room)return false;
+  const centerCol=Math.floor((x-room.originX)/room.cell),centerRow=Math.floor((z-room.originZ)/room.cell);
+  for(let row=centerRow-2;row<=centerRow+2;row++)for(let col=centerCol-2;col<=centerCol+2;col++){
+   const symbol=room.map[row]?.[col];if(!symbol||symbol==="."||symbol==="D")continue;
+   const center=cellCenter(room,col,row);
+   if(symbol==="#"){
+    const half=room.cell/2+PLAYER_RADIUS;if(Math.abs(x-center.x)<half&&Math.abs(z-center.z)<half)return false;continue;
+   }
+   const spec=ASSET_REGISTRY[symbol],transform=assetTransform(room,symbol,col,row,center),half=spec?.collision||[room.cell/2,room.cell/2];
+   if(Math.abs(x-transform.x)<half[0]+PLAYER_RADIUS&&Math.abs(z-transform.z)<half[1]+PLAYER_RADIUS)return false;
+  }
+  return true;
+ }
  function doorwayCells(room){
   const result=[];room.map.forEach((row,r)=>[...row].forEach((symbol,c)=>{if(symbol==="D")result.push(cellCenter(room,c,r))}));return result;
  }
@@ -118,5 +132,5 @@
   loading=Promise.all([loadRooms(fetchImpl),loadKit().then(kit=>({kit,error:""})).catch(error=>({kit:null,error:String(error?.message||error) }))]).then(([rooms,asset])=>runtime=buildRuntime(THREE,scene,rooms,asset.kit,asset.error)).finally(()=>loading=null);return loading;
  }
  function destroy(){if(!runtime)return;const root=runtime.group;root.traverse(object=>{object.geometry?.dispose?.();const list=Array.isArray(object.material)?object.material:[object.material];list.filter(Boolean).forEach(material=>material.dispose?.())});root.parent?.remove(root);runtime=null}
- return {KIT_URL,ROOM_FILES,ASSET_REGISTRY,WALKABLE,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,doorwayCells,validateConnection,sourceScene,assetTransform,buildRuntime,loadRooms,loadKit,ensure,destroy,get current(){return runtime}};
+ return {KIT_URL,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,doorwayCells,validateConnection,sourceScene,assetTransform,buildRuntime,loadRooms,loadKit,ensure,destroy,get current(){return runtime}};
 });
