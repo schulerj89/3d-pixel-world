@@ -24,6 +24,7 @@
  text-shadow:0 2px 0 #101028;
  pointer-events:none;
 }
+.coin-quest-hud[hidden]{display:none}
 .coin-quest-title{min-width:0;color:#9af2ff;font-size:10px;line-height:1.1;letter-spacing:.1em;text-transform:uppercase}
 .coin-quest-timer{color:#ffe06a;font-size:24px;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
 .coin-quest-progress{font-size:13px;line-height:1;letter-spacing:.03em;white-space:nowrap}

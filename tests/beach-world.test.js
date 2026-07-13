@@ -4,8 +4,10 @@ const root=path.join(__dirname,".."),Beach=require("../beach-world.js"),read=fil
 assert.deepStrictEqual(Beach.CITY_FILES,["building_A","building_C","building_E","building_G","road_straight","road_straight_crossing","bench","streetlight","car_hatchback","car_taxi"],"beach must request the audited City Builder subset");
 assert.equal(Beach.NPC_SPECS.length,5,"beach needs five distinct external NPCs");
 assert.equal(new Set(Beach.NPC_SPECS.map(spec=>spec.file)).size,5,"each independently animated NPC must own a unique GLB skeleton");
+assert(Beach.NPC_SPECS.every(spec=>spec.height<=2.6),"Beach NPCs should stay close to the 2.7-unit player height");
 assert(Object.values(Beach.DEBUG_POSES).some(pose=>pose.name==="beach-overview"));
 assert(Object.values(Beach.DEBUG_POSES).some(pose=>pose.name==="beach-water-shore"));
+assert(Object.values(Beach.DEBUG_POSES).some(pose=>pose.name==="beach-token-dash"));
 assert.equal(Object.values(Beach.DEBUG_POSES).filter(pose=>pose.name.includes("full-body")).length,5,"every NPC needs stable full-body screenshot coverage");
 
 let beachBytes=0;
