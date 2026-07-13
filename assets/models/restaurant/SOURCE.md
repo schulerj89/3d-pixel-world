@@ -9,9 +9,11 @@ This directory contains a curated derivative of **KayKit: Restaurant Bits 1.0 FR
 - Downloaded archive SHA-256: `75F75F0A1AE569F3F2348FA7A04CCD45D2F010D419045755C70AE43289B68E4B`
 - Archive root/version: `KayKit_Restaurant_Bits_1.0_FREE`
 
-`kaykit-restaurant-kit.glb` is a curated, optimized derivative containing 31 separately addressable glTF scenes. It is 549,488 bytes with SHA-256 `613A6109FBF3CDAB31B4E52FD5E1C2146F6C187FC4738B099D83960827351ADE`. It contains 17,766 triangles, 20,677 uploaded vertices, 34 meshes/primitives, one material, and one 128x128 WebP gradient atlas. The atlas has an estimated 87,380-byte decoded GPU allocation including mip levels.
+`kaykit-restaurant-kit.glb` is a curated, optimized derivative containing 33 separately addressable glTF scenes. It is 573,880 bytes with SHA-256 `DE5FE7C84A4574D4DC5D72F6B8B8DD762C8B3120828E1D35787BE0344649927F`. It contains 18,706 triangles, 21,628 uploaded vertices, 36 meshes/primitives, one material, and one 128x128 WebP gradient atlas. The atlas has an estimated 87,380-byte decoded GPU allocation including mip levels.
 
 The two added blank variants were verified visually before runtime integration and rebuilt from the official Godot Asset Library repository at commit `153c8a7535b48237854cb54ff6890679f8c574d1`: `stove_multi` is the undecorated four-burner stove, and `kitchentable_A_large` is the undecorated prep table.
+
+The dining-table food pass visually compared the pack's official `contents.png` and `sample.png` contact sheets before integration. The pack has no strawberry model; `food_ingredient_tomato` is its closest small red produce and is arranged in three-piece clusters on plain tables. `food_stew` was also added for meal variety. Both scenes reuse the existing shared atlas, adding no texture or material.
 
 The source pack's 1024x1024 atlas is explicitly designed by the creator to be downsampled to 128x128. The derivative uses `EXT_texture_webp` and `KHR_mesh_quantization`, both supported by the repository's bundled GLTFLoader. No Draco or Meshopt decoder is required.
 
@@ -56,6 +58,8 @@ plate
 bowl
 food_burger
 food_dinner
+food_ingredient_tomato
+food_stew
 ```
 
 Load this GLB once, index `gltf.scenes` by each scene's first/root node name, and clone the chosen scene. Repeated walls, floors, chairs, and tables should share geometry/material or use instancing. Gameplay collision should remain authored with simple boxes; do not derive collision from the visual mesh.
