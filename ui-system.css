@@ -1,0 +1,119 @@
+:root {
+  --game-hud-safe-top: max(8px, env(safe-area-inset-top));
+  --game-hud-safe-left: max(8px, env(safe-area-inset-left));
+  --game-hud-safe-right: max(8px, env(safe-area-inset-right));
+  --game-hud-touch-target: 44px;
+  --game-hud-gap: 4px;
+  --game-hud-radius: 14px;
+  --game-hud-surface: #fffdf4f2;
+  --game-hud-surface-active: #eee7ff;
+  --game-hud-border: #d8c9ff;
+  --game-hud-border-active: #6c3cff;
+  --game-hud-ink: #273a63;
+  --game-hud-focus: #365fc7;
+  --game-hud-shadow: 0 3px 10px #321c5a2e;
+
+  /* Semantic aliases let overlays share one visual language without coupling to HUD markup. */
+  --ui-accent: var(--game-hud-border-active);
+  --ui-surface: var(--game-hud-surface);
+  --ui-border: var(--game-hud-border);
+  --ui-text: var(--game-hud-ink);
+  --ui-focus: var(--game-hud-focus);
+  --ui-radius-md: var(--game-hud-radius);
+  --ui-shadow: var(--game-hud-shadow);
+  --ui-touch-target: var(--game-hud-touch-target);
+}
+
+/* Reusable HUD controls: stable touch sizing, shared surfaces, and keyboard focus. */
+.gameHudButton,
+.gameHudBadge {
+  box-sizing: border-box;
+  min-height: var(--game-hud-touch-target);
+  border: 2px solid var(--game-hud-border);
+  border-radius: var(--game-hud-radius);
+  background: var(--game-hud-surface);
+  color: var(--game-hud-ink);
+  box-shadow: var(--game-hud-shadow);
+  font-weight: 700;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gameHudButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 12px;
+  touch-action: manipulation;
+}
+
+.gameHudBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gameHudButton:hover,
+.gameHudButton[aria-expanded="true"] {
+  border-color: var(--game-hud-border-active);
+  background: var(--game-hud-surface-active);
+}
+
+.gameHudButton:focus-visible {
+  outline: 3px solid var(--game-hud-focus);
+  outline-offset: 2px;
+}
+
+.gameHudButton:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 5px #321c5a38;
+}
+
+/* In short landscape, Menu + House become one compact segmented cluster. */
+@media (orientation: landscape) and (max-height: 820px) {
+  #hudMenuButton.gameHudButton,
+  body.house-mode #housePanelToggle.gameHudButton {
+    display: inline-flex;
+    top: var(--game-hud-safe-top);
+    min-height: var(--game-hud-touch-target);
+    height: var(--game-hud-touch-target);
+    margin: 0;
+    padding: 6px 10px;
+    border-width: 2px;
+    font-size: 15px;
+    box-shadow: var(--game-hud-shadow);
+  }
+
+  #hudMenuButton.gameHudButton--menu {
+    left: var(--game-hud-safe-left);
+    width: 92px;
+    border-radius: var(--game-hud-radius) 6px 6px var(--game-hud-radius);
+  }
+
+  #housePanelToggle.gameHudButton--house {
+    left: calc(var(--game-hud-safe-left) + 92px + var(--game-hud-gap));
+    width: 106px;
+    border-radius: 6px var(--game-hud-radius) var(--game-hud-radius) 6px;
+  }
+
+  #housePanelToggle.gameHudButton--house .gameIcon {
+    width: 24px;
+    height: 24px;
+  }
+
+  #money.gameHudBadge--currency {
+    top: var(--game-hud-safe-top) !important;
+    right: var(--game-hud-safe-right);
+    min-height: var(--game-hud-touch-target);
+    padding: 5px 11px 5px 6px;
+    border-width: 2px;
+    border-color: #ffca45;
+    border-radius: var(--game-hud-radius);
+    font-size: 16px;
+  }
+
+  #money.gameHudBadge--currency .gameIcon {
+    width: 28px;
+    height: 28px;
+  }
+}
