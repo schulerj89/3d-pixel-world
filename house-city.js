@@ -28,7 +28,7 @@
   if(traffic)root.add(traffic.root);
   function canWalk(x,z){const edge=CONFIG.size/2-CONFIG.playerRadius;if(x<-edge||x>edge||z<-edge||z>edge)return false;const p=CONFIG.playerRadius+CONFIG.buildingClearance;return !collisions.some(b=>x>b.minX-p&&x<b.maxX+p&&z>b.minZ-p&&z<b.maxZ+p)}
   function setActive(active){traffic?.setEnabled(active)}
-  function update(dt){traffic?.update(dt)}
+  function update(dt,player,camera){traffic?.update(dt,camera?.position)}
   function debug(){return {size:CONFIG.size,buildingCount:BUILDINGS.length,windowInstances:transforms.length,lampInstances:lampPositions.length,collisionCount:collisions.length,traffic:traffic?.metrics()||null,budgets:{...CONFIG.budgets},estimatedModuleDrawCalls:traffic?75:15,estimatedModuleTriangles:BUILDINGS.length*12+transforms.length*12+lampPositions.length*24+dashCount*12+36+(traffic?1200:0)}}
   function dispose(){traffic?.destroy();root.removeFromParent();resources.forEach(v=>v.dispose());resources.clear()}
   return {group:root,root,config:CONFIG,collisions,exteriorSpawn:{x:0,z:9.5},canWalk,setActive,update,debug,dispose,destroy:dispose};

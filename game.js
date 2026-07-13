@@ -986,7 +986,7 @@ function updatePlayerWalkAnimation(isMoving,dt){
  P.rotation.z=THREE.MathUtils.lerp(P.rotation.z,Math.sin(walk)*.035*walkStrength,easing);
  P.position.y=THREE.MathUtils.lerp(P.position.y,Math.abs(Math.sin(walk))*.06*walkStrength,easing);
 }
-let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);moveCameraControl(dt);let playerMoved=false;if(!window.isPlayerSeated?.()&&Math.abs(vx)+Math.abs(vz)>.08){
+let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);const worldShadows=currentPlace!=="beach";if(sun.castShadow!==worldShadows)sun.castShadow=worldShadows;moveCameraControl(dt);let playerMoved=false;if(!window.isPlayerSeated?.()&&Math.abs(vx)+Math.abs(vz)>.08){
 // Movement is relative to the camera direction.
 const forwardX=-Math.sin(cameraAngle);
 const forwardZ=-Math.cos(cameraAngle);
@@ -1013,6 +1013,7 @@ syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(play
 // Sink the avatar slightly while wading and expose the state for future splash
 // effects. Deep water remains traversable but never lets the avatar leave bounds.
 window.houseWorldApi?.update?.(dt);
+window.beachTownApi?.update?.(dt,currentPlace==="beach",C);
 if(currentPlace==="beach"){
  const wadeDepth=THREE.MathUtils.clamp((BEACH_CONFIG.waterEdgeZ-P.position.z)/5,0,1);
  P.userData.wading=wadeDepth>0;
@@ -1063,15 +1064,17 @@ function destroyForestWorld(){if(forestWorld){forestWorld.destroy();forestWorld=
 const beach=new THREE.Group();beach.name="beach-world";beach.visible=false;S.add(beach);
 // The full destination is roughly 50x50. The surf is part of the playable
 // space, so players can wade well past the foam without leaving the world.
-const BEACH_CONFIG={halfWidth:25,nearZ:25,farZ:-25,waterEdgeZ:-5.5,deepWaterZ:-17,spawn:{x:0,z:15},camera:{angle:.22,height:10.5,distance:15.5}};
+const BEACH_CONFIG={halfWidth:40,nearZ:40,farZ:-40,waterEdgeZ:-5.5,deepWaterZ:-25,spawn:{x:0,z:15},camera:{angle:.22,height:10.5,distance:15.5}};
 const beachSandMaterial=new THREE.MeshStandardMaterial({color:0xf2d38d,roughness:1});
-const beachSand=new THREE.Mesh(new THREE.BoxGeometry(50,.28,30.5),beachSandMaterial);
-beachSand.position.set(0,-.08,9.75);beachSand.receiveShadow=true;beach.add(beachSand);
+const beachSand=new THREE.Mesh(new THREE.BoxGeometry(80,.28,45.5),beachSandMaterial);
+// The large receiver crossed the moving directional-light frustum and produced
+// a dark rectangular edge on tablets. Beach props still carry local shading.
+beachSand.position.set(0,-.08,17.25);beachSand.receiveShadow=false;beach.add(beachSand);
 const beachWaterMaterial=new THREE.MeshBasicMaterial({color:0x39b9d1,transparent:true,opacity:.82});
-const beachWater=new THREE.Mesh(new THREE.PlaneGeometry(50,19.5),beachWaterMaterial);
-beachWater.rotation.x=-Math.PI/2;beachWater.position.set(0,.04,-15.25);beach.add(beachWater);
+const beachWater=new THREE.Mesh(new THREE.PlaneGeometry(80,34.5),beachWaterMaterial);
+beachWater.rotation.x=-Math.PI/2;beachWater.position.set(0,.04,-22.75);beach.add(beachWater);
 const foamMaterial=new THREE.MeshBasicMaterial({color:0xe9ffff,transparent:true,opacity:.88});
-[-5.65,-6.05,-6.55].forEach((z,index)=>{const foam=new THREE.Mesh(new THREE.PlaneGeometry(49-index*.7,.14),foamMaterial);foam.rotation.x=-Math.PI/2;foam.position.set(0,.065,z);beach.add(foam)});
+[-5.65,-6.05,-6.55].forEach((z,index)=>{const foam=new THREE.Mesh(new THREE.PlaneGeometry(79-index*.7,.14),foamMaterial);foam.rotation.x=-Math.PI/2;foam.position.set(0,.065,z);beach.add(foam)});
 const palmPositions=[[-22,-2],[-20,8],[-18,20],[-11,4],[-9,18],[-3,9],[5,20],[9,3],[13,14],[19,5],[22,20],[22,-1]];
 const palmTrunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.18,.28,3.8,7),new THREE.MeshStandardMaterial({color:0x9b6943,roughness:1}),palmPositions.length);
 const palmLeaves=new THREE.InstancedMesh(new THREE.ConeGeometry(1.35,.22,7),new THREE.MeshStandardMaterial({color:0x35a85d,roughness:1,side:THREE.DoubleSide}),palmPositions.length*3);
@@ -1095,24 +1098,27 @@ function beachMesh(geometry,material,x,y,z,parent=beach){const mesh=new THREE.Me
 [-12,-8,8,12].forEach((x,index)=>{const board=beachMesh(new THREE.CapsuleGeometry(.3,1.6,4,8),index%2?beachPropMaterials.pink:beachPropMaterials.blue,x,.8,-4.7);board.rotation.z=.1*(index%2?1:-1)});
 const beachSkinMaterials=[0x8b5a3c,0xc98962,0xf2c6a0].map(color=>new THREE.MeshStandardMaterial({color,roughness:1}));
 const beachWearMaterials=[beachPropMaterials.pink,beachPropMaterials.blue,beachPropMaterials.yellow,new THREE.MeshStandardMaterial({color:0x77d891,roughness:1})];
-function makeBeachNpc({x,z,sitting=false,skin=0,wear=0,turn=0}){
- const npc=new THREE.Group(),skinMat=beachSkinMaterials[skin],wearMat=beachWearMaterials[wear];
- const part=(geometry,material,px,py,pz)=>beachMesh(geometry,material,px,py,pz,npc);
- part(new THREE.BoxGeometry(.72,.85,.42),wearMat,0,sitting?1.03:1.55,0);
- part(new THREE.SphereGeometry(.38,8,6),skinMat,0,sitting?1.72:2.35,0);
- const armY=sitting?1.16:1.5;part(new THREE.BoxGeometry(.2,.72,.2),skinMat,-.48,armY,0);part(new THREE.BoxGeometry(.2,.72,.2),skinMat,.48,armY,0);
- const legY=sitting?.58:.58,legZ=sitting?.34:0;const legRotation=sitting?Math.PI/2:0;
- [-.22,.22].forEach(lx=>{const leg=part(new THREE.BoxGeometry(.23,.85,.25),skinMat,lx,legY,legZ);leg.rotation.x=legRotation});
- if(sitting)part(new THREE.BoxGeometry(1.25,.18,.65),beachPropMaterials.wood,0,.48,-.05);
- npc.position.set(x,0,z);npc.rotation.y=turn;npc.traverse(obj=>{if(obj.isMesh)obj.castShadow=false});beach.add(npc);
-}
-[
+const BEACH_NPCS=[
  {x:-15,z:4.8,sitting:true,skin:1,wear:1,turn:.3},{x:0,z:9.8,sitting:true,skin:2,wear:0,turn:-.5},
  {x:-7,z:-2.8,sitting:false,skin:0,wear:2,turn:2.6},{x:13,z:-2.2,sitting:false,skin:1,wear:3,turn:-2.4},
  {x:-19,z:12,sitting:false,skin:2,wear:0,turn:.8},{x:10,z:19.8,sitting:true,skin:0,wear:3,turn:2.9},
  {x:18,z:8,sitting:false,skin:0,wear:1,turn:-.8},{x:-8,z:16,sitting:true,skin:1,wear:2,turn:2.2},
  {x:4,z:-10,sitting:false,skin:2,wear:3,turn:.2},{x:-15,z:-8,sitting:false,skin:1,wear:0,turn:2.8}
-].forEach(makeBeachNpc);
+];
+const npcBoxGeometry=new THREE.BoxGeometry(1,1,1),npcHeadGeometry=new THREE.SphereGeometry(.38,8,6),npcParentQuaternion=new THREE.Quaternion(),npcLocalQuaternion=new THREE.Quaternion(),npcWorldQuaternion=new THREE.Quaternion(),npcWorldPosition=new THREE.Vector3(),npcPartScale=new THREE.Vector3();
+function beachNpcMatrix(npc,localX,localY,localZ,scaleX,scaleY,scaleZ,rotationX=0){
+ npcParentQuaternion.setFromAxisAngle(new THREE.Vector3(0,1,0),npc.turn);npcLocalQuaternion.setFromAxisAngle(new THREE.Vector3(1,0,0),rotationX);npcWorldQuaternion.copy(npcParentQuaternion).multiply(npcLocalQuaternion);
+ npcWorldPosition.set(localX,localY,localZ).applyQuaternion(npcParentQuaternion).add(new THREE.Vector3(npc.x,0,npc.z));npcPartScale.set(scaleX,scaleY,scaleZ);return beachMatrix.compose(npcWorldPosition,npcWorldQuaternion,npcPartScale);
+}
+function npcInstances(entries,geometry,material,write){if(!entries.length)return;const instances=new THREE.InstancedMesh(geometry,material,entries.length);entries.forEach((entry,index)=>instances.setMatrixAt(index,write(entry)));instances.instanceMatrix.needsUpdate=true;instances.computeBoundingSphere();instances.castShadow=instances.receiveShadow=false;beach.add(instances)}
+beachWearMaterials.forEach((wearMaterial,wear)=>npcInstances(BEACH_NPCS.filter(npc=>npc.wear===wear),npcBoxGeometry,wearMaterial,npc=>beachNpcMatrix(npc,0,npc.sitting?1.03:1.55,0,.72,.85,.42)));
+beachSkinMaterials.forEach((skinMaterial,skin)=>{
+ const people=BEACH_NPCS.filter(npc=>npc.skin===skin);
+ npcInstances(people,npcHeadGeometry,skinMaterial,npc=>beachNpcMatrix(npc,0,npc.sitting?1.72:2.35,0,1,1,1));
+ const limbs=people.flatMap(npc=>[{npc,x:-.48,y:npc.sitting?1.16:1.5,z:0,sx:.2,sy:.72,sz:.2},{npc,x:.48,y:npc.sitting?1.16:1.5,z:0,sx:.2,sy:.72,sz:.2},{npc,x:-.22,y:.58,z:npc.sitting?.34:0,sx:.23,sy:.85,sz:.25,rx:npc.sitting?Math.PI/2:0},{npc,x:.22,y:.58,z:npc.sitting?.34:0,sx:.23,sy:.85,sz:.25,rx:npc.sitting?Math.PI/2:0}]);
+ npcInstances(limbs,npcBoxGeometry,skinMaterial,part=>beachNpcMatrix(part.npc,part.x,part.y,part.z,part.sx,part.sy,part.sz,part.rx||0));
+});
+npcInstances(BEACH_NPCS.filter(npc=>npc.sitting),npcBoxGeometry,beachPropMaterials.wood,npc=>beachNpcMatrix(npc,0,.48,-.05,1.25,.18,.65));
 const beachStructureColliders=[];
 function addBeachStructure(factoryName,x,z){
  const factory=window.beachStructureFactories&&window.beachStructureFactories[factoryName];
@@ -1125,6 +1131,8 @@ function addBeachStructure(factoryName,x,z){
 }
 addBeachStructure("cafe",-14,12);
 addBeachStructure("surfShop",14,12);
+const beachTown=window.createBeachTown?.(THREE)||null;
+if(beachTown){beach.add(beachTown.group);beachStructureColliders.push(...beachTown.collisions);window.beachTownApi=beachTown}
 function canWalkOnBeach(x,z){
  if(x<-BEACH_CONFIG.halfWidth+.55||x>BEACH_CONFIG.halfWidth-.55||z>BEACH_CONFIG.nearZ-.55||z<BEACH_CONFIG.farZ+.55)return false;
  const radius=.3;
