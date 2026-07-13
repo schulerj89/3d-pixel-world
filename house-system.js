@@ -224,7 +224,7 @@ document.getElementById("goForest").onclick=()=>window.runWorldTransition("Growi
 document.getElementById("goCastle").onclick=()=>window.runWorldTransition("Raising the castle gates…","castle",showCastle);
 
 
-let sitting=false,tvIsOn=false,currentChannel="news";
+let sitting=false,seatedFurniture=null,tvIsOn=false,currentChannel="news";
 const houseActionBtn=document.getElementById("houseAction");
 const remotePanelEl=document.getElementById("remotePanel");
 const tvScreenEl=document.getElementById("tvScreen");
@@ -239,24 +239,45 @@ const shows={
 };
 function hasFurniture(kind){return furniture.some(f=>f.userData.kind===kind)}
 function nearFurniture(kind,range=1.8){return furniture.find(f=>f.userData.kind===kind&&Math.hypot(f.position.x-P.position.x,f.position.z-P.position.z)<range)}
+function nearbySeat(range=2.25){
+ return furniture.find(f=>(f.userData.kind==="chair"||f.userData.kind==="sofa")&&f.visible!==false&&Math.hypot(f.position.x-P.position.x,f.position.z-P.position.z)<range);
+}
+function leaveSeat(){
+ if(!sitting)return;
+ const seat=seatedFurniture;
+ sitting=false;seatedFurniture=null;P.userData.seated=false;
+ if(seat){
+  const exitOffset=new THREE.Vector3(0,0,seat.userData.kind==="sofa"?1.35:1.05).applyQuaternion(seat.quaternion);
+  P.position.set(seat.position.x+exitOffset.x,0,seat.position.z+exitOffset.z);
+ }else P.position.y=0;
+}
+function takeSeat(seat){
+ if(!seat)return;
+ const isSofa=seat.userData.kind==="sofa";
+ const seatOffset=new THREE.Vector3(0,0,isSofa ? .08 : .03).applyQuaternion(seat.quaternion);
+ sitting=true;seatedFurniture=seat;P.userData.seated=true;
+ P.position.set(seat.position.x+seatOffset.x,isSofa ? -.35 : -.3,seat.position.z+seatOffset.z);
+ P.rotation.y=seat.rotation.y;
+}
+window.isPlayerSeated=()=>sitting;
+window.leavePlayerSeat=leaveSeat;
 function refreshHouseButtons(){
  const inHouse=currentPlace==="house";
  // Retire the legacy floating badge. Its refresh loop used to fight the
  // newer remote UI hide loop, causing the top-right control to flash.
  openTVRemoteBtn.style.display="none";
  openTVRemoteBtn.hidden=true;
- if(!inHouse||buildingMode){houseActionBtn.style.display="none";return}
- const chair=nearFurniture("chair"),fridge=nearFurniture("fridge"),tv=nearFurniture("tv",2.4);
- if(chair){houseActionBtn.style.display="block";houseActionBtn.textContent=sitting?"🚶 STAND":"🪑 SIT";houseActionBtn.dataset.action="sit"}
- else if(fridge){houseActionBtn.style.display="block";houseActionBtn.textContent="🧊 OPEN FRIDGE";houseActionBtn.dataset.action="fridge"}
- else if(tv){houseActionBtn.style.display="block";houseActionBtn.textContent="TV CONTROLS";houseActionBtn.dataset.action="tv"}
+ if(!inHouse||buildingMode){if(sitting)leaveSeat();houseActionBtn.style.display="none";return}
+ const seat=nearbySeat(),fridge=nearFurniture("fridge"),tv=nearFurniture("tv",2.4);
+ if(sitting||seat){houseActionBtn.style.display="block";houseActionBtn.classList.add("seat-action");houseActionBtn.textContent=sitting?"🚶":"🛋️";houseActionBtn.setAttribute("aria-label",sitting?"Stand up":"Sit down");houseActionBtn.title=sitting?"Stand up":"Sit down";houseActionBtn.dataset.action="sit"}
+ else if(fridge){houseActionBtn.classList.remove("seat-action");houseActionBtn.style.display="block";houseActionBtn.textContent="🧊 OPEN FRIDGE";houseActionBtn.dataset.action="fridge"}
+ else if(tv){houseActionBtn.classList.remove("seat-action");houseActionBtn.style.display="block";houseActionBtn.textContent="TV CONTROLS";houseActionBtn.dataset.action="tv"}
  else houseActionBtn.style.display="none";
 }
 houseActionBtn.onclick=()=>{
  if(houseActionBtn.dataset.action==="sit"){
-  const chair=nearFurniture("chair",2.2);
-  if(!sitting&&chair){sitting=true;P.position.set(chair.position.x,.45,chair.position.z)}
-  else{sitting=false;P.position.z+=1}
+  if(sitting)leaveSeat();
+  else takeSeat(nearbySeat());
  }
  if(houseActionBtn.dataset.action==="fridge")document.getElementById("msg").textContent="Inside: milk, fruit, cake, and juice! 🥛🍓🍰";
  if(houseActionBtn.dataset.action==="tv"){

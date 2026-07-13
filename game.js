@@ -964,6 +964,16 @@ if(perfOverlay){perfOverlay.style.cssText="position:fixed;right:8px;bottom:8px;z
 let walkStrength=0;
 function updatePlayerWalkAnimation(isMoving,dt){
  const easing=1-Math.exp(-dt*14);
+ const seated=Boolean(window.isPlayerSeated?.());
+ if(seated){
+  walkStrength=THREE.MathUtils.lerp(walkStrength,0,easing);
+  playerLeftArm.rotation.x=THREE.MathUtils.lerp(playerLeftArm.rotation.x,0,easing);
+  playerRightArm.rotation.x=THREE.MathUtils.lerp(playerRightArm.rotation.x,0,easing);
+  playerLeftLeg.rotation.x=THREE.MathUtils.lerp(playerLeftLeg.rotation.x,-Math.PI/2,easing);
+  playerRightLeg.rotation.x=THREE.MathUtils.lerp(playerRightLeg.rotation.x,-Math.PI/2,easing);
+  P.rotation.z=THREE.MathUtils.lerp(P.rotation.z,0,easing);
+  return;
+ }
  walkStrength=THREE.MathUtils.lerp(walkStrength,isMoving?1:0,easing);
  if(isMoving)walk+=dt*12;
  const swing=Math.sin(walk)*.55*walkStrength;
@@ -974,7 +984,7 @@ function updatePlayerWalkAnimation(isMoving,dt){
  P.rotation.z=THREE.MathUtils.lerp(P.rotation.z,Math.sin(walk)*.035*walkStrength,easing);
  P.position.y=THREE.MathUtils.lerp(P.position.y,Math.abs(Math.sin(walk))*.06*walkStrength,easing);
 }
-let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);moveCameraControl(dt);let playerMoved=false;if(Math.abs(vx)+Math.abs(vz)>.08){
+let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);moveCameraControl(dt);let playerMoved=false;if(!window.isPlayerSeated?.()&&Math.abs(vx)+Math.abs(vz)>.08){
 // Movement is relative to the camera direction.
 const forwardX=-Math.sin(cameraAngle);
 const forwardZ=-Math.cos(cameraAngle);
