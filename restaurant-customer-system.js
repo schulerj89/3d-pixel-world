@@ -21,8 +21,9 @@
   constructor(options={}){
    this.config={...DEFAULT_CONFIG,...options};this.config.entry=clonePoint(options.entry||DEFAULT_CONFIG.entry);this.config.waitingFaceTarget=clonePoint(options.waitingFaceTarget||DEFAULT_CONFIG.waitingFaceTarget);this.config.exitPath=(options.exitPath||DEFAULT_CONFIG.exitPath).map(clonePoint);
    this.line=options.line||new StraightCustomerLine({anchor:options.lineAnchor||DEFAULT_CONFIG.lineAnchor,direction:options.lineDirection||DEFAULT_CONFIG.lineDirection,spacing:options.lineSpacing||DEFAULT_CONFIG.lineSpacing,maxActive:options.maxActive??DEFAULT_CONFIG.maxActive});
-   this.avatarFactory=typeof options.avatarFactory==="function"?options.avatarFactory:()=>null;this.onEvent=typeof options.onEvent==="function"?options.onEvent:()=>{};this.customers=[];this.pending=[];this.nextId=1;this.disposed=false;
+   this.avatarFactory=typeof options.avatarFactory==="function"?options.avatarFactory:()=>null;this.onEvent=typeof options.onEvent==="function"?options.onEvent:()=>{};this.listeners=new Set();this.customers=[];this.pending=[];this.nextId=1;this.disposed=false;
   }
+  subscribe(listener){if(typeof listener!=="function")throw new Error("Customer listener must be a function");this.listeners.add(listener);return ()=>this.listeners.delete(listener)}
   enqueue(order){
    if(this.disposed||!order||order.id==null)throw new Error("Restaurant customers require an order with an id");
    const normalized={...order,id:String(order.id)};if(this.findByOrder(normalized.id)||this.pending.some(item=>item.id===normalized.id))return false;
@@ -42,11 +43,11 @@
   _beginFade(customer){if(!customer.orderCompleted)throw new Error("A restaurant customer cannot leave before its order is completed");customer.state=CustomerState.FADING;customer.fadeElapsed=0;customer.avatar?.setMotion?.("idle");this._emit("customer:fading",customer)}
   _remove(customer){customer.state=CustomerState.REMOVED;customer.avatar?.dispose?.();this.customers=this.customers.filter(item=>item!==customer);this._emit("customer:left",customer)}
   _drain(){while(this.pending.length&&this.customers.length<this.line.maxActive)this._spawn(this.pending.shift())}
-  _emit(type,customer,order=customer?.order){this.onEvent(Object.freeze({type,customerId:customer?.id||null,orderId:order?.id||null,state:customer?.state||null}))}
+  _emit(type,customer,order=customer?.order){const event=Object.freeze({type,customerId:customer?.id||null,orderId:order?.id||null,state:customer?.state||null});this.onEvent(event);this.listeners.forEach(listener=>listener(event));return event}
   snapshot(){return {maxActive:this.line.maxActive,active:this.customers.map(customer=>({id:customer.id,orderId:customer.order.id,state:customer.state,orderCompleted:customer.orderCompleted,variant:customer.variant,x:+customer.position.x.toFixed(2),z:+customer.position.z.toFixed(2),opacity:customer.state===CustomerState.FADING?+clamp(1-customer.fadeElapsed/this.config.fadeDuration,0,1).toFixed(2):1})),pending:this.pending.map(order=>order.id),line:this.line.snapshot()}}
   debug(){return this.snapshot()}
   reset(){this.pending.length=0;[...this.customers].forEach(customer=>{customer.avatar?.dispose?.();customer.state=CustomerState.REMOVED});this.customers.length=0}
-  dispose(){this.reset();this.disposed=true}
+  dispose(){this.reset();this.listeners.clear();this.disposed=true}
  }
  return Object.freeze({CustomerState,DEFAULT_CONFIG,StraightCustomerLine,RestaurantCustomerSystem});
 });

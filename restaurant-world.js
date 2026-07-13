@@ -15,7 +15,12 @@
  });
  const CASH_DESK=Object.freeze({assetId:"restaurant.front.cash-desk",sourceScene:"kitchencounter_straight_A_backsplash",position:Object.freeze({x:0,y:0,z:15.5}),scale:1,yaw:Math.PI,collision:Object.freeze([1,1.03])});
  const FRONT_ENTRANCE=Object.freeze({assetId:"restaurant.front.entrance",frameAssetId:"restaurant.front.entrance-frame",frameScene:"wall_doorway",doorAssetId:"restaurant.front.door",doorScene:"door_A",position:Object.freeze({x:0,y:0,z:20}),doorOffsetX:-.8,yaw:0,collision:Object.freeze([2,.25])});
- const INITIAL_CUSTOMER_ORDERS=Object.freeze(["strawberry-plate","burger","dinner","strawberry-dessert"].map((productId,index)=>Object.freeze({id:`restaurant-order-${String(index+1).padStart(3,"0")}`,productId})));
+ const INITIAL_CUSTOMER_ORDERS=Object.freeze([
+  Object.freeze({id:"restaurant-order-0001",customerId:"restaurant-guest-001",customerName:"Ari",productId:"strawberry-plate"}),
+  Object.freeze({id:"restaurant-order-0002",customerId:"restaurant-guest-002",customerName:"Bea",productId:"burger-meal"}),
+  Object.freeze({id:"restaurant-order-0003",customerId:"restaurant-guest-003",customerName:"Cal",productId:"dinner-plate"}),
+  Object.freeze({id:"restaurant-order-0004",customerId:"restaurant-guest-004",customerName:"Dee",productId:"sweet-treat"})
+ ]);
  const KITCHEN_FOOD_COUNTER=Object.freeze({
   assetId:"restaurant.kitchen.food-counter",sourceScene:"kitchentable_A_large",position:Object.freeze({x:-11,y:0,z:-34.5}),yaw:Math.PI/2,collision:Object.freeze([1,1.5]),
   food:Object.freeze([Object.freeze({assetId:"restaurant.kitchen.food.burger",sourceScene:"food_burger",x:-.6,y:1.04,z:0,scale:.55}),Object.freeze({assetId:"restaurant.kitchen.food.dinner",sourceScene:"food_dinner",x:.6,y:1.04,z:0,scale:.55})]),
@@ -140,6 +145,13 @@
  function sourceScene(kit,name){return kit?.scenes?.find(scene=>scene.children?.[0]?.name===name)||null}
  const WALL_FIXTURES=new Set(["S","F","W","R"]);
  function firstMesh(root){let mesh=null;root?.traverse?.(object=>{if(!mesh&&object.isMesh)mesh=object});return mesh}
+ function cloneSkinnedModel(source){
+  const cloned=source?.clone?.(true);if(!cloned||!source?.traverse||!cloned.traverse)return cloned;
+  const sourceByClone=new Map(),cloneBySource=new Map();
+  const pair=(original,copy)=>{sourceByClone.set(copy,original);cloneBySource.set(original,copy);for(let index=0;index<original.children.length;index++)pair(original.children[index],copy.children[index])};pair(source,cloned);
+  cloned.traverse(node=>{if(!node.isSkinnedMesh)return;const original=sourceByClone.get(node);if(!original?.skeleton)return;node.skeleton=original.skeleton.clone();node.bindMatrix.copy(original.bindMatrix);node.skeleton.bones=original.skeleton.bones.map(bone=>cloneBySource.get(bone));node.bind(node.skeleton,node.bindMatrix)});
+  return cloned;
+ }
  function buildKitchenFloor(THREE,room,kit,matrix){
   const floorGroup=new THREE.Group();floorGroup.name="restaurant-kitchen-checkerboard";
   const prototype=sourceScene(kit,KITCHEN_FLOOR.sourceScene),source=firstMesh(prototype);
@@ -240,11 +252,16 @@
   if(typeof require==="function")try{return require("./restaurant-customer-system.js")}catch(_error){return null}
   return null;
  }
+ function orderIntegrationApi(){
+  if(globalThis.RestaurantOrderIntegration)return globalThis.RestaurantOrderIntegration;
+  if(typeof require==="function")try{return require("./restaurant-order-integration.js")}catch(_error){return null}
+  return null;
+ }
  function createCustomerAvatarFactory(THREE,parent,npcAsset){
   const spec=EXTRA_ASSETS.cashierMerchant,colors=[0x68a7d8,0xd8799b,0x7cb66d,0xd39b54];
   return ({id,order,variant})=>{
-   const root=npcAsset?.scene?.clone?.(true)||buildCashierFallback(THREE,{...spec,assetId:id,position:{x:0,y:0,z:0},yaw:0});root.name=id;root.scale.setScalar?.(spec.scale*.96);root.userData={...root.userData,assetId:id,sourceAssetId:spec.assetId,orderId:String(order.id),costumeVariant:variant,placeholder:!npcAsset?.scene};parent.add(root);
-   const materials=[];root.traverse?.(object=>{if(!object.isMesh)return;const source=Array.isArray(object.material)?object.material:[object.material];const variants=source.map(material=>{const clone=material?.clone?.()||material;if(clone?.color?.lerp)clone.color.lerp(new THREE.Color(colors[variant%colors.length]),.22);if(clone){clone.transparent=true;materials.push(clone)}return clone});object.material=Array.isArray(object.material)?variants:variants[0];object.castShadow=object.receiveShadow=true});
+   const root=cloneSkinnedModel(npcAsset?.scene)||buildCashierFallback(THREE,{...spec,assetId:id,position:{x:0,y:0,z:0},yaw:0});root.name=id;root.scale.setScalar?.(spec.scale*.96);root.userData={...root.userData,assetId:id,sourceAssetId:spec.assetId,orderId:String(order.id),costumeVariant:variant,placeholder:!npcAsset?.scene};parent.add(root);
+   const materials=[];root.traverse?.(object=>{if(!object.isMesh)return;const costumePart=/^(bottes|chemise|pants|hat)$/i.test(object.name),source=Array.isArray(object.material)?object.material:[object.material];const variants=source.map(material=>{const clone=material?.clone?.()||material;if(costumePart&&clone?.color?.lerp)clone.color.lerp(new THREE.Color(colors[variant%colors.length]),.72);if(clone){clone.transparent=true;materials.push(clone)}return clone});object.material=Array.isArray(object.material)?variants:variants[0];object.castShadow=object.receiveShadow=true});
    const clips={idle:npcAsset?.animations?.find(clip=>clip.name===spec.idleClip),walk:npcAsset?.animations?.find(clip=>clip.name===spec.walkClip)},mixer=npcAsset?.scene&&THREE.AnimationMixer?new THREE.AnimationMixer(root):null,actions={},state={motion:null};
    const setMotion=motion=>{if(state.motion===motion)return;const clip=clips[motion]||clips.idle;if(!mixer||!clip){state.motion=motion;return}const next=actions[motion]||(actions[motion]=mixer.clipAction(clip));Object.values(actions).forEach(action=>{if(action!==next)action.fadeOut?.(.16)});next.reset?.().fadeIn?.(.16).play?.();state.motion=motion};
    return {root,setPosition:(x,z)=>root.position.set(x,0,z),faceDirection:(x,z)=>{root.rotation.y=Math.atan2(x,z)},setMotion,setOpacity:value=>materials.forEach(material=>{material.opacity=value}),update:dt=>mixer?.update(dt),dispose:()=>{mixer?.stopAllAction?.();parent.remove(root);materials.forEach(material=>material?.dispose?.())}};
@@ -300,7 +317,7 @@
     const register=new THREE.Mesh(new THREE.BoxGeometry(.7,.5,.55),new THREE.MeshStandardMaterial({color:0x303840,roughness:.6}));register.position.set(spec.position.x,spec.position.y+.25,spec.position.z);register.userData={assetId:spec.assetId,placeholder:true};front.add(register);
    }
   }
-  const cashierSpec=EXTRA_ASSETS.cashierMerchant,cashierAsset=extras.cashierMerchant,cashier=cashierAsset?.scene?.clone?.(true)||buildCashierFallback(THREE,cashierSpec);
+  const cashierSpec=EXTRA_ASSETS.cashierMerchant,cashierAsset=extras.cashierMerchant,cashier=cloneSkinnedModel(cashierAsset?.scene)||buildCashierFallback(THREE,cashierSpec);
   if(cashierAsset?.scene){cashier.name=cashierSpec.assetId;cashier.position.set(cashierSpec.position.x,cashierSpec.position.y,cashierSpec.position.z);cashier.rotation.y=cashierSpec.yaw;cashier.scale.setScalar(cashierSpec.scale);cashier.userData={assetId:cashierSpec.assetId,url:cashierSpec.url,placeholder:false,idleClip:cashierSpec.idleClip};cashier.traverse(object=>{if(object.isMesh){object.castShadow=object.receiveShadow=true}});const clip=cashierAsset.animations?.find(animation=>animation.name===cashierSpec.idleClip);if(clip&&THREE.AnimationMixer){const mixer=new THREE.AnimationMixer(cashier);mixer.clipAction(clip).play();mixers.push(mixer)}loadedAssetIds.push(cashierSpec.assetId)}
   front.add(cashier);
   const entrance=new THREE.Group();entrance.name=FRONT_ENTRANCE.assetId;
@@ -346,16 +363,12 @@
    batch.userData={assetId:spec.assetId,symbol,placeholder:true,instanceCount:placements.length};group.add(batch);
   }
   const diningTableFood=addDiningTableFood(THREE,group,kit,loadedAssetIds),foodCounter=addKitchenFoodCounter(THREE,group,kit,loadedAssetIds);addFrontArea(THREE,group,kit,extras,loadedAssetIds,mixers);
-  const CustomerSystem=customerSystemApi()?.RestaurantCustomerSystem,customerSystem=CustomerSystem?new CustomerSystem({maxActive:4,waitingFaceTarget:EXTRA_ASSETS.cashRegister.position,avatarFactory:createCustomerAvatarFactory(THREE,group,extras.cashierMerchant)}):null,eventDisposers=[];
-  INITIAL_CUSTOMER_ORDERS.forEach(order=>customerSystem?.enqueue(order));
-  if(customerSystem&&typeof globalThis.addEventListener==="function"){
-   const added=event=>{const detail=event.detail||{},order=detail.order||detail.customerOrder?.order||detail;if(order?.id!=null)customerSystem.enqueue(order)};
-   const completed=event=>{const detail=event.detail||{},orderId=detail.orderId||detail.order?.id||detail.customerOrder?.order?.id;if(orderId!=null)customerSystem.completeOrder(orderId)};
-   globalThis.addEventListener("restaurant-order-added",added);globalThis.addEventListener("restaurant-order-completed",completed);eventDisposers.push(()=>globalThis.removeEventListener("restaurant-order-added",added),()=>globalThis.removeEventListener("restaurant-order-completed",completed));
-  }
+  const CustomerSystem=customerSystemApi()?.RestaurantCustomerSystem,customerSystem=CustomerSystem?new CustomerSystem({maxActive:4,waitingFaceTarget:EXTRA_ASSETS.cashRegister.position,avatarFactory:createCustomerAvatarFactory(THREE,group,extras.cashierMerchant)}):null;
+  const Bridge=orderIntegrationApi()?.RestaurantOrderQueueBridge,orderBridge=Bridge&&customerSystem&&globalThis.restaurantOrders?new Bridge({orders:globalThis.restaurantOrders,customers:customerSystem,maxActive:4}):null;
+  if(orderBridge)orderBridge.start();else INITIAL_CUSTOMER_ORDERS.forEach(order=>customerSystem?.enqueue(order));
   const urls=[KIT_URL,...Object.values(EXTRA_ASSETS).map(spec=>spec.url)],externalReady=Object.keys(EXTRA_ASSETS).every(key=>extras[key]?.scene),entranceReady=sourceScene(kit,FRONT_ENTRANCE.frameScene)&&sourceScene(kit,FRONT_ENTRANCE.doorScene);
   const totalAssetBytes=KIT_BYTES+Object.values(EXTRA_ASSETS).reduce((sum,spec)=>sum+(spec.bytes||0),0),proximity={markerId:KITCHEN_FOOD_COUNTER.marker.id,range:KITCHEN_FOOD_COUNTER.marker.range,active:false,action:null};
-  group.userData={destination:"restaurant",rooms:rooms.map(room=>({id:room.room,width:room.width,depth:room.depth,layoutFile:ROOM_FILES[room.room]})),assetRegistry:ASSET_REGISTRY,assets:{url:KIT_URL,urls,status:kit&&externalReady&&entranceReady?"ready":"fallback",loadedAssetIds,totalBytes:totalAssetBytes,error:assetError},floor:{kitchen:KITCHEN_FLOOR},diningFood:diningTableFood.userData,npcs:{count:1+(customerSystem?.customers?.length||0),cashier:{assetId:EXTRA_ASSETS.cashierMerchant.assetId,idleClip:EXTRA_ASSETS.cashierMerchant.idleClip,animated:mixers.length===1},customerQueue:customerSystem?.debug?.()||null},proximity,orders:{controller:"RestaurantCustomerSystem",completionMethod:"completeOrder(orderId)",maxActive:4},hud:false};
+  group.userData={destination:"restaurant",rooms:rooms.map(room=>({id:room.room,width:room.width,depth:room.depth,layoutFile:ROOM_FILES[room.room]})),assetRegistry:ASSET_REGISTRY,assets:{url:KIT_URL,urls,status:kit&&externalReady&&entranceReady?"ready":"fallback",loadedAssetIds,totalBytes:totalAssetBytes,error:assetError},floor:{kitchen:KITCHEN_FLOOR},diningFood:diningTableFood.userData,npcs:{count:1+(customerSystem?.customers?.length||0),cashier:{assetId:EXTRA_ASSETS.cashierMerchant.assetId,idleClip:EXTRA_ASSETS.cashierMerchant.idleClip,animated:mixers.length===1},customerQueue:customerSystem?.debug?.()||null},proximity,orders:{controller:orderBridge?"RestaurantOrderQueueBridge":"RestaurantCustomerSystem",completionMethod:"completeOrder(orderId)",maxActive:4,active:orderBridge?.debug?.().orders.active.length??4},hud:Boolean(orderBridge)};
   scene.add(group);
   const spawns=Object.fromEntries(rooms.map(room=>[room.room,cellCenter(room,room.spawnCol,room.spawnRow)]));
   const cameraPoses={
@@ -372,7 +385,7 @@
    restaurantFoodTables:{sceneId:"dining",name:"restaurant-food-tables",target:{x:.5,z:-9.5},angle:0,height:7.5,distance:12},
    kitchenFoodCounter:{sceneId:"kitchen",name:"kitchen-food-counter",target:{x:-8.6,z:-34.5},angle:Math.PI/2,height:5.8,distance:7}
    };
-  return {group,rooms,spawns,spawn:spawns.dining,camera:{angle:.35,height:8.5,distance:8.8},cameraPoses,debugViews:DEBUG_VIEWS,floorSurfaceY:KITCHEN_FLOOR.surfaceY,customerSystem,enqueueOrder:order=>customerSystem?.enqueue(order)??false,completeOrder:orderId=>customerSystem?.completeOrder(orderId)??false,canWalk:(x,z)=>canWalk(rooms,x,z),update(dt,playerPosition){mixers.forEach(mixer=>mixer.update(dt));customerSystem?.update(dt);group.userData.npcs.customerQueue=customerSystem?.debug?.()||null;group.userData.npcs.count=1+(customerSystem?.customers?.length||0);const active=Boolean(playerPosition)&&Math.hypot(playerPosition.x-KITCHEN_FOOD_COUNTER.position.x,playerPosition.z-KITCHEN_FOOD_COUNTER.position.z)<=KITCHEN_FOOD_COUNTER.marker.range;foodCounter.marker.visible=active;proximity.active=active;if(globalThis.document?.body)document.body.dataset.restaurantProximityIcon=active?proximity.markerId:"";return active},dispose(){eventDisposers.forEach(dispose=>dispose());customerSystem?.dispose()}};
+  return {group,rooms,spawns,spawn:spawns.dining,camera:{angle:.35,height:8.5,distance:8.8},cameraPoses,debugViews:DEBUG_VIEWS,floorSurfaceY:KITCHEN_FLOOR.surfaceY,customerSystem,orderBridge,enqueueOrder:order=>customerSystem?.enqueue(order)??false,completeOrder:orderId=>customerSystem?.completeOrder(orderId)??false,canWalk:(x,z)=>canWalk(rooms,x,z),update(dt,playerPosition){mixers.forEach(mixer=>mixer.update(dt));customerSystem?.update(dt);group.userData.npcs.customerQueue=customerSystem?.debug?.()||null;group.userData.npcs.count=1+(customerSystem?.customers?.length||0);if(orderBridge)group.userData.orders.active=orderBridge.debug().orders.active.length;const active=Boolean(playerPosition)&&Math.hypot(playerPosition.x-KITCHEN_FOOD_COUNTER.position.x,playerPosition.z-KITCHEN_FOOD_COUNTER.position.z)<=KITCHEN_FOOD_COUNTER.marker.range;foodCounter.marker.visible=active;proximity.active=active;if(globalThis.document?.body)document.body.dataset.restaurantProximityIcon=active?proximity.markerId:"";return active},dispose(){orderBridge?.dispose();customerSystem?.dispose()}};
  }
  async function loadRooms(fetchImpl=globalThis.fetch){
   if(typeof fetchImpl!=="function")throw new Error("Restaurant layouts require fetch");
@@ -402,5 +415,5 @@
   return {geometries:geometries.size,materials:materials.size,textures:textures.size};
  }
  function destroy(){if(!runtime)return;const root=runtime.group;runtime.dispose?.();disposeRuntimeResources(root);root.parent?.remove(root);runtime=null}
- return {KIT_URL,KIT_BYTES,BACKGROUND_COLOR,EXTRA_ASSETS,CASH_DESK,FRONT_ENTRANCE,INITIAL_CUSTOMER_ORDERS,KITCHEN_FOOD_COUNTER,DINING_TABLE_FOOD,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,WALL,KITCHEN_FLOOR,DEBUG_VIEWS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,wallCellCollision,doorwayCells,validateConnection,sourceScene,firstMesh,buildKitchenFloor,wallBoundaryLines,wallSegments,buildWalls,assetTransform,buildCashierFallback,customerSystemApi,createCustomerAvatarFactory,createProximityIcon,addKitchenFoodCounter,addDiningTableFood,addFrontArea,buildRuntime,loadRooms,loadKit,loadExtraAssets,disposeRuntimeResources,ensure,destroy,get current(){return runtime}};
+ return {KIT_URL,KIT_BYTES,BACKGROUND_COLOR,EXTRA_ASSETS,CASH_DESK,FRONT_ENTRANCE,INITIAL_CUSTOMER_ORDERS,KITCHEN_FOOD_COUNTER,DINING_TABLE_FOOD,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,WALL,KITCHEN_FLOOR,DEBUG_VIEWS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,wallCellCollision,doorwayCells,validateConnection,sourceScene,firstMesh,cloneSkinnedModel,buildKitchenFloor,wallBoundaryLines,wallSegments,buildWalls,assetTransform,buildCashierFallback,customerSystemApi,orderIntegrationApi,createCustomerAvatarFactory,createProximityIcon,addKitchenFoodCounter,addDiningTableFood,addFrontArea,buildRuntime,loadRooms,loadKit,loadExtraAssets,disposeRuntimeResources,ensure,destroy,get current(){return runtime}};
 });
