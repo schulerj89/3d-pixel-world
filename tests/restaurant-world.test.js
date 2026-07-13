@@ -38,6 +38,17 @@ assert(Restaurant.canWalk(rooms,0,-20.01),"doorway must cross the shared room bo
 assert.strictEqual(Restaurant.canWalk(rooms,-19.5,0),false,"wall cells must collide");
 assert.strictEqual(Restaurant.canWalk(rooms,-12.6,-30),false,"outside both rooms must collide");
 
+const kitchenSpawn=Restaurant.cellCenter(kitchen,kitchen.spawnCol,kitchen.spawnRow),step=.5,queue=[[diningSpawn.x,diningSpawn.z]],visited=new Set([`${diningSpawn.x},${diningSpawn.z}`]);
+let connected=false;
+for(let index=0;index<queue.length&&!connected;index++){
+ const [x,z]=queue[index];if(Math.hypot(x-kitchenSpawn.x,z-kitchenSpawn.z)<=step){connected=true;break}
+ for(const [dx,dz] of [[step,0],[-step,0],[0,step],[0,-step]]){
+  const nx=x+dx,nz=z+dz,key=`${nx},${nz}`;
+  if(!visited.has(key)&&Restaurant.canWalk(rooms,nx,nz)){visited.add(key);queue.push([nx,nz])}
+ }
+}
+assert(connected,"the dining spawn must have a continuous collision-safe route into the kitchen");
+
 const table=Restaurant.cellCenter(dining,8,8);
 assert.strictEqual(Restaurant.symbolAtWorld(dining,table.x,table.z),"T");
 assert.strictEqual(Restaurant.canWalk(rooms,table.x,table.z),false,"placeholder fixtures must collide");
