@@ -7,6 +7,22 @@
   };
   let sourceTextPromise=null;
 
+  function readBounds(geometry){
+    geometry.computeBoundingBox();
+    const box=geometry.boundingBox;
+    if(!box?.min||!box?.max)throw new Error("Alien geometry did not produce a bounding box");
+    return {
+      min:{x:box.min.x,y:box.min.y,z:box.min.z},
+      max:{x:box.max.x,y:box.max.y,z:box.max.z},
+      size:{x:box.max.x-box.min.x,y:box.max.y-box.min.y,z:box.max.z-box.min.z}
+    };
+  }
+
+  function groundedY(bounds,scale=1,surfaceY=0){
+    if(!bounds?.min||!Number.isFinite(bounds.min.y))throw new Error("Alien bounds are required for grounding");
+    return surfaceY-bounds.min.y*scale;
+  }
+
   function parseAlienObj(THREE,text){
     const vertices=[],normals=[],positions=[],normalData=[],colors=[];
     let currentColor=MATERIAL_COLORS.Main;
@@ -36,7 +52,7 @@
     geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));
     geometry.setAttribute("normal",new THREE.Float32BufferAttribute(normalData,3));
     geometry.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));
-    geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    readBounds(geometry);geometry.computeBoundingSphere();
     return geometry;
   }
 
@@ -51,10 +67,12 @@
   const api={
     source:{name:"Animated Alien Pack",author:"Quaternius",license:"CC0-1.0",url:"https://quaternius.com/packs/animatedalien.html"},
     parse:parseAlienObj,
+    readBounds,
+    groundedY,
     async load(THREE,url=DEFAULT_URL){
       const geometry=parseAlienObj(THREE,await fetchSource(url));
       const material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.72,metalness:.04});
-      return {geometry,material,dispose(){geometry.dispose();material.dispose()}};
+      return {geometry,material,bounds:readBounds(geometry),dispose(){geometry.dispose();material.dispose()}};
     }
   };
   root.QuaterniusAlienAsset=api;

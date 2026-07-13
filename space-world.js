@@ -69,13 +69,20 @@
       window.QuaterniusAlienAsset.load(THREE).then(asset=>{
         if(disposed){asset.dispose();return}
         alienAsset=asset;
-        alienFallbacks.forEach(({visual,sitting})=>{
+        const grounding=[];
+        alienFallbacks.forEach(({visual,sitting},index)=>{
           visual.clear();const model=new THREE.Mesh(asset.geometry,asset.material);
-          const modelScale=sitting?.72:.9;model.scale.setScalar(modelScale);model.position.y=sitting?.44:0;
+          const modelScale=sitting?.72:.9,surfaceY=sitting?.49:0;
+          model.scale.setScalar(modelScale);
+          model.position.y=window.QuaterniusAlienAsset.groundedY(asset.bounds,modelScale,surfaceY);
+          model.userData.grounding={surfaceY,modelMinY:asset.bounds.min.y,scale:modelScale};
           model.castShadow=model.receiveShadow=false;visual.add(model)
+          grounding.push({index,sitting:!!sitting,surfaceY,worldBottomY:model.position.y+asset.bounds.min.y*modelScale})
         });
         group.userData.alienAsset.status="loaded";
         group.userData.alienAsset.instances=alienFallbacks.length;
+        group.userData.alienAsset.bounds=asset.bounds;
+        group.userData.alienAsset.grounding=grounding;
       }).catch(error=>{if(!disposed){group.userData.alienAsset.status="fallback-error";console.warn("Using primitive alien fallback",error)}})
     }
     const structures=window.spaceStructureFactory?window.spaceStructureFactory(THREE):null;
