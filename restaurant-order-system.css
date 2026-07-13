@@ -1,0 +1,11 @@
+.restaurantOrderMenu{display:none;position:fixed;top:max(64px,calc(env(safe-area-inset-top) + 54px));right:max(12px,env(safe-area-inset-right));z-index:24;width:min(260px,calc(100vw - 24px));color:#2d2440;font:600 14px/1.25 Arial,sans-serif;filter:drop-shadow(0 5px 12px #2c164033)}
+body.restaurant-mode .restaurantOrderMenu{display:block}
+body.restaurant-mode #money{display:flex!important}
+.restaurantOrderMenu__toggle{display:block;width:100%;min-height:44px;padding:9px 13px;border:2px solid #7551a8;border-radius:14px;background:#fffdf4;color:#2d2440;font:700 15px Arial,sans-serif;text-align:left;cursor:pointer}
+.restaurantOrderMenu__toggle:focus-visible,.restaurantOrderMenu__make:focus-visible{outline:3px solid #ffd34e;outline-offset:2px}
+.restaurantOrderMenu__list{margin-top:6px;padding:7px;border:2px solid #d5c4ec;border-radius:13px;background:#fffdf4f2;backdrop-filter:blur(5px)}
+.restaurantOrderMenu__order{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px 8px;min-height:30px;padding:6px;border-bottom:1px solid #e7def2}
+.restaurantOrderMenu__order:last-child{border-bottom:0}.restaurantOrderMenu__order strong{color:#267346}
+.restaurantOrderMenu__make{grid-column:1/-1;min-height:34px;border:1px solid #b69bd7;border-radius:9px;background:#eee5fb;color:#392a51;font-weight:700;cursor:pointer}
+.restaurantOrderMenu__empty{margin:3px 6px;color:#71677e;font-weight:500}.restaurantOrderMenu.is-collapsed{width:154px}
+@media (max-height:480px){.restaurantOrderMenu{top:max(58px,calc(env(safe-area-inset-top) + 48px));width:224px}.restaurantOrderMenu__list{max-height:190px;overflow:auto}}
