@@ -271,7 +271,7 @@ function showBeach(){
 async function showSpace(){
   destroyCityWorld();
  if(castle)castle.visible=false;
- const world=ensureSpaceWorld();await world.ready;currentPlace="space";P.visible=true;
+ const world=ensureSpaceWorld();await world.ready;ensureSpaceInteractionRuntime(world);currentPlace="space";P.visible=true;
  document.body.classList.add("space-mode");document.body.classList.remove("restaurant-mode","bakery-mode","house-mode","beach-mode","city-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(world.background);startPage.style.display="none";
  setBakeryVisible(false);house.visible=false;beach.visible=false;world.group.visible=true;
@@ -474,6 +474,117 @@ window.objectActions=window.createObjectActionSystem({
  getWorld:()=>currentPlace,
  isBuildMode:()=>buildingMode
 });
+const SPACE_COIN_POSITIONS=Object.freeze([
+ Object.freeze({x:-10,y:0,z:-2}),Object.freeze({x:-6,y:0,z:2}),Object.freeze({x:-2,y:0,z:6}),
+ Object.freeze({x:2,y:0,z:2}),Object.freeze({x:6,y:0,z:-2}),Object.freeze({x:2,y:0,z:-8})
+]);
+let spaceInteractionRuntime=null;
+function createSpaceConversationCamera(){
+ const tween=window.createThreeConversationCameraAdapter({THREE,camera:C,duration:650});
+ return {
+  capture(){
+   const saved=tween.capture();saved.orbit={followCamera,cameraAngle,cameraHeight,cameraDistance};saved.playerVisible=P.visible;followCamera=false;P.visible=false;return saved;
+  },
+  focus:(target,config)=>tween.focus(target,config),
+  restore(saved,detail){
+   const instant=detail?.reason==="world-exit",destination=Object.assign({},saved,{duration:instant?0:650});
+   return Promise.resolve(tween.restore(destination)).finally(()=>{
+    if(saved?.orbit){cameraAngle=saved.orbit.cameraAngle;cameraHeight=saved.orbit.cameraHeight;cameraDistance=saved.orbit.cameraDistance;followCamera=saved.orbit.followCamera}
+    if(saved&&typeof saved.playerVisible==="boolean")P.visible=saved.playerVisible;
+   });
+  }
+ };
+}
+function questConversationDefinition(quest){
+ const state=()=>quest.controller.snapshot();
+ return {
+  id:"space-guide-nova",speaker:"Nova",prompt:"Talk to Nova",range:4.5,priority:30,
+  enabled:()=>currentPlace==="space",camera:{distance:3.7,height:2.1,targetHeight:.55,duration:650},start:"briefing",
+  nodes:{briefing:{
+   text:()=>{
+    const mission=state();
+    if(mission.phase==="active")return `You have ${mission.collectedCount} of ${mission.count} star coins. ${Math.ceil(mission.remainingMs/1000)} seconds remain.`;
+    if(mission.phase==="failed")return "The beacon window closed. I can reset the star coins if you want another run.";
+    if(mission.phase==="success")return "Perfect route! The six beacons are stable, and your $10 reward has been transferred.";
+    return "Six star coins broke away from our beacon grid. Collect them before the 30-second signal window closes and I will pay you $10.";
+   },
+   actions:[
+    {id:"accept",label:"Start the coin sprint",action:"start-coin-task",end:true,when:()=>state().phase==="idle"},
+    {id:"later",label:"Maybe later",end:true,when:()=>state().phase==="idle"},
+    {id:"status",label:"Back to the hunt",end:true,when:()=>state().phase==="active"},
+    {id:"retry",label:"Retry the mission",action:"retry-coin-task",end:true,when:()=>state().phase==="failed"},
+    {id:"leave-failed",label:"Not yet",end:true,when:()=>state().phase==="failed"},
+    {id:"thanks",label:"Thanks, Nova",end:true,when:()=>state().phase==="success"}
+   ]
+  }}
+ };
+}
+function ensureSpaceInteractionRuntime(world){
+ if(spaceInteractionRuntime?.world===world)return spaceInteractionRuntime;
+ if(spaceInteractionRuntime)destroySpaceInteractionRuntime();
+ const view=window.createConversationDOMView({root:document.body}),camera=createSpaceConversationCamera();
+ const quest=window.CoinQuestSystem.createCoinQuestSystem({
+  THREE,scene:world.group,loader:new window.ThreeGLTFLoader.GLTFLoader(),getPlayerPosition:()=>P.position,
+  onReward:value=>window.gameEconomy.add(value,"space-coin-sprint"),showRetryButton:false,
+  getRenderInfo:()=>({calls:R.info.render.calls,triangles:R.info.render.triangles,geometries:R.info.memory.geometries,textures:R.info.memory.textures}),
+  config:{id:"space-coin-sprint",title:"Cosmic Coin Sprint",count:6,timeLimitSeconds:30,reward:10,positions:SPACE_COIN_POSITIONS}
+ });
+ let pendingQuestStart=null;
+ const conversation=window.createConversationSystem({
+  view,camera,scratchPosition:new THREE.Vector3(),
+  runAction:action=>{
+   if(action.action==="start-coin-task"){pendingQuestStart="start";return {end:true}}
+   if(action.action==="retry-coin-task"){pendingQuestStart="retry";return {end:true}}
+   return typeof action.run==="function"?action.run():undefined;
+  }
+ });
+ const questGiver=world.aliens[2]||world.aliens[0];
+ questGiver.userData.npcName="Nova";questGiver.userData.interactionType="quest-giver";
+ conversation.register(questGiver,questConversationDefinition(quest));
+ const names=["Zed","Mori","Pip","Orbi","Luma"];
+ world.aliens.forEach((alien,index)=>{
+  if(alien===questGiver)return;const name=names[index]||`Explorer ${index+1}`;alien.userData.npcName=name;alien.userData.interactionType="npc";
+  conversation.register(alien,{id:`space-alien-${index}`,speaker:name,prompt:`Talk to ${name}`,range:4,enabled:()=>currentPlace==="space",camera:{distance:3.5,height:2,targetHeight:.55,duration:650},nodes:{hello:{text:"The road lights lead back to the launch pads. Nova is tracking a beacon problem near the center crossing.",actions:[{id:"bye",label:"Safe travels",end:true}]}}});
+ });
+ const cargo=world.findObject("space.cargo.stack-a");
+ if(cargo){
+  cargo.userData.interactionType="object";
+  conversation.register(cargo,{id:"space-cargo-manifest",speaker:"Cargo Stack C-14",prompt:"Inspect cargo",range:4.2,enabled:()=>currentPlace==="space",camera:{distance:4.4,height:2.4,duration:650},nodes:{
+   sealed:{text:"The container is sealed. Its status light is waiting for a manifest check.",actions:[{id:"scan",label:"Run manifest scan",next:"manifest"},{id:"leave",label:"Leave it sealed",end:true}]},
+   manifest:{text:"Manifest verified: solar couplers, rover cells, and six empty beacon sockets.",actions:[{id:"close",label:"Close manifest",end:true}]}
+  }});
+ }
+ const unsubscribeConversation=conversation.subscribe(event=>{
+  document.body.classList.toggle("conversation-active",event.snapshot.state!==conversation.STATES.IDLE);
+  if(event.type==="end"&&event.detail?.phase==="complete"&&pendingQuestStart){const action=pendingQuestStart;pendingQuestStart=null;if(action==="retry")quest.retry(performance.now());else quest.start(performance.now())}
+ });
+ const unsubscribeQuest=quest.subscribe(event=>{
+  const state=event.snapshot;
+  if(event.type==="coin:collect")document.getElementById("msg").textContent=`Star coin collected: ${event.collectedCount} / ${state.count}`;
+  if(event.type==="quest:success")document.getElementById("msg").textContent=`Mission complete! You earned $${event.reward}.`;
+  if(event.type==="quest:failed")document.getElementById("msg").textContent="Time expired. Talk to Nova to retry.";
+ });
+ const keyHandler=event=>conversation.handleInput(event);addEventListener("keydown",keyHandler);
+ spaceInteractionRuntime={
+  world,conversation,quest,
+  update(dt,isActive){
+   if(!isActive){conversation.updateInteraction(null);if(quest.hud)quest.hud.hidden=true;return}
+   conversation.updateInteraction(P.position,{world:"space",quest:quest.controller.snapshot()});quest.update(dt,performance.now());
+   const mission=quest.controller.snapshot();
+   document.body.dataset.spaceConversationState=conversation.state;document.body.dataset.spaceQuestPhase=mission.phase;document.body.dataset.spaceQuestCoins=`${mission.collectedCount}/${mission.count}`;document.body.dataset.spaceQuestRemaining=String(Math.ceil(mission.remainingMs/1000));
+  },
+  debug(){return {conversation:conversation.snapshot(),quest:quest.debugSnapshot(),questGiver:questGiver.userData.npcName,registeredTargets:world.aliens.length+(cargo?1:0)}},
+  destroy(){
+   removeEventListener("keydown",keyHandler);unsubscribeConversation();unsubscribeQuest();document.body.classList.remove("conversation-active");quest.destroy();
+   const finish=()=>conversation.destroy();if(conversation.state===conversation.STATES.IDLE)finish();else conversation.end("world-exit").finally(finish);
+  }
+ };
+ window.spaceInteractionRuntime=spaceInteractionRuntime;return spaceInteractionRuntime;
+}
+function destroySpaceInteractionRuntime(){if(spaceInteractionRuntime){spaceInteractionRuntime.destroy();spaceInteractionRuntime=null;window.spaceInteractionRuntime=null}}
+window.destroySpaceInteractionRuntime=destroySpaceInteractionRuntime;
+window.updateSpaceInteractions=(dt,isActive)=>spaceInteractionRuntime?.update(dt,isActive);
+window.isGameplayInputLocked=()=>Boolean(spaceInteractionRuntime&&spaceInteractionRuntime.conversation.state!==spaceInteractionRuntime.conversation.STATES.IDLE);
 const buildingTools=document.getElementById("buildingTools");
 const saveHouseButton=document.getElementById("saveHouse");
 const buildHouseButton=document.getElementById("buildHouse");

@@ -25,6 +25,7 @@ assert(html.includes("viewport-fit=cover"), "the viewport must expose notch safe
 assert(/\.gameHudButton:focus-visible\s*\{[^}]*outline: 3px solid/.test(css), "HUD buttons must expose a strong keyboard focus state");
 assert(/#hudMenuButton\.gameHudButton--menu\s*\{[^}]*left: var\(--game-hud-safe-left\)/.test(css), "Menu must anchor the compact landscape cluster");
 assert(/#housePanelToggle\.gameHudButton--house\s*\{[^}]*left: calc\(var\(--game-hud-safe-left\) \+ 92px \+ var\(--game-hud-gap\)\)/.test(css), "House must join Menu at the shared cluster gap");
+assert(css.includes("body.house-mode #housePanelToggle.gameHudButton"), "House must only be forced visible while the player is in My House");
 assert(css.includes("min-height: var(--game-hud-touch-target)"), "HUD components must retain the shared touch target");
 
 console.log("HUD UI system: tokens, safe areas, focus, touch targets, and compact Menu/House cluster validated");

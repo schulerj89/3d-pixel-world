@@ -72,7 +72,7 @@
 /* In short landscape, Menu + House become one compact segmented cluster. */
 @media (orientation: landscape) and (max-height: 820px) {
   #hudMenuButton.gameHudButton,
-  #housePanelToggle.gameHudButton {
+  body.house-mode #housePanelToggle.gameHudButton {
     display: inline-flex;
     top: var(--game-hud-safe-top);
     min-height: var(--game-hud-touch-target);

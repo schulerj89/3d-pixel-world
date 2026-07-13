@@ -599,14 +599,22 @@ window.getGameDebug=()=>({
  memory:{geometries:R.info.memory.geometries,textures:R.info.memory.textures},
  space:spaceWorld?.debug?.()||null,
  city:cityWorld?.debug?.()||null,
- restaurant:window.RestaurantWorld?.current?.group?.userData||null
+ restaurant:window.RestaurantWorld?.current?.group?.userData||null,
+ spaceInteractions:window.spaceInteractionRuntime?.debug?.()||null
 });
 let inKitchen=false;
 let money=100;
 let servedCount=0;
 const foods=["🧁 Cupcake","🍪 Cookies","🎂 Cake","🥐 Croissant","🍞 Sweet Bread","🍓 Strawberry Milkshake","🍫 Chocolate Milkshake"];
-function updateMoney(){document.getElementById("moneyValue").textContent="$"+money}
+function updateMoney(){document.getElementById("moneyValue").textContent="$"+money;document.body.dataset.money=String(money)}
 updateMoney();
+window.gameEconomy={
+ getBalance:()=>money,
+ add(amount,reason="reward"){
+  const value=Number(amount);if(!Number.isFinite(value))throw new Error("Economy rewards must be finite");
+  money+=value;updateMoney();document.body.dataset.lastMoneyReason=reason;return money;
+ }
+};
 function newOrders(){
  if(window.BakeryOrderTracker){window.BakeryOrderTracker.refresh();return}
  document.getElementById("order1").textContent=foods[Math.floor(Math.random()*foods.length)];
@@ -1010,7 +1018,7 @@ function updatePlayerWalkAnimation(isMoving,dt){
  P.rotation.z=THREE.MathUtils.lerp(P.rotation.z,Math.sin(walk)*.035*walkStrength,easing);
  P.position.y=THREE.MathUtils.lerp(P.position.y,groundY+Math.abs(Math.sin(walk))*.06*walkStrength,easing);
 }
-let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);const worldShadows=currentPlace!=="beach"&&currentPlace!=="city";if(sun.castShadow!==worldShadows)sun.castShadow=worldShadows;moveCameraControl(dt);let playerMoved=false;if(!window.isPlayerSeated?.()&&Math.abs(vx)+Math.abs(vz)>.08){
+let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);const worldShadows=currentPlace!=="beach"&&currentPlace!=="city";if(sun.castShadow!==worldShadows)sun.castShadow=worldShadows;moveCameraControl(dt);let playerMoved=false;if(!window.isPlayerSeated?.()&&!window.isGameplayInputLocked?.()&&Math.abs(vx)+Math.abs(vz)>.08){
 // Movement is relative to the camera direction.
 const forwardX=-Math.sin(cameraAngle);
 const forwardZ=-Math.cos(cameraAngle);
@@ -1043,6 +1051,7 @@ window.houseWorldApi?.update?.(dt);
 window.beachTownApi?.update?.(dt,currentPlace==="beach",C);
 if(currentPlace==="city")cityWorld?.update?.(dt,P.position);
 spaceWorld?.update?.(dt,currentPlace==="space");
+window.updateSpaceInteractions?.(dt,currentPlace==="space");
 if(currentPlace==="beach"){
  const wadeDepth=THREE.MathUtils.clamp((BEACH_CONFIG.waterEdgeZ-P.position.z)/5,0,1);
  P.userData.wading=wadeDepth>0;
@@ -1074,8 +1083,8 @@ function ensureSpaceWorld(){
  }
  return spaceWorld;
 }
-function hideSpaceWorld(){if(spaceWorld)spaceWorld.group.visible=false}
-function destroySpaceWorld(){if(spaceWorld){spaceWorld.dispose();spaceWorld=null}}
+function hideSpaceWorld(){if(spaceWorld){window.destroySpaceInteractionRuntime?.();spaceWorld.group.visible=false}}
+function destroySpaceWorld(){if(spaceWorld){window.destroySpaceInteractionRuntime?.();spaceWorld.dispose();spaceWorld=null}}
 window.destroySpaceWorld=destroySpaceWorld;
 // Large destinations are lazy factories: entering creates only that world's
 // resources and leaving can release its geometry/materials immediately.
