@@ -30,4 +30,6 @@ assert(script.includes("global.startGameMusic?.()"),"Start Game must request mus
 assert(game.includes("window.startGameMusic=startMusic"),"the title must use the existing world music controller");
 assert(script.includes("forceContextLoss"),"dismissed title preview must release its WebGL context");
 assert(script.includes("getTitleScreenDebug"),"title must expose renderer metrics for browser QA");
+assert(script.includes('mode:"compact-grounded"')&&script.includes("targetY=1.5,distance=6.1"),"short landscape preview must pull back and raise its target for grounded framing with headroom");
+assert(script.includes("modelHeight=bounds.max.y-bounds.min.y")&&script.includes("frameModel();camera.updateProjectionMatrix()"),"title preview must record actual model bounds and reframe after load and resize");
 console.log("title screen: landscape layout, animated chibi, music handoff, and disposal validated");
