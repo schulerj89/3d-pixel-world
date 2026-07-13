@@ -59,6 +59,7 @@ Prefer the plain table plus separately placed food/plates. The pre-decorated lar
 | `floor_kitchen` | 4 x 0.5 x 4 | 48 | Instanced decorative kitchen floor |
 | `fridge_A_decorated` | 2 x 2.5 x 2.24 | 2,398 | Feature refrigerator with separate door children |
 | `oven` | 2 x 2.02 x 2.348 | 542 | Wall-aligned oven with separate door child |
+| `stove_multi` | 2 x 1.2 x 2.288 | 1,084 | Plain four-burner stove with an empty cooktop; preferred runtime stove |
 | `stove_multi_decorated` | 2.2 x 1.716 x 2.288 | 2,270 | Readable hero cooking station |
 | `extractorhood` | 2 x 2 x 1.609 | 204 | Mount above stove; authored Y range is 2..4 |
 | `kitchencounter_sink_backsplash` | 2 x 1.802 x 2.042 | 686 | Sink run |
@@ -66,6 +67,7 @@ Prefer the plain table plus separately placed food/plates. The pre-decorated lar
 | `kitchencounter_innercorner_backsplash` | 2 x 1.2 x 2 | 56 | Consistent counter turn |
 | `kitchencabinet` | 2 x 2 x 1.042 | 156 | Wall cabinet; authored Y range is 2..4 |
 | `kitchentable_A_large_decorated` | 3 x 1.928 x 2 | 1,996 | Center prep island with visual clutter included |
+| `kitchentable_A_large` | 3 x 1 x 2 | 236 | Blank prep table suitable for separately placed food props |
 | `dishrack_plates` | 1.2 x 1.095 x 1.2 | 880 | Sink-side detail |
 | `shelf_papertowel_decorated` | 2 x 1.71 x 0.626 | 832 | Wall detail; position relative to wall rather than floor |
 
@@ -73,11 +75,11 @@ The kit also includes low-cost cutting board, knife, pan, pot, plate, bowl, burg
 
 ## Integrated browser budget
 
-The curated derivative contains 29 separately addressable scenes and all assets listed above:
+The curated derivative contains 31 separately addressable scenes and all assets listed above:
 
-- 503,564-byte GLB, SHA-256 `66A6930D382CB6014FE459F628BC5F9D960EF9B487D0E76BE803633540AFF44D`.
-- 16,456 triangles and 18,855 uploaded vertices across all 29 unique scene assets.
-- 32 meshes/primitives, one shared material, one 128x128 WebP atlas.
+- 549,488-byte GLB, SHA-256 `613A6109FBF3CDAB31B4E52FD5E1C2146F6C187FC4738B099D83960827351ADE`.
+- 17,766 triangles and 20,677 uploaded vertices across all 31 unique scene assets.
+- 34 meshes/primitives, one shared material, one 128x128 WebP atlas.
 - Estimated atlas GPU allocation: 87,380 bytes including mip levels.
 - Extensions: `EXT_texture_webp`, `KHR_mesh_quantization`; both are supported by the bundled GLTFLoader.
 
