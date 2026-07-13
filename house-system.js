@@ -540,8 +540,8 @@ const SPACE_COIN_POSITIONS=Object.freeze([
  Object.freeze({x:2,y:0,z:2}),Object.freeze({x:6,y:0,z:-2}),Object.freeze({x:2,y:0,z:-8})
 ]);
 const BEACH_TOKEN_POSITIONS=Object.freeze([
- Object.freeze({x:-13,y:0,z:1}),Object.freeze({x:-16,y:0,z:11}),Object.freeze({x:-9,y:0,z:16}),
- Object.freeze({x:1,y:0,z:4}),Object.freeze({x:7,y:0,z:1}),Object.freeze({x:7,y:0,z:13})
+ Object.freeze({x:-18,y:0,z:1}),Object.freeze({x:-11,y:0,z:3}),Object.freeze({x:-4,y:0,z:0}),
+ Object.freeze({x:4,y:0,z:3}),Object.freeze({x:11,y:0,z:0}),Object.freeze({x:18,y:0,z:2})
 ]);
 const SPACE_COIN_PROGRESS_KEY="spaceCoinSprint";
 function getSpaceCoinProgress(){return saved.questProgress?.[SPACE_COIN_PROGRESS_KEY]||null}
