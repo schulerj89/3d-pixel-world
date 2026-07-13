@@ -483,13 +483,14 @@ function createSpaceConversationCamera(){
  const tween=window.createThreeConversationCameraAdapter({THREE,camera:C,duration:650});
  return {
   capture(){
-   const saved=tween.capture();saved.orbit={followCamera,cameraAngle,cameraHeight,cameraDistance};followCamera=false;return saved;
+   const saved=tween.capture();saved.orbit={followCamera,cameraAngle,cameraHeight,cameraDistance};saved.playerVisible=P.visible;followCamera=false;P.visible=false;return saved;
   },
   focus:(target,config)=>tween.focus(target,config),
   restore(saved,detail){
    const instant=detail?.reason==="world-exit",destination=Object.assign({},saved,{duration:instant?0:650});
    return Promise.resolve(tween.restore(destination)).finally(()=>{
     if(saved?.orbit){cameraAngle=saved.orbit.cameraAngle;cameraHeight=saved.orbit.cameraHeight;cameraDistance=saved.orbit.cameraDistance;followCamera=saved.orbit.followCamera}
+    if(saved&&typeof saved.playerVisible==="boolean")P.visible=saved.playerVisible;
    });
   }
  };

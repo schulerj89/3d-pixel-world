@@ -78,5 +78,6 @@ function makeView(){
  assert.throws(()=>createConversationSystem().register({},{}),/at least one node/);
  const source=fs.readFileSync(path.join(__dirname,"..","conversation-system.js"),"utf8");
  assert.match(source,/Number\.isFinite\(config\.targetHeight\)/,"animated actors can provide a stable root-relative camera target");
+ assert.match(source,/const helper=camera\.clone\(\)/,"camera framing uses the camera's -Z forward axis");
  console.log("conversation-system tests passed");
 })().catch(error=>{console.error(error);process.exitCode=1});

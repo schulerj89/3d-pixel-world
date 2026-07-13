@@ -15,6 +15,7 @@ assert(html.indexOf("coin-quest-system.js")<html.indexOf("house-system.js"),"que
 
 assert.match(house,/count:6,timeLimitSeconds:30,reward:10/,"Nova configures six coins, thirty seconds, and a $10 reward");
 assert.match(house,/speaker:"Nova"/);assert.match(house,/action:"start-coin-task"/);assert.match(house,/action:"retry-coin-task"/);
+assert.match(house,/targetHeight:\.55/,"small aliens use a stable root-relative camera target");
 assert.match(house,/showRetryButton:false/,"failed missions must route retry through Nova rather than bypassing the NPC");
 assert.match(house,/scratchPosition:new THREE\.Vector3\(\)/,"conversation proximity checks must reuse a scratch vector without mutating targets");
 assert.match(house,/world\.findObject\("space\.cargo\.stack-a"\)/,"portable conversations are also attached to a world object");
@@ -22,6 +23,7 @@ assert.match(house,/pendingQuestStart="start"/,"the timer waits until the conver
 assert.match(house,/event\.detail\?\.phase==="complete"/,"quest start is synchronized to the completed conversation exit");
 assert.match(house,/saved\.orbit=\{followCamera,cameraAngle,cameraHeight,cameraDistance\}/,"camera orbit state is captured exactly");
 assert.match(house,/cameraAngle=saved\.orbit\.cameraAngle/);assert.match(house,/followCamera=saved\.orbit\.followCamera/);
+assert.match(house,/saved\.playerVisible=P\.visible/);assert.match(house,/P\.visible=saved\.playerVisible/,"the avatar is restored after no longer occluding a conversation target");
 assert.match(house,/window\.isGameplayInputLocked/,"conversation state can lock gameplay controls");
 assert.doesNotMatch(house,/portrait|imageBox|image-box/i,"text conversations do not create a portrait/image box");
 

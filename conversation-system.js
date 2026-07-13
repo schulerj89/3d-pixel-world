@@ -217,8 +217,10 @@
    front.y=0;if(front.lengthSq()<.001)front.set(0,0,1);front.normalize();
    const height=Number.isFinite(config.height)?config.height:Math.max(1.4,box.isEmpty()?1.8:box.max.y-box.min.y);
    const position=center.clone().addScaledVector(front,Number(config.distance)||3.5);position.y=center.y+height*.55;
-   const quaternion=new THREE.Quaternion();new THREE.Object3D().position.copy(position);
-   const helper=new THREE.Object3D();helper.position.copy(position);helper.lookAt(center);quaternion.copy(helper.quaternion);
+   const quaternion=new THREE.Quaternion();
+   // Cameras look down local -Z while Object3D looks down +Z. Use a camera
+   // clone so the cinematic pose faces the target instead of turning away.
+   const helper=camera.clone();helper.position.copy(position);helper.lookAt(center);quaternion.copy(helper.quaternion);
    return {position,quaternion,zoom:camera.zoom,target:center};
   }
   function transition(destination,customDuration){
