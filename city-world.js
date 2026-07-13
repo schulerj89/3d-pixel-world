@@ -59,10 +59,10 @@
  function loadGLTF(loader,url){return new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject))}
  function loadSidewalkTexture(THREE){return new Promise(resolve=>{if(!THREE?.TextureLoader)return resolve({texture:null,error:"City sidewalk texture loader is unavailable"});new THREE.TextureLoader().load(SIDEWALK_TEXTURE_URL,texture=>{texture.wrapS=texture.wrapT=THREE.RepeatWrapping;if("colorSpace" in texture&&THREE.SRGBColorSpace)texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=4;resolve({texture,error:null})},undefined,error=>resolve({texture:null,error:`patterned-paving: ${error?.message||error}`}) )})}
  function loadCitySkyTexture(THREE){return new Promise(resolve=>{if(!THREE?.TextureLoader)return resolve({texture:null,error:"City sky texture loader is unavailable"});new THREE.TextureLoader().load(CITY_SKY_TEXTURE_URL,texture=>{if("colorSpace" in texture&&THREE.SRGBColorSpace)texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=2;resolve({texture,error:null})},undefined,error=>resolve({texture:null,error:`partly-cloudy-sky: ${error?.message||error}`}) )})}
- async function loadAssets(Loader=globalThis.ThreeGLTFLoader?.GLTFLoader){
+ async function loadAssets(Loader=globalThis.ThreeGLTFLoader?.GLTFLoader,files=MODEL_FILES){
   if(!Loader)return{prototypes:new Map(),loadedAssetIds:[],errors:["City GLTF loader is unavailable"],texture:null};
   const loader=new Loader(),prototypes=new Map(),errors=[];
-  await Promise.all(MODEL_FILES.map(async file=>{try{const gltf=await loadGLTF(loader,`${ASSET_ROOT}${file}.gltf?v=${BUILD_VERSION}`);prototypes.set(file,gltf.scene)}catch(error){errors.push(`${file}: ${error?.message||error}`)}}));
+  await Promise.all(files.map(async file=>{try{const gltf=await loadGLTF(loader,`${ASSET_ROOT}${file}.gltf?v=${BUILD_VERSION}`);prototypes.set(file,gltf.scene)}catch(error){errors.push(`${file}: ${error?.message||error}`)}}));
   let sharedTexture=null;for(const prototype of prototypes.values())prototype.traverse(object=>{if(!object.isMesh)return;const materials=Array.isArray(object.material)?object.material:[object.material];materials.filter(Boolean).forEach(material=>{if(!material.map)return;if(!sharedTexture)sharedTexture=material.map;else if(material.map!==sharedTexture){material.map.dispose?.();material.map=sharedTexture;material.needsUpdate=true}})});
   return{prototypes,loadedAssetIds:[...prototypes.keys()].map(file=>`kaykit.city.${file}`),errors,texture:sharedTexture};
  }

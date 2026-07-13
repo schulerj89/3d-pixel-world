@@ -557,7 +557,7 @@ document.getElementById("makeFood").addEventListener("pointerdown",e=>{
   addedIngredients=0;showRecipe();
  }
 });
-let currentPlace="bakery";
+let currentPlace="bakery",beachWorld=null;
 const worldLoading=document.getElementById("worldLoading"),worldLoadingTitle=document.getElementById("worldLoadingTitle");
 const disposableWorlds=new Map();
 function disposeWorldRoot(root){
@@ -593,12 +593,13 @@ window.runWorldTransition=(label,place,build)=>{
  },40))));
 };
 window.getGameDebug=()=>({
- sceneId:currentPlace,loadedWorlds:[...disposableWorlds.keys(),...(window.RestaurantWorld?.current?["restaurant"]:[]),...(spaceWorld?["space"]:[]),...(cityWorld?["city"]:[]),...(castle?["castle"]:[])],
+ sceneId:currentPlace,loadedWorlds:[...disposableWorlds.keys(),...(window.RestaurantWorld?.current?["restaurant"]:[]),...(spaceWorld?["space"]:[]),...(cityWorld?["city"]:[]),...(beachWorld?["beach"]:[]),...(castle?["castle"]:[])],
  player:{x:+P.position.x.toFixed(2),y:+P.position.y.toFixed(2),z:+P.position.z.toFixed(2)},
  render:{calls:R.info.render.calls,triangles:R.info.render.triangles},
  memory:{geometries:R.info.memory.geometries,textures:R.info.memory.textures},
  space:spaceWorld?.debug?.()||null,
  city:cityWorld?.debug?.()||null,
+ beach:beachWorld?.debug?.()||null,
  restaurant:window.RestaurantWorld?.current?.group?.userData||null,
  spaceInteractions:window.spaceInteractionRuntime?.debug?.()||null,
  audio:{music:window.getMusicDebug?.()||null,effects:window.getSoundEffectDebug?.()||null}
@@ -737,7 +738,7 @@ hudMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();cons
 hudDrawer.addEventListener("pointerdown",event=>{if(event.target.closest("button"))setHudMenu(false)});
 document.getElementById("menuGoHouse").addEventListener("pointerdown",event=>{event.preventDefault();showHouse()});
 document.getElementById("menuGoBakery").addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Setting the tables…","restaurant",showRestaurant)});
-document.getElementById("menuGoBeach").addEventListener("pointerdown",event=>{event.preventDefault();showBeach()});
+document.getElementById("menuGoBeach").addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Opening Sunny Beach…","beach",showBeach)});
 menuGoSpace.addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Launching Space…","space",showSpace)});
 document.getElementById("menuGoCastle").addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Raising the castle gates…","castle",showCastle)});
 cityMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Opening Chibi City…","city",showCity)});
@@ -1050,7 +1051,7 @@ if(Math.hypot(worldX,worldZ)>.08){
 const canMove=currentPlace==="bakery"?canWalkAt(nextX,nextZ):
  currentPlace==="restaurant"?Boolean(window.RestaurantWorld?.current?.canWalk(nextX,nextZ)):
  currentPlace==="house"?canWalkInHouse(nextX,nextZ):
- currentPlace==="beach"?canWalkOnBeach(nextX,nextZ):
+ currentPlace==="beach"?Boolean(beachWorld?.canWalk(nextX,nextZ)??canWalkOnBeach(nextX,nextZ)):
  currentPlace==="space"?ensureSpaceWorld().canWalk(nextX,nextZ):
  currentPlace==="city"?Boolean(cityWorld&&cityWorld.canWalk(nextX,nextZ)):
  currentPlace==="castle"?canWalkInCastle(nextX,nextZ):true;
@@ -1062,7 +1063,7 @@ updateCastleFloorPresentation();
 // Sink the avatar slightly while wading and expose the state for future splash
 // effects. Deep water remains traversable but never lets the avatar leave bounds.
 window.houseWorldApi?.update?.(dt);
-window.beachTownApi?.update?.(dt,currentPlace==="beach",C);
+beachWorld?.update?.(dt,currentPlace==="beach",C);
 if(currentPlace==="city")cityWorld?.update?.(dt,P.position);
 spaceWorld?.update?.(dt,currentPlace==="space");
 window.updateSpaceInteractions?.(dt,currentPlace==="space");
@@ -1191,6 +1192,22 @@ function canWalkOnBeach(x,z){
  const radius=.3;
  return !beachStructureColliders.some(box=>x>box.minX-radius&&x<box.maxX+radius&&z>box.minZ-radius&&z<box.maxZ+radius);
 }
+const legacyBeachChildren=[...beach.children];
+let legacyBeachDisposed=false;
+function ensureBeachWorld(){
+ if(!beachWorld){
+  if(!window.worldFactories?.beach)throw new Error("Beach world factory did not load");
+  beachWorld=window.worldFactories.beach(THREE);beachWorld.group.visible=false;beach.add(beachWorld.group);
+  beachWorld.ready.then(()=>{
+   if(legacyBeachDisposed)return;
+   window.beachTownApi?.dispose?.();
+   legacyBeachChildren.forEach(child=>{if(child.parent)disposeWorldRoot(child)});
+   legacyBeachDisposed=true;
+  });
+ }
+ return beachWorld;
+}
+function destroyBeachWorld(){if(beachWorld){beachWorld.dispose();beachWorld=null}}
 
 // The castle is intentionally lazy: its meshes do not consume GPU resources
 // until the destination is visited, and the shared world loader can dispose it.
@@ -1291,6 +1308,7 @@ window.releaseLargeWorlds=except=>{
  if(except!=="restaurant")window.RestaurantWorld?.destroy?.();
  if(except!=="space")destroySpaceWorld();
  if(except!=="city")destroyCityWorld();
+ if(except!=="beach")destroyBeachWorld();
  if(except!=="castle")destroyCastleWorld();
 };
 function canWalkInCastle(x,z){
