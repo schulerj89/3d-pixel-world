@@ -2,7 +2,7 @@
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const path=require("node:path");
-const {DEFAULT_CONFIG,normalizeConfig,CoinQuestController}=require("../coin-quest-system.js");
+const {DEFAULT_CONFIG,normalizeConfig,isHudVisiblePhase,CoinQuestController}=require("../coin-quest-system.js");
 
 let clock=1000,rewards=0;const events=[];
 const config=normalizeConfig({id:"test-coins",count:3,timeLimitSeconds:5,reward:10,positions:[{x:1,y:0,z:2},{x:3,y:0,z:4}]});
@@ -19,6 +19,10 @@ assert.equal(quest.collect(2),false);assert.equal(rewards,10);
 clock=3000;quest.retry();assert.equal(quest.snapshot().phase,"active");assert.equal(quest.snapshot().collectedCount,0);assert.equal(quest.snapshot().run,2);
 clock=8100;quest.update();assert.equal(quest.snapshot().phase,"failed");assert.equal(quest.snapshot().remainingMs,0);assert.equal(rewards,10);
 assert.ok(events.includes("quest:start"));assert.ok(events.includes("quest:success"));assert.ok(events.includes("quest:retry"));assert.ok(events.includes("quest:failed"));
+assert.equal(isHudVisiblePhase("idle"),false,"HUD stays out of the way before a mission starts");
+assert.equal(isHudVisiblePhase("active"),true,"active missions show timer and progress");
+assert.equal(isHudVisiblePhase("failed"),true,"timeout feedback remains visible until Nova is revisited");
+assert.equal(isHudVisiblePhase("success"),false,"completed missions dismiss the sprint HUD");
 
 assert.equal(DEFAULT_CONFIG.reward,10);assert.equal(DEFAULT_CONFIG.count,6);
 const source=fs.readFileSync(path.join(__dirname,"..","coin-quest-system.js"),"utf8");
@@ -27,7 +31,7 @@ assert.match(source,/prototype\.clone\(true\)/,"one loaded prototype is cloned a
 assert.match(source,/Math\.sin\(elapsed\*config\.hoverSpeed/,"coins hover deterministically");
 assert.match(source,/anchor\.rotation\.y\+=/,"coins rotate every update");
 assert.match(source,/controller\.phase==="active"&&!coin\.collected/,"coins stay hidden outside an active quest run");
-assert.match(source,/hud\.hidden=state\.phase==="idle"/,"the timer HUD stays hidden before the NPC starts the quest");
+assert.match(source,/hud\.hidden=!isHudVisiblePhase\(state\.phase\)/,"HUD visibility follows the tested quest lifecycle helper");
 assert.match(source,/getRenderInfo/,"browser render metrics can be exposed in debug state");
 assert.match(source,/disposeObjectResources\(prototype\)/,"loaded GLTF resources are disposed with the quest system");
 assert.match(source,/showRetryButton===false/,"portable integrations can route retries through their quest giver");
