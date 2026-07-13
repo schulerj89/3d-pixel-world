@@ -1030,7 +1030,7 @@ const canMove=currentPlace==="bakery"?canWalkAt(nextX,nextZ):
  currentPlace==="forest"?Boolean(forestWorld&&forestWorld.canWalk(nextX,nextZ)):
  currentPlace==="castle"?canWalkInCastle(nextX,nextZ):true;
 if(canMove){P.position.x=nextX;P.position.z=nextZ;playerMoved=true}
-syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);
+syncBakeryRoomState();}else{syncBakeryRoomState()}updatePlayerWalkAnimation(playerMoved,dt);updateCastleFloorPresentation();
 // Sink the avatar slightly while wading and expose the state for future splash
 // effects. Deep water remains traversable but never lets the avatar leave bounds.
 window.houseWorldApi?.update?.(dt);
@@ -1173,13 +1173,13 @@ function createCastleWorld(){
  const geometries={
   ground:new THREE.BoxGeometry(40,.25,40),wallLong:new THREE.BoxGeometry(11.45,7.5,.65),wallSide:new THREE.BoxGeometry(.65,7.5,28),
   tower:new THREE.CylinderGeometry(1.65,1.9,10.2,10),merlon:new THREE.BoxGeometry(.72,.7,.72),floor:new THREE.BoxGeometry(27,.18,27),
-  gallerySide:new THREE.BoxGeometry(4.6,.22,25.8),galleryBack:new THREE.BoxGeometry(18,.22,4.4),ramp:new THREE.BoxGeometry(3.5,.22,20),
+  upperMain:new THREE.BoxGeometry(21,.22,25.8),upperLanding:new THREE.BoxGeometry(4.9,.22,2.7),ramp:new THREE.BoxGeometry(3.5,.22,20),rampRail:new THREE.BoxGeometry(.16,.7,20),
   column:new THREE.CylinderGeometry(.32,.38,3.5,8),table:new THREE.BoxGeometry(4,.25,1.3),bench:new THREE.BoxGeometry(2.8,.28,.65),
   body:new THREE.BoxGeometry(.72,.9,.42),head:new THREE.SphereGeometry(.38,8,6),limb:new THREE.BoxGeometry(.2,.75,.2)
  };
  const materials={grass:new THREE.MeshStandardMaterial({color:0x73a85c,roughness:1}),stone:new THREE.MeshStandardMaterial({color:0x9aa4b3,roughness:.92}),
   darkStone:new THREE.MeshStandardMaterial({color:0x687384,roughness:1}),floor:new THREE.MeshStandardMaterial({color:0xb8a789,roughness:1}),wood:new THREE.MeshStandardMaterial({color:0x71452d,roughness:1}),
-  gold:new THREE.MeshStandardMaterial({color:0xe9bd42,roughness:.55}),red:new THREE.MeshStandardMaterial({color:0xa73546,roughness:.9}),blue:new THREE.MeshStandardMaterial({color:0x355fb3,roughness:.9}),skin:new THREE.MeshStandardMaterial({color:0xd69a72,roughness:1})};
+  upperFloor:new THREE.MeshStandardMaterial({color:0xc8b99b,roughness:1,transparent:true}),gold:new THREE.MeshStandardMaterial({color:0xe9bd42,roughness:.55}),red:new THREE.MeshStandardMaterial({color:0xa73546,roughness:.9}),blue:new THREE.MeshStandardMaterial({color:0x355fb3,roughness:.9}),skin:new THREE.MeshStandardMaterial({color:0xd69a72,roughness:1})};
  castleBox(group,geometries.ground,materials.grass,0,-.16,0);
  castleBox(group,geometries.floor,materials.floor,0,-.03,0);
  // Two front segments preserve a clearly readable, collision-matched gate.
@@ -1198,17 +1198,23 @@ function createCastleWorld(){
  const merlons=new THREE.InstancedMesh(geometries.merlon,materials.stone,merlonPositions.length),merlonMatrix=new THREE.Matrix4();
  merlonPositions.forEach(([x,z],index)=>{merlonMatrix.makeTranslation(x,8,z);merlons.setMatrixAt(index,merlonMatrix)});
  merlons.instanceMatrix.needsUpdate=true;merlons.computeBoundingSphere();merlons.receiveShadow=true;group.add(merlons);
- // The upper floor is a U-shaped gallery, leaving the great hall visible from
- // above. A broad ramp is easier to steer on touch screens than narrow stairs.
- castleBox(group,geometries.gallerySide,materials.floor,-10.6,CASTLE_CONFIG.upperY,0);
- castleBox(group,geometries.gallerySide,materials.floor,10.6,CASTLE_CONFIG.upperY,0);
- castleBox(group,geometries.galleryBack,materials.floor,0,CASTLE_CONFIG.upperY,-10.7);
+ // Three slabs create a complete second-storey deck while preserving one
+ // deliberate opening for the ramp. The large slab spans the hall; the two
+ // west landings close the floor around the top and bottom of the opening.
+ const upperFloorMeshes=[
+  castleBox(group,geometries.upperMain,materials.upperFloor,2.45,CASTLE_CONFIG.upperY,0),
+  castleBox(group,geometries.upperLanding,materials.upperFloor,-10.5,CASTLE_CONFIG.upperY,-11.55),
+  castleBox(group,geometries.upperLanding,materials.upperFloor,-10.5,CASTLE_CONFIG.upperY,11.55)
+ ];
+ upperFloorMeshes.forEach(mesh=>{mesh.userData.castleUpperFloor=true});
+ // A broad ramp is easier to steer on touch screens than narrow stairs.
  const ramp=castleBox(group,geometries.ramp,materials.darkStone,-10.6,CASTLE_CONFIG.upperY/2,0);
  ramp.rotation.x=Math.atan2(CASTLE_CONFIG.upperY,20);
- // Waist-high gallery rails clearly communicate the safe walkable edge.
- castleBox(group,new THREE.BoxGeometry(.22,1,18.2),materials.gold,-8.2,4.9,.9);
- castleBox(group,new THREE.BoxGeometry(.22,1,18.2),materials.gold,8.2,4.9,.9);
- castleBox(group,new THREE.BoxGeometry(16.2,1,.22),materials.gold,0,4.9,-8.35);
+ // Rails trace the open edge rather than breaking up the usable floor. The
+ // west wall protects the other side, and the top stays open as the entrance.
+ castleBox(group,new THREE.BoxGeometry(.22,1,20.25),materials.gold,-8.35,4.9,.1);
+ castleBox(group,new THREE.BoxGeometry(4.25,1,.22),materials.gold,-10.45,4.9,10.25);
+ [-12.4,-8.8].forEach(x=>{const rail=castleBox(group,geometries.rampRail,materials.gold,x,CASTLE_CONFIG.upperY/2+.42,0);rail.rotation.x=ramp.rotation.x});
  // Great-hall landmarks: a carpeted aisle, throne dais, banquet tables,
  // columns and banners make entering through the gate feel consequential.
  castleBox(group,new THREE.BoxGeometry(3.2,.06,24),materials.red,0,.13,0);
@@ -1221,7 +1227,7 @@ function createCastleWorld(){
  [-9,-5,5,9].forEach(x=>castleBox(group,geometries.column,materials.stone,x,1.75,-8.5));
  [-7.5,7.5].forEach(x=>{const banner=castleBox(group,new THREE.BoxGeometry(1.7,2.5,.08),x<0?materials.red:materials.blue,x,3.35,-12.62);banner.receiveShadow=false});
  // A reading nook and royal map table give the second storey its own purpose.
- [-11.8,-9.7].forEach(x=>castleBox(group,new THREE.BoxGeometry(1.45,1.9,.45),materials.wood,x,5.35,5.9));
+ [9.5,11.25].forEach(x=>castleBox(group,new THREE.BoxGeometry(1.45,1.9,.45),materials.wood,x,5.35,5.9));
  castleBox(group,new THREE.CylinderGeometry(1.25,1.25,.28,10),materials.wood,5.3,4.62,-10.8);
  castleBox(group,new THREE.CylinderGeometry(.08,.08,2.3,6),materials.gold,0,5.55,-11.7);
  const royalFlag=castleBox(group,new THREE.BoxGeometry(2.2,1.35,.08),materials.red,1.1,6.15,-11.65);royalFlag.receiveShadow=false;
@@ -1233,7 +1239,9 @@ function createCastleWorld(){
  }
  guard(-3.3,12.2,0,materials.red);guard(3.3,12.2,0,materials.blue);guard(-4,-10,Math.PI,materials.red);guard(4,-10,Math.PI,materials.blue);
  group.userData.lifecycle={destination:"castle",footprint:"30x30",stories:2,lazy:true,dispose:"window.worldFactories.castle.destroy()",estimatedMeshes:group.children.length};
- group.userData.debug=()=>({footprint:"30x30",stories:2,drawCallEstimate:group.children.length,instancedBattlements:merlonPositions.length,playerFloor:P.position.y>2?2:1});
+ group.userData.upperFloorMeshes=upperFloorMeshes;
+ group.userData.upperFloorMaterial=materials.upperFloor;
+ group.userData.debug=()=>({footprint:"30x30",stories:2,upperFloor:"full-deck",upperFloorArea:568.3,walkableCoverage:"85%",rampOpening:{minX:-12.95,maxX:-8.05,minZ:-10.2,maxZ:10.3},floorGhosted:materials.upperFloor.opacity<1,drawCallEstimate:group.children.length,instancedBattlements:merlonPositions.length,playerFloor:P.position.y>2?2:1});
  group.userData.resources={geometries:Object.values(geometries),materials:Object.values(materials)};
  S.add(group);castle=group;return group;
 }
@@ -1253,7 +1261,12 @@ window.releaseLargeWorlds=except=>{
 function canWalkInCastle(x,z){
  const inset=.55,worldHalf=CASTLE_CONFIG.worldSize/2;if(x<-worldHalf+inset||x>worldHalf-inset||z<-worldHalf+inset||z>worldHalf-inset)return false;
  const onRamp=isCastleRamp(x,z),nextY=castleElevationAt(x,z,P.position.y),onUpper=nextY>2.25;
- if(onUpper&&!onRamp&&!isCastleUpperGallery(x,z))return false;
+ if(onUpper&&!onRamp&&!isCastleUpperFloor(x,z))return false;
+ // The opening rail is a real movement boundary at upper-floor height. The
+ // ramp's open top remains the only route onto the deck.
+ if(window.CastleLayout.crossesOpeningRail(P.position.x,x,z,P.position.y,nextY))return false;
+ if(window.CastleLayout.crossesRampSideRail(P.position.x,P.position.z,x,z,P.position.y,nextY))return false;
+ if(window.CastleLayout.crossesFrontOpeningRail(P.position.x,P.position.z,x,z,P.position.y,nextY))return false;
  // Outer keep walls block the player, while the broad gate remains open.
  if(z>13.55&&z<14.45&&Math.abs(x)>CASTLE_CONFIG.gateHalfWidth&&Math.abs(x)<14.45)return false;
  if(z<-13.55&&Math.abs(x)<14.45)return false;
@@ -1264,11 +1277,18 @@ function canWalkInCastle(x,z){
  if(Math.abs(x)>4.7&&Math.abs(x)<9.3&&z>-6&&z<-2.8)return false;
  return true;
 }
-function isCastleRamp(x,z){return x>-12.35&&x<-8.85&&z>-10.15&&z<10.15}
-function isCastleUpperGallery(x,z){
- return z>-12.9&&z<12.9&&((x>-12.9&&x<-8.25)||(x>8.25&&x<12.9))||z>-12.9&&z<-8.25&&x>-12.9&&x<12.9;
-}
-function castleElevationAt(x,z,currentY=0){
- if(isCastleRamp(x,z))return THREE.MathUtils.clamp((10-z)/20*CASTLE_CONFIG.upperY,0,CASTLE_CONFIG.upperY);
- return currentY>2.25&&isCastleUpperGallery(x,z)?CASTLE_CONFIG.upperY:0;
+function isCastleRamp(x,z){return window.CastleLayout.isRamp(x,z)}
+function isCastleUpperFloor(x,z){return window.CastleLayout.isUpperFloor(x,z)}
+function castleElevationAt(x,z,currentY=0){return window.CastleLayout.elevationAt(x,z,currentY)}
+function updateCastleFloorPresentation(){
+ if(!castle)return;
+ const material=castle.userData.upperFloorMaterial;
+ if(!material)return;
+ // A solid ceiling would hide the avatar from the elevated follow camera while
+ // exploring the great hall. Ghost only the deck slabs on the lower storey;
+ // the second floor stays fully opaque outside and while walking upstairs.
+ const ghost=currentPlace==="castle"&&Math.abs(P.position.x)<13.4&&Math.abs(P.position.z)<13.4&&P.position.y<2.25;
+ const opacity=ghost?.22:1;
+ if(material.opacity===opacity)return;
+ material.opacity=opacity;material.depthWrite=!ghost;material.needsUpdate=true;
 }
