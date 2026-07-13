@@ -1,6 +1,6 @@
 # Restaurant extra asset provenance
 
-Both source assets are released under CC0. No source-site imagery, logos, or promotional material is included here.
+The source asset is released under CC0. No source-site imagery, logos, or promotional material is included here.
 
 ## Cash register
 
@@ -11,14 +11,3 @@ Both source assets are released under CC0. No source-site imagery, logos, or pro
 - Local processing: centered with the pivot below the model, converted to GLB, quantized, and reduced to 256x256 WebP textures with glTF Transform 4.4.1
 - Runtime size: 323,928 bytes; 9,837 triangles; five 256x256 textures
 - SHA-256: `75AE3D69BE56082556BEAC4AF9CF859843419128071D869380F1B498ECD253D0`
-
-## Front door
-
-- Asset: **doorwayFront** from Kenney's Furniture Kit
-- Source: https://kenney.nl/assets/furniture-kit
-- License: CC0
-- Source format: `Models/GLTF format/doorwayFront.glb` from the official Kenney download
-- Local processing: centered with the pivot below the model and quantized with glTF Transform 4.4.1
-- Runtime size: 7,920 bytes; 150 triangles; no textures
-- SHA-256: `1944800EBF9C6FC1EE018FE3B966489A9EB4CD8A2AF5359D2D1AFF037CCEF680`
-

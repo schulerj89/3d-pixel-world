@@ -9,10 +9,10 @@
  const KIT_URL=`assets/models/restaurant/kaykit-restaurant-kit.glb?v=${BUILD_VERSION}`;
  const BACKGROUND_COLOR=0x87ceeb;
  const EXTRA_ASSETS=Object.freeze({
-  cashRegister:Object.freeze({assetId:"restaurant.front.cash-register",url:`assets/models/restaurant-extras/cash-register.glb?v=${BUILD_VERSION}`,position:Object.freeze({x:0,y:1.03,z:15.5}),scale:1.15,yaw:Math.PI}),
-  frontDoor:Object.freeze({assetId:"restaurant.front.door",url:`assets/models/restaurant-extras/front-door.glb?v=${BUILD_VERSION}`,position:Object.freeze({x:0,y:0,z:19.92}),scale:2.75,yaw:Math.PI})
+  cashRegister:Object.freeze({assetId:"restaurant.front.cash-register",url:`assets/models/restaurant-extras/cash-register.glb?v=${BUILD_VERSION}`,position:Object.freeze({x:0,y:1.03,z:15.5}),scale:1.15,yaw:Math.PI})
  });
  const CASH_DESK=Object.freeze({assetId:"restaurant.front.cash-desk",sourceScene:"kitchencounter_straight_A_backsplash",position:Object.freeze({x:0,y:0,z:15.5}),scale:1,yaw:Math.PI,collision:Object.freeze([1,1.03])});
+ const FRONT_ENTRANCE=Object.freeze({assetId:"restaurant.front.entrance",frameAssetId:"restaurant.front.entrance-frame",frameScene:"wall_doorway",doorAssetId:"restaurant.front.door",doorScene:"door_A",position:Object.freeze({x:0,y:0,z:20}),yaw:0,collision:Object.freeze([2,.25])});
  const ROOM_FILES={dining:"restaurant-main-level.txt",kitchen:"restaurant-kitchen-level.txt"};
  const WALKABLE=new Set([".","D","E"]);
  const PLAYER_RADIUS=.28;
@@ -87,6 +87,7 @@
    if(Math.abs(x-transform.x)<half[0]+PLAYER_RADIUS&&Math.abs(z-transform.z)<half[1]+PLAYER_RADIUS)return false;
   }
   if(room.room==="dining"&&Math.abs(x-CASH_DESK.position.x)<CASH_DESK.collision[0]+PLAYER_RADIUS&&Math.abs(z-CASH_DESK.position.z)<CASH_DESK.collision[1]+PLAYER_RADIUS)return false;
+  if(room.room==="dining"&&Math.abs(x-FRONT_ENTRANCE.position.x)<FRONT_ENTRANCE.collision[0]+PLAYER_RADIUS&&Math.abs(z-FRONT_ENTRANCE.position.z)<FRONT_ENTRANCE.collision[1]+PLAYER_RADIUS)return false;
   return true;
  }
  function wallCellCollision(room,col,row,center){
@@ -215,13 +216,23 @@
    const prototype=extras[key]?.scene;
    if(prototype){
     const art=prototype.clone(true);art.name=spec.assetId;art.position.set(spec.position.x,spec.position.y,spec.position.z);art.rotation.y=spec.yaw;art.scale.setScalar(spec.scale);art.userData={assetId:spec.assetId,url:spec.url,placeholder:false};art.traverse(object=>{if(object.isMesh){object.castShadow=object.receiveShadow=true}});front.add(art);loadedAssetIds.push(spec.assetId);
-   }else if(key==="cashRegister"){
-    const register=new THREE.Mesh(new THREE.BoxGeometry(.7,.5,.55),new THREE.MeshStandardMaterial({color:0x303840,roughness:.6}));register.position.set(spec.position.x,spec.position.y+.25,spec.position.z);register.userData={assetId:spec.assetId,placeholder:true};front.add(register);
    }else{
-    const door=new THREE.Mesh(new THREE.BoxGeometry(1.35,2.78,.18),new THREE.MeshStandardMaterial({color:0xdce8ed,roughness:.55}));door.position.set(spec.position.x,1.39,spec.position.z);door.userData={assetId:spec.assetId,placeholder:true};front.add(door);
+    const register=new THREE.Mesh(new THREE.BoxGeometry(.7,.5,.55),new THREE.MeshStandardMaterial({color:0x303840,roughness:.6}));register.position.set(spec.position.x,spec.position.y+.25,spec.position.z);register.userData={assetId:spec.assetId,placeholder:true};front.add(register);
    }
   }
-  front.userData={assetId:"restaurant.front-area",cashDesk:CASH_DESK,props:EXTRA_ASSETS};group.add(front);return front;
+  const entrance=new THREE.Group();entrance.name=FRONT_ENTRANCE.assetId;
+  const framePrototype=sourceScene(kit,FRONT_ENTRANCE.frameScene),doorPrototype=sourceScene(kit,FRONT_ENTRANCE.doorScene);
+  if(framePrototype&&doorPrototype){
+   [[framePrototype,FRONT_ENTRANCE.frameAssetId,FRONT_ENTRANCE.frameScene],[doorPrototype,FRONT_ENTRANCE.doorAssetId,FRONT_ENTRANCE.doorScene]].forEach(([prototype,assetId,source])=>{
+    const art=prototype.clone(true);art.position.set(FRONT_ENTRANCE.position.x,FRONT_ENTRANCE.position.y,FRONT_ENTRANCE.position.z);art.rotation.y=FRONT_ENTRANCE.yaw;art.userData={assetId,sourceScene:source,placeholder:false};art.traverse(object=>{if(object.isMesh){object.castShadow=object.receiveShadow=true}});entrance.add(art);loadedAssetIds.push(assetId);
+   });
+  }else{
+   const frameMaterial=new THREE.MeshStandardMaterial({color:0xf4d6cc,roughness:.9}),doorMaterial=new THREE.MeshStandardMaterial({color:0x35a684,roughness:.75});
+   [[.45,4,.5,-1.78,2],[.45,4,.5,1.78,2],[3.1,.45,.5,0,3.78]].forEach(([w,h,d,x,y])=>{const part=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),frameMaterial);part.position.set(x,y,FRONT_ENTRANCE.position.z);entrance.add(part)});
+   const door=new THREE.Mesh(new THREE.BoxGeometry(1.65,2.8,.22),doorMaterial);door.position.set(.8,1.4,FRONT_ENTRANCE.position.z);door.userData={assetId:FRONT_ENTRANCE.doorAssetId,placeholder:true};entrance.add(door);
+  }
+  entrance.userData={assetId:FRONT_ENTRANCE.assetId,frameScene:FRONT_ENTRANCE.frameScene,doorScene:FRONT_ENTRANCE.doorScene,placeholder:!(framePrototype&&doorPrototype)};front.add(entrance);
+  front.userData={assetId:"restaurant.front-area",cashDesk:CASH_DESK,entrance:FRONT_ENTRANCE,props:EXTRA_ASSETS};group.add(front);return front;
  }
  function buildRuntime(THREE,scene,rooms,kit=null,assetError="",extras={}){
   validateConnection(rooms[0],rooms[1]);
@@ -252,8 +263,8 @@
    batch.userData={assetId:spec.assetId,symbol,placeholder:true,instanceCount:placements.length};group.add(batch);
   }
   addFrontArea(THREE,group,kit,extras,loadedAssetIds);
-  const urls=[KIT_URL,...Object.values(EXTRA_ASSETS).map(spec=>spec.url)],externalReady=Object.keys(EXTRA_ASSETS).every(key=>extras[key]?.scene);
-  group.userData={destination:"restaurant",rooms:rooms.map(room=>({id:room.room,width:room.width,depth:room.depth,layoutFile:ROOM_FILES[room.room]})),assetRegistry:ASSET_REGISTRY,assets:{url:KIT_URL,urls,status:kit&&externalReady?"ready":"fallback",loadedAssetIds,error:assetError},floor:{kitchen:KITCHEN_FLOOR},npcs:0,orders:false,hud:false};
+  const urls=[KIT_URL,...Object.values(EXTRA_ASSETS).map(spec=>spec.url)],externalReady=Object.keys(EXTRA_ASSETS).every(key=>extras[key]?.scene),entranceReady=sourceScene(kit,FRONT_ENTRANCE.frameScene)&&sourceScene(kit,FRONT_ENTRANCE.doorScene);
+  group.userData={destination:"restaurant",rooms:rooms.map(room=>({id:room.room,width:room.width,depth:room.depth,layoutFile:ROOM_FILES[room.room]})),assetRegistry:ASSET_REGISTRY,assets:{url:KIT_URL,urls,status:kit&&externalReady&&entranceReady?"ready":"fallback",loadedAssetIds,error:assetError},floor:{kitchen:KITCHEN_FLOOR},npcs:0,orders:false,hud:false};
   scene.add(group);
   const spawns=Object.fromEntries(rooms.map(room=>[room.room,cellCenter(room,room.spawnCol,room.spawnRow)]));
   const cameraPoses={
@@ -295,5 +306,5 @@
   return {geometries:geometries.size,materials:materials.size,textures:textures.size};
  }
  function destroy(){if(!runtime)return;const root=runtime.group;disposeRuntimeResources(root);root.parent?.remove(root);runtime=null}
- return {KIT_URL,BACKGROUND_COLOR,EXTRA_ASSETS,CASH_DESK,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,WALL,KITCHEN_FLOOR,DEBUG_VIEWS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,wallCellCollision,doorwayCells,validateConnection,sourceScene,firstMesh,buildKitchenFloor,wallBoundaryLines,wallSegments,buildWalls,assetTransform,addFrontArea,buildRuntime,loadRooms,loadKit,loadExtraAssets,disposeRuntimeResources,ensure,destroy,get current(){return runtime}};
+ return {KIT_URL,BACKGROUND_COLOR,EXTRA_ASSETS,CASH_DESK,FRONT_ENTRANCE,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,WALL,KITCHEN_FLOOR,DEBUG_VIEWS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,wallCellCollision,doorwayCells,validateConnection,sourceScene,firstMesh,buildKitchenFloor,wallBoundaryLines,wallSegments,buildWalls,assetTransform,addFrontArea,buildRuntime,loadRooms,loadKit,loadExtraAssets,disposeRuntimeResources,ensure,destroy,get current(){return runtime}};
 });

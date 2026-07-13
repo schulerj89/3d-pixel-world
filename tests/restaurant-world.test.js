@@ -23,6 +23,7 @@ const jsonLength=kitBuffer.readUInt32LE(12),gltf=JSON.parse(kitBuffer.subarray(2
 const kitScenes=new Set(gltf.scenes.flatMap(scene=>scene.nodes.map(node=>gltf.nodes[node]?.name)));
 assert(kitScenes.has(Restaurant.WALL.sourceScene),"KayKit derivative must include the authored restaurant wall scene");
 assert(kitScenes.has(Restaurant.KITCHEN_FLOOR.sourceScene),"curated Restaurant Bits GLB must include the authored kitchen floor");
+assert(kitScenes.has(Restaurant.FRONT_ENTRANCE.frameScene)&&kitScenes.has(Restaurant.FRONT_ENTRANCE.doorScene),"front entrance must reuse the matching Restaurant Bits doorway and door scenes");
 const html=read("index.html"),houseSystem=read("house-system.js"),styles=read("styles.css");
 assert(/id="goBakery"[^>]*>[^<]*<span>Restaurant<\/span>/.test(html),"Realm destination must display Restaurant");
 assert(!/id="goBakery">[^<]*<span>Bakery<\/span>/.test(html),"Bakery must not remain a visible Realm destination");
@@ -38,8 +39,9 @@ assert.strictEqual(dining.cell,1);assert.strictEqual(kitchen.cell,1);
 assert(Restaurant.validateConnection(dining,kitchen),"connected doorway must align");
 assert.strictEqual(Restaurant.doorwayCells(dining).length,4);
 assert.strictEqual(Restaurant.doorwayCells(kitchen).length,4);
-assert.strictEqual(dining.map[dining.map.length-1].split("E").length-1,2,"front entrance must reserve a two-unit opening in the south wall");
-assert(Restaurant.canWalk(rooms,0,19.7),"front entrance opening must be walkable from the dining side");
+assert.strictEqual(dining.map[dining.map.length-1].split("E").length-1,4,"front entrance must reserve the full four-unit authored doorway module");
+assert(Restaurant.canWalk(rooms,0,19),"player must be able to approach the front entrance from the dining side");
+assert.strictEqual(Restaurant.canWalk(rooms,0,19.7),false,"closed front entrance must stop the player before the visible door");
 
 const diningSpawn=Restaurant.cellCenter(dining,dining.spawnCol,dining.spawnRow);
 assert(Restaurant.canWalk(rooms,diningSpawn.x,diningSpawn.z),"dining spawn must be walkable");
@@ -135,7 +137,7 @@ assert.strictEqual(kitchenFloor.children.reduce((sum,batch)=>sum+batch.count,0),
 for(const name of ["kitchen-overview","kitchen-fixtures","kitchen-doorway","kitchen-north-wall","kitchen-west-wall","kitchen-east-wall","restaurant-chair-table","restaurant-cash-register","restaurant-front-door","restaurant-sky-overview"]){
  assert(Restaurant.DEBUG_VIEWS[name],`screenshot QA needs stable ${name} view`);
 }
-for(const view of Object.values(Restaurant.DEBUG_VIEWS))assert(Restaurant.canWalk(rooms,view.position.x,view.position.z),"kitchen screenshot pose must remain walkable");
+for(const view of Object.values(Restaurant.DEBUG_VIEWS).filter(view=>!view.hidePlayer))assert(Restaurant.canWalk(rooms,view.position.x,view.position.z),"player-visible restaurant screenshot poses must remain walkable");
 const floorRoot=Object.assign(new Node3D(),{name:Restaurant.KITCHEN_FLOOR.sourceScene,isMesh:true,geometry:{},material:{}}),floorScene=new Group();floorScene.add(floorRoot);
 const authoredFloor=Restaurant.buildKitchenFloor({Group,BoxGeometry,MeshStandardMaterial,InstancedMesh},kitchen,{scenes:[floorScene]},new Matrix4());
 assert.strictEqual(authoredFloor.userData.sourceReady,true,"available Restaurant Bits floor must replace the procedural fallback");
