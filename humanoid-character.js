@@ -1,8 +1,14 @@
-// Animated, material-customizable humanoid player with an automatic voxel fallback.
+// Animated, material-customizable Styloo chibi player with an automatic voxel fallback.
 (function(global){
- const ASSET_URL="assets/models/character/quaternius-casual-humanoid.glb?v=__BUILD_VERSION__";
- const REQUIRED_CLIPS={idle:"CharacterArmature|Idle",walk:"CharacterArmature|Walk",run:"CharacterArmature|Run"};
- const ASSET_BYTES=1144160;
+ const ASSET_URL="assets/models/character/styloo-chibi-student.glb?v=__BUILD_VERSION__";
+ const REQUIRED_CLIPS={idle:"anim_iddle",walk:"anim_walk",run:"anim_run"};
+ const ASSET_BYTES=3753900;
+ const FACING=global.characterFacing;
+ const MODEL_FORWARD_AXIS=FACING?.STYLOO_MODEL_FORWARD_AXIS||"+z";
+ const MODEL_FORWARD_CORRECTION=FACING?.STYLOO_MODEL_FORWARD_CORRECTION??0;
+ // Styloo authored the face/eyes on +Z. P.rotation.y is atan2(moveX, moveZ),
+ // so no corrective half-turn is needed for this asset.
+ const ORIENTATION={forwardAxis:MODEL_FORWARD_AXIS,yawOffsetRadians:MODEL_FORWARD_CORRECTION,movementYaw:"atan2(moveX, moveZ)"};
 
  function readCustomization(){
   try{return JSON.parse(localStorage.getItem("my3DWorld")||"{}")}
@@ -28,8 +34,8 @@
   model.userData.characterMaterialsCloned=true;
   const saved=values||readCustomization();
   const outfit=saved.outfit&&saved.outfit!=="Everyday"?Number(saved.outfitColor):Number(saved.shirt);
-  const colors={Skin:Number(saved.skin??0xf2bb91),Hair:Number(saved.hair??0x6b3c35),
-   Purple:Number(outfit||0xb77cff),LightBlue:Number(saved.pants??0x5870c8)};
+  const colors={character:Number(saved.skin??0xf2bb91),hairvariant:Number(saved.hair??0x6b3c35),
+   schooloutfit:Number(outfit||0xb77cff),schoolskirt:Number(saved.pants??0x5870c8)};
   materials.forEach(material=>{
    const color=colors[material.name];
    if(Number.isFinite(color)&&material.color)material.color.setHex(color);
@@ -48,15 +54,21 @@
    const clips=new Map(gltf.animations.map(clip=>[clip.name,clip]));
    for(const clipName of Object.values(REQUIRED_CLIPS))if(!clips.has(clipName))throw new Error(`Required animation missing: ${clipName}`);
    const model=gltf.scene;
-   model.name=this.preview?"animated-humanoid-preview":"animated-humanoid-player";
-   model.scale.setScalar(1.45);model.rotation.y=Math.PI;
+   model.name=this.preview?"animated-chibi-preview":"animated-chibi-player";
+   model.scale.setScalar(1.08);
+   if(FACING?.attachVisual)FACING.attachVisual(model,MODEL_FORWARD_AXIS);
+   else model.rotation.y=ORIENTATION.yawOffsetRadians;
+   model.userData.characterForwardAxis=ORIENTATION.forwardAxis;
+   model.userData.characterYawOffset=ORIENTATION.yawOffsetRadians;
    cloneAndTintMaterials(model);
    this.root.add(model);this.model=model;
    this.mixer=new THREE.AnimationMixer(model);
    Object.entries(REQUIRED_CLIPS).forEach(([state,name])=>this.actions[state]=this.mixer.clipAction(clips.get(name)));
    this.actions.idle.play();this.active="idle";
    this.fallbackChildren.forEach(child=>child.visible=false);
-   this.root.userData.characterAsset="quaternius-modular-humanoid";
+   this.root.userData.characterAsset="styloo-chibi-student-v1.2";
+   this.root.userData.characterForwardAxis=ORIENTATION.forwardAxis;
+   this.root.userData.characterYawOffset=ORIENTATION.yawOffsetRadians;
    this.root.userData.characterFallback=false;
    return this;
   }
@@ -81,7 +93,9 @@
   }
  }
 
- const debug={status:"loading",source:"Quaternius Ultimate Modular Men Pack",assetBytes:ASSET_BYTES,
+ const debug={status:"loading",source:"Styloo Chibi Characters v1.2 / studentpr.glb",license:"CC0-1.0",
+  assetBytes:ASSET_BYTES,triangles:10586,orientation:ORIENTATION,
+  customizableMaterials:["character","hairvariant","schooloutfit","schoolskirt"],
   requiredClips:Object.values(REQUIRED_CLIPS),loadedClips:[],fallback:true,error:null,preview:false};
  const debugNode=global.document?.createElement?.("output")||null;
  if(debugNode){debugNode.id="characterAssetStatus";debugNode.hidden=true;global.document.body.appendChild(debugNode)}
