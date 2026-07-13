@@ -602,6 +602,7 @@ window.getGameDebug=()=>({
  beach:beachWorld?.debug?.()||null,
  restaurant:window.RestaurantWorld?.current?.group?.userData||null,
  spaceInteractions:window.spaceInteractionRuntime?.debug?.()||null,
+ beachInteractions:window.beachInteractionRuntime?.debug?.()||null,
  audio:{music:window.getMusicDebug?.()||null,effects:window.getSoundEffectDebug?.()||null}
 });
 let inKitchen=false;
@@ -1064,6 +1065,7 @@ updateCastleFloorPresentation();
 // effects. Deep water remains traversable but never lets the avatar leave bounds.
 window.houseWorldApi?.update?.(dt);
 beachWorld?.update?.(dt,currentPlace==="beach",C);
+window.updateBeachInteractions?.(dt,currentPlace==="beach");
 if(currentPlace==="city")cityWorld?.update?.(dt,P.position);
 spaceWorld?.update?.(dt,currentPlace==="space");
 window.updateSpaceInteractions?.(dt,currentPlace==="space");
@@ -1207,7 +1209,7 @@ function ensureBeachWorld(){
  }
  return beachWorld;
 }
-function destroyBeachWorld(){if(beachWorld){beachWorld.dispose();beachWorld=null}}
+function destroyBeachWorld(){if(beachWorld){window.destroyBeachInteractionRuntime?.();beachWorld.dispose();beachWorld=null}}
 
 // The castle is intentionally lazy: its meshes do not consume GPU resources
 // until the destination is visited, and the shared world loader can dispose it.

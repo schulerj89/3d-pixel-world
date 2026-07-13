@@ -11,11 +11,11 @@
  const NATURE_ROOT="assets/models/beach-nature/";
  const NATURE_FILES=Object.freeze(["tree_palm","tree_palmBend","tree_palmDetailedTall","rock_smallA","rock_smallB"]);
  const NPC_SPECS=Object.freeze([
-  {id:"marina",file:"mini-skate/character-skate-girl.glb",x:-6,z:5,turn:2.8,height:2.85},
-  {id:"kai",file:"mini-skate/character-skate-boy.glb",x:12,z:5,turn:-2.8,height:2.85},
-  {id:"sol",file:"mini-characters/character-female-a.glb",x:-18,z:8,turn:2.6,height:2.9},
-  {id:"tala",file:"mini-characters/character-female-c.glb",x:1,z:10,turn:2.9,height:2.9},
-  {id:"milo",file:"mini-characters/character-male-b.glb",x:18,z:8,turn:-2.6,height:2.9}
+  {id:"marina",file:"mini-skate/character-skate-girl.glb",x:-6,z:5,turn:2.8,height:2.55},
+  {id:"kai",file:"mini-skate/character-skate-boy.glb",x:12,z:5,turn:-2.8,height:2.55},
+  {id:"sol",file:"mini-characters/character-female-a.glb",x:-18,z:8,turn:2.6,height:2.6},
+  {id:"tala",file:"mini-characters/character-female-c.glb",x:1,z:10,turn:2.9,height:2.6},
+  {id:"milo",file:"mini-characters/character-male-b.glb",x:18,z:8,turn:-2.6,height:2.6}
  ]);
  const DEBUG_POSES=Object.freeze({
   spawn:{name:"beach-spawn",x:0,z:15,angle:.22,height:10.5,distance:15.5},
@@ -27,6 +27,8 @@
   townRoad:{name:"beach-town-road",x:0,z:24,angle:0,height:9,distance:18},
   townBuildings:{name:"beach-town-buildings",x:0,z:40,angle:Math.PI,height:12,distance:24,hidePlayer:true},
   npcGroup:{name:"beach-npc-group",x:0,z:10,angle:Math.PI,height:12,distance:24,hidePlayer:true},
+  tokenDash:{name:"beach-token-dash",x:-3,z:5,angle:Math.PI,height:10,distance:18},
+  tokenDashConversation:{name:"beach-token-dash-conversation",x:-5.2,z:7.6,angle:2.8,height:6.2,distance:9},
   npcMarina:{name:"beach-npc-marina-full-body",x:-6,z:5,angle:Math.PI,height:4.2,distance:7,hidePlayer:true},
   npcKai:{name:"beach-npc-kai-full-body",x:12,z:5,angle:Math.PI,height:4.2,distance:7,hidePlayer:true},
   npcSol:{name:"beach-npc-sol-full-body",x:-18,z:8,angle:Math.PI,height:4.2,distance:7,hidePlayer:true},
@@ -47,7 +49,7 @@
 
  function create(THREE){
   const group=new THREE.Group();group.name="beach-world";
-  const collisions=[],mixers=[],npcRoots=[],loadedAssetIds=[],errors=[];
+  const collisions=[],mixers=[],npcRoots=[],npcById=new Map(),loadedAssetIds=[],errors=[];
   let traffic=null,water=null,waterNormals=null,disposed=false,active=false;
   group.userData={destination:"beach",assets:{status:"loading",loadedAssetIds,errors},water:{status:"fallback",implementation:"MeshPhongMaterial"},npcs:{count:NPC_SPECS.length,animated:0,actors:[]}};
 
@@ -102,10 +104,10 @@
    const palms=[[-24,-1,"tree_palm"],[-21,8,"tree_palmBend"],[-20,19,"tree_palmDetailedTall"],[-8,19,"tree_palmBend"],[7,20,"tree_palmDetailedTall"],[20,7,"tree_palmBend"],[23,19,"tree_palmDetailedTall"]];
    palms.forEach(([x,z,file],index)=>{const prototype=nature.get(file);if(!prototype)return;const object=markMeshes(prototype.clone(true));normalizeObject(THREE,object,5.4+(index%3)*.7);object.position.x=x;object.position.z=z;object.rotation.y=(index*.83)%6.28;object.name=`beach-palm-${index}`;object.userData={assetId:`kenney.nature.${file}`,license:"CC0-1.0"};group.add(object)});
    [[-27,-4,"rock_smallA"],[25,-3,"rock_smallB"],[-5,-3,"rock_smallB"]].forEach(([x,z,file],index)=>{const prototype=nature.get(file);if(!prototype)return;const object=markMeshes(prototype.clone(true));normalizeObject(THREE,object,.65+index*.12);object.position.x=x;object.position.z=z;object.name=`beach-rock-${index}`;group.add(object)});
-   for(const spec of NPC_SPECS){try{const gltf=await loadGLTF(loader,`assets/models/beach-npcs/${spec.file}`),actor=markMeshes(gltf.scene);const grounding=normalizeObject(THREE,actor,spec.height);actor.position.x=spec.x;actor.position.z=spec.z;actor.rotation.y=spec.turn;actor.name=`beach-npc-${spec.id}`;actor.userData={assetId:`kenney.${spec.file}`,license:"CC0-1.0",clip:"idle",grounding};group.add(actor);npcRoots.push(actor);const clip=gltf.animations.find(item=>item.name.toLowerCase()==="idle");let animated=false;if(clip){const mixer=new THREE.AnimationMixer(actor);mixer.clipAction(clip).play();mixers.push(mixer);animated=true;group.userData.npcs.animated++}group.userData.npcs.actors.push({id:spec.id,assetId:actor.userData.assetId,clip:clip?.name||null,animated,grounding});loadedAssetIds.push(actor.userData.assetId)}catch(error){errors.push(`npc ${spec.id}: ${error?.message||error}`);group.userData.npcs.actors.push({id:spec.id,animated:false,error:String(error?.message||error)})}}
+   for(const spec of NPC_SPECS){try{const gltf=await loadGLTF(loader,`assets/models/beach-npcs/${spec.file}`),actor=markMeshes(gltf.scene);const grounding=normalizeObject(THREE,actor,spec.height);actor.position.x=spec.x;actor.position.z=spec.z;actor.rotation.y=spec.turn;actor.name=`beach-npc-${spec.id}`;actor.userData={assetId:`kenney.${spec.file}`,npcId:spec.id,npcName:spec.id[0].toUpperCase()+spec.id.slice(1),license:"CC0-1.0",clip:"idle",grounding};group.add(actor);npcRoots.push(actor);npcById.set(spec.id,actor);const clip=gltf.animations.find(item=>item.name.toLowerCase()==="idle");let animated=false;if(clip){const mixer=new THREE.AnimationMixer(actor);mixer.clipAction(clip).play();mixers.push(mixer);animated=true;group.userData.npcs.animated++}group.userData.npcs.actors.push({id:spec.id,height:spec.height,assetId:actor.userData.assetId,clip:clip?.name||null,animated,grounding});loadedAssetIds.push(actor.userData.assetId)}catch(error){errors.push(`npc ${spec.id}: ${error?.message||error}`);group.userData.npcs.actors.push({id:spec.id,animated:false,error:String(error?.message||error)})}}
   }
 
-  const world={group,bounds:{minX:-39.45,maxX:39.45,minZ:-39.45,maxZ:39.45},spawn:CONFIG.spawn,camera:CONFIG.camera,background:0x9edfff,name:"Sunny Beach",debugPoses:DEBUG_POSES,
+  const world={group,bounds:{minX:-39.45,maxX:39.45,minZ:-39.45,maxZ:39.45},spawn:CONFIG.spawn,camera:CONFIG.camera,background:0x9edfff,name:"Sunny Beach",debugPoses:DEBUG_POSES,npcs:npcRoots,findNpc:id=>npcById.get(id)||null,
    canWalk(x,z){if(x<world.bounds.minX||x>world.bounds.maxX||z<world.bounds.minZ||z>world.bounds.maxZ)return false;return!collisions.some(box=>x>box.minX-PLAYER_RADIUS&&x<box.maxX+PLAYER_RADIUS&&z>box.minZ-PLAYER_RADIUS&&z<box.maxZ+PLAYER_RADIUS)},
    update(dt,isActive,camera){active=Boolean(isActive);traffic?.setEnabled(active);if(!active)return;if(camera)sky.position.copy(camera.position);traffic?.update(dt,camera?.position);mixers.forEach(mixer=>mixer.update(dt));if(water?.material?.uniforms?.time)water.material.uniforms.time.value+=dt*.65},
    debug(){return{assets:group.userData.assets,water:group.userData.water,npcs:group.userData.npcs,collisions:collisions.length,traffic:traffic?.metrics()||null,poses:Object.keys(DEBUG_POSES),budget:{maxAssetBytes:8*1024*1024,maxRenderCalls:140,reflectionTarget:"256x256"},active}},

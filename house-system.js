@@ -309,7 +309,7 @@ function showHouse(){P.visible=true;
 }
 async function showBeach(){
  window.releaseLargeWorlds("beach");
- const world=ensureBeachWorld();await world.ready;
+ const world=ensureBeachWorld();await world.ready;ensureBeachInteractionRuntime(world);
  currentPlace="beach";P.visible=true;
  document.body.classList.add("beach-mode");document.body.classList.remove("restaurant-mode","bakery-mode","house-mode","space-mode","city-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
  S.background.set(0x9edfff);startPage.style.display="none";
@@ -539,6 +539,10 @@ const SPACE_COIN_POSITIONS=Object.freeze([
  Object.freeze({x:-10,y:0,z:-2}),Object.freeze({x:-6,y:0,z:2}),Object.freeze({x:-2,y:0,z:6}),
  Object.freeze({x:2,y:0,z:2}),Object.freeze({x:6,y:0,z:-2}),Object.freeze({x:2,y:0,z:-8})
 ]);
+const BEACH_TOKEN_POSITIONS=Object.freeze([
+ Object.freeze({x:-13,y:0,z:1}),Object.freeze({x:-16,y:0,z:11}),Object.freeze({x:-9,y:0,z:16}),
+ Object.freeze({x:1,y:0,z:4}),Object.freeze({x:7,y:0,z:1}),Object.freeze({x:7,y:0,z:13})
+]);
 let spaceInteractionRuntime=null;
 function createSpaceConversationCamera(){
  const tween=window.createThreeConversationCameraAdapter({THREE,camera:C,duration:650});
@@ -648,7 +652,92 @@ function ensureSpaceInteractionRuntime(world){
 function destroySpaceInteractionRuntime(){if(spaceInteractionRuntime){spaceInteractionRuntime.destroy();spaceInteractionRuntime=null;window.spaceInteractionRuntime=null}}
 window.destroySpaceInteractionRuntime=destroySpaceInteractionRuntime;
 window.updateSpaceInteractions=(dt,isActive)=>spaceInteractionRuntime?.update(dt,isActive);
-window.isGameplayInputLocked=()=>Boolean(spaceInteractionRuntime&&spaceInteractionRuntime.conversation.state!==spaceInteractionRuntime.conversation.STATES.IDLE);
+let beachInteractionRuntime=null;
+function beachQuestConversationDefinition(quest){
+ const state=()=>quest.controller.snapshot();
+ return {
+  id:"beach-guide-marina",speaker:"Marina",prompt:"Talk to Marina",range:4.2,priority:30,
+  enabled:()=>currentPlace==="beach",camera:{distance:4.1,height:2.6,targetHeight:1.3,duration:650},start:"challenge",
+  nodes:{challenge:{
+   text:()=>{
+    const game=state();
+    if(game.phase==="active")return `You found ${game.collectedCount} of ${game.count} boardwalk tokens. ${Math.ceil(game.remainingMs/1000)} seconds remain.`;
+    if(game.phase==="failed")return "The prize timer ran out, but I can scatter the tokens for another try.";
+    if(game.phase==="success")return "That was fast! The prize booth is stocked again, and your $20 reward is in your wallet.";
+    return "The boardwalk prize booth lost six gold tokens across the sand. Collect all six in 35 seconds and I will pay you $20.";
+   },
+   actions:[
+    {id:"accept",label:"Start the token dash",action:"start-beach-token-dash",end:true,when:()=>state().phase==="idle"},
+    {id:"later",label:"Maybe later",end:true,when:()=>state().phase==="idle"},
+    {id:"status",label:"Keep searching",end:true,when:()=>state().phase==="active"},
+    {id:"retry",label:"Try the dash again",action:"retry-beach-token-dash",end:true,when:()=>state().phase==="failed"},
+    {id:"leave-failed",label:"Not yet",end:true,when:()=>state().phase==="failed"},
+    {id:"thanks",label:"Thanks, Marina",end:true,when:()=>state().phase==="success"}
+   ]
+  }}
+ };
+}
+function ensureBeachInteractionRuntime(world){
+ if(beachInteractionRuntime?.world===world)return beachInteractionRuntime;
+ if(beachInteractionRuntime)destroyBeachInteractionRuntime();
+ const view=window.createConversationDOMView({root:document.body}),camera=createSpaceConversationCamera();
+ const quest=window.CoinQuestSystem.createCoinQuestSystem({
+  THREE,scene:world.group,loader:new window.ThreeGLTFLoader.GLTFLoader(),getPlayerPosition:()=>P.position,
+  onReward:value=>window.gameEconomy.add(value,"beach-token-dash"),showRetryButton:false,
+  getRenderInfo:()=>({calls:R.info.render.calls,triangles:R.info.render.triangles,geometries:R.info.memory.geometries,textures:R.info.memory.textures}),
+  config:{id:"beach-token-dash",title:"Boardwalk Token Dash",count:6,timeLimitSeconds:35,reward:20,positions:BEACH_TOKEN_POSITIONS}
+ });
+ let pendingQuestStart=null;
+ const conversation=window.createConversationSystem({
+  view,camera,scratchPosition:new THREE.Vector3(),
+  runAction:action=>{
+   if(action.action==="start-beach-token-dash"){pendingQuestStart="start";return {end:true}}
+   if(action.action==="retry-beach-token-dash"){pendingQuestStart="retry";return {end:true}}
+   return typeof action.run==="function"?action.run():undefined;
+  }
+ });
+ const questGiver=world.findNpc?.("marina")||world.npcs?.[0];
+ if(!questGiver)throw new Error("Beach token dash requires Marina");
+ questGiver.userData.npcName="Marina";questGiver.userData.interactionType="quest-giver";
+ conversation.register(questGiver,beachQuestConversationDefinition(quest));
+ const tips={kai:"Marina's tokens glint beside the water and umbrellas.",sol:"The road is out of bounds for the token dash, so stay on the sand.",tala:"Make a wide loop and finish near Marina.",milo:"The gold tokens float just above the beach."};
+ world.npcs?.forEach(actor=>{
+  if(actor===questGiver)return;const id=actor.userData.npcId,name=actor.userData.npcName||id;
+  conversation.register(actor,{id:`beach-npc-${id}`,speaker:name,prompt:`Talk to ${name}`,range:3.8,enabled:()=>currentPlace==="beach",camera:{distance:4,height:2.6,targetHeight:1.3,duration:650},nodes:{hello:{text:tips[id]||"Marina is running a boardwalk token dash today.",actions:[{id:"bye",label:"Got it",end:true}]}}});
+ });
+ const unsubscribeConversation=conversation.subscribe(event=>{
+  document.body.classList.toggle("conversation-active",event.snapshot.state!==conversation.STATES.IDLE);
+  if(event.type==="end"&&event.detail?.phase==="complete"&&pendingQuestStart){const action=pendingQuestStart;pendingQuestStart=null;if(action==="retry")quest.retry(performance.now());else quest.start(performance.now())}
+ });
+ const unsubscribeQuest=quest.subscribe(event=>{
+  const state=event.snapshot;
+  if(event.type==="coin:collect"){window.playGameSoundEffect?.("spaceCoinSound",.68);document.getElementById("msg").textContent=`Boardwalk token found: ${event.collectedCount} / ${state.count}`}
+  if(event.type==="quest:success")document.getElementById("msg").textContent=`Token dash complete! You earned $${event.reward}.`;
+  if(event.type==="quest:failed")document.getElementById("msg").textContent="Time expired. Talk to Marina to retry.";
+ });
+ const keyHandler=event=>conversation.handleInput(event);addEventListener("keydown",keyHandler);
+ beachInteractionRuntime={
+  world,conversation,quest,
+  update(dt,isActive){
+   if(!isActive){conversation.updateInteraction(null);if(quest.hud)quest.hud.hidden=true;return}
+   conversation.updateInteraction(P.position,{world:"beach",quest:quest.controller.snapshot()});quest.update(dt,performance.now());
+   const game=quest.controller.snapshot();document.body.dataset.beachConversationState=conversation.state;document.body.dataset.beachQuestPhase=game.phase;document.body.dataset.beachQuestTokens=`${game.collectedCount}/${game.count}`;document.body.dataset.beachQuestRemaining=String(Math.ceil(game.remainingMs/1000));
+  },
+  debug(){return {conversation:conversation.snapshot(),quest:quest.debugSnapshot(),questGiver:questGiver.userData.npcName,registeredTargets:world.npcs?.length||1}},
+  destroy(){
+   removeEventListener("keydown",keyHandler);unsubscribeConversation();unsubscribeQuest();document.body.classList.remove("conversation-active");quest.destroy();
+   const finish=()=>conversation.destroy();if(conversation.state===conversation.STATES.IDLE)finish();else conversation.end("world-exit").finally(finish);
+  }
+ };
+ window.beachInteractionRuntime=beachInteractionRuntime;return beachInteractionRuntime;
+}
+function destroyBeachInteractionRuntime(){if(beachInteractionRuntime){beachInteractionRuntime.destroy();beachInteractionRuntime=null;window.beachInteractionRuntime=null}}
+window.destroyBeachInteractionRuntime=destroyBeachInteractionRuntime;
+window.updateBeachInteractions=(dt,isActive)=>beachInteractionRuntime?.update(dt,isActive);
+window.isGameplayInputLocked=()=>Boolean(
+ (spaceInteractionRuntime&&spaceInteractionRuntime.conversation.state!==spaceInteractionRuntime.conversation.STATES.IDLE)||
+ (beachInteractionRuntime&&beachInteractionRuntime.conversation.state!==beachInteractionRuntime.conversation.STATES.IDLE)
+);
 const buildingTools=document.getElementById("buildingTools");
 const saveHouseButton=document.getElementById("saveHouse");
 const buildHouseButton=document.getElementById("buildHouse");
