@@ -151,7 +151,7 @@
    if(!hud)return;const state=controller.snapshot(),seconds=Math.max(0,state.remainingMs/1000);
    hud.hidden=!isHudVisiblePhase(state.phase);
    titleNode.textContent=config.title;timerNode.textContent=`${seconds.toFixed(seconds<10?1:0)}s`;
-   progressNode.textContent=`${state.collectedCount} / ${state.count} coins`;
+   progressNode.textContent=`${state.collectedCount}/${state.count}`;progressNode.setAttribute("aria-label",`${state.collectedCount} of ${state.count} coins collected`);
    hud.dataset.phase=state.phase;retryButton.hidden=state.phase!=="failed"||options.showRetryButton===false;
    statusNode.textContent=state.phase==="success"?`Mission complete  +$${config.reward}`:state.phase==="failed"?"Time expired":"";
   }
