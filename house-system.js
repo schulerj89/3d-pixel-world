@@ -52,18 +52,22 @@ function applyHouseLayout(layout){
  }
  for(const wall of layout.walls){
   const length=wall.end-wall.start;
-  const wallWidth=wall.type==="cell"?wall.width:(wall.orientation==="H"?length:layout.wallThickness);
-  const interiorMaterial=window.HouseWallMaterials?.create("interior",{width:wallWidth,height:layout.wallHeight,renderer:R})||0xf2e8dc;
+  const renderedHeight=layout.wallHeight+(wall.heightOffset||0);
+  const wallWidth=wall.type==="cell"?wall.width:length;
+  const interiorMaterial=window.HouseWallMaterials?.create("interior",{width:wallWidth,height:renderedHeight,renderer:R})||0xf2e8dc;
   const mesh=wall.type==="cell"
-   ?hbox(wall.width,layout.wallHeight,wall.depth,interiorMaterial,wall.x,layout.wallHeight/2,wall.z,houseLayoutShell)
+   ?hbox(wall.width,renderedHeight,wall.depth,interiorMaterial,wall.x,renderedHeight/2,wall.z,houseLayoutShell)
    :wall.orientation==="H"
-    ?hbox(length,layout.wallHeight,layout.wallThickness,interiorMaterial,(wall.start+wall.end)/2,layout.wallHeight/2,wall.fixed,houseLayoutShell)
-    :hbox(layout.wallThickness,layout.wallHeight,length,interiorMaterial,wall.fixed,layout.wallHeight/2,(wall.start+wall.end)/2,houseLayoutShell);
+    ?hbox(length,renderedHeight,wall.thickness||layout.wallThickness,interiorMaterial,(wall.start+wall.end)/2,renderedHeight/2,wall.fixed,houseLayoutShell)
+    :hbox(wall.thickness||layout.wallThickness,renderedHeight,length,interiorMaterial,wall.fixed,renderedHeight/2,(wall.start+wall.end)/2,houseLayoutShell);
   mesh.name=`house-wall-${wall.id}`;mesh.userData.wallId=wall.id;
  }
  document.body.dataset.houseLayoutStatus="ready";
  document.body.dataset.houseGridCell=String(layout.gridCell);
  queueMicrotask(()=>{
+  // An explicit empty layout is different from a first visit. Preserve the
+  // player's recovery choice instead of rebuilding fixtures over an old save.
+  if(saved.houseFurnitureCleared===true)return;
   const seedStarterSet=furniture.length===0,spec=window.HouseSpaceSpec?.REFRIGERATOR;
   for(const fixture of layout.fixtures){
    const kind={refrigerator:"fridge","double-bed":"bed",sofa:"sofa","dining-table":"diningTable"}[fixture.id];
@@ -210,7 +214,7 @@ g.rotation.y=savedItem?.rotation ?? 0;
 // Saved furniture is constructed before the interaction declarations below are
 // initialized. A microtask registers it after this script has finished loading.
 queueMicrotask(()=>registerFurnitureAction(g));
-if(!loading)saveWorld();
+if(!loading){saved.houseFurnitureCleared=false;saveWorld()}
 return g;
 }
 saved.furniture=(saved.furniture||[]).filter(item=>(typeof item==="string"?item:item?.kind)!=="remote");
@@ -219,6 +223,7 @@ saved.furniture.forEach(item=>{
  if(typeof item==="string")addFurniture(item,true);
  else addFurniture(item.kind,true,item);
 });
+queueMicrotask(()=>updateFurnitureLabel());
 function setBakeryVisible(show){
  bakeryObjects.forEach(obj=>obj.visible=show);
  P.visible=true;
@@ -634,6 +639,9 @@ window.isGameplayInputLocked=()=>Boolean(spaceInteractionRuntime&&spaceInteracti
 const buildingTools=document.getElementById("buildingTools");
 const saveHouseButton=document.getElementById("saveHouse");
 const buildHouseButton=document.getElementById("buildHouse");
+const clearAllFurnitureButton=document.getElementById("clearAllFurniture");
+const clearFurnitureStatus=document.getElementById("clearFurnitureStatus");
+let clearFurnitureConfirmTimer=null;
 const buildMessage=document.getElementById("buildMessage");
 const housePanelToggle=document.getElementById("housePanelToggle");
 const closeHousePanel=document.getElementById("closeHousePanel");
@@ -743,6 +751,8 @@ function selectedFurniture(){
 function updateFurnitureLabel(){
  const item=selectedFurniture();
  document.getElementById("selectedFurniture").textContent=item?"Selected: "+item.userData.label+" · "+(selectedFurnitureIndex+1)+" of "+furniture.length:"No furniture selected";
+ clearAllFurnitureButton.disabled=furniture.length===0;
+ clearAllFurnitureButton.setAttribute("aria-disabled",String(clearAllFurnitureButton.disabled));
  furniture.forEach((f,i)=>f.traverse(child=>{if(child.isMesh){if(!child.userData.baseEmissive)child.userData.baseEmissive=child.material.emissive.getHex();child.material.emissive.setHex(i===selectedFurnitureIndex&&buildingMode?0x24104a:child.userData.baseEmissive)} }));
  updateFurnitureGuides();
 }
@@ -816,6 +826,37 @@ window.getHouseLayoutDebug=()=>({
 });
 
 document.getElementById("deleteFurniture").onclick=()=>{const item=selectedFurniture();if(!item)return;if(item===seatedFurniture)leaveSeat();unregisterFurnitureAction(item);house.remove(item);furniture.splice(selectedFurnitureIndex,1);selectedFurnitureIndex=Math.min(selectedFurnitureIndex,furniture.length-1);updateFurnitureLabel();saveWorld()};
+function clearAllFurniture(){
+ if(!furniture.length)return false;
+ if(sitting)leaveSeat();
+ tvControlsPanelEl.style.display="none";
+ houseActionBtn.style.display="none";
+ for(const item of furniture){unregisterFurnitureAction(item);house.remove(item)}
+ furniture.length=0;
+ selectedFurnitureIndex=-1;
+ saved.houseFurnitureCleared=true;
+ saveWorld();
+ updateFurnitureLabel();
+ clearFurnitureStatus.textContent="All furniture removed. Your empty house has been saved.";
+ document.getElementById("msg").textContent="All furniture cleared and the empty house was saved.";
+ return true;
+}
+function resetClearFurnitureConfirmation(){
+ clearTimeout(clearFurnitureConfirmTimer);clearFurnitureConfirmTimer=null;
+ clearAllFurnitureButton.dataset.confirming="false";
+ clearAllFurnitureButton.textContent="Clear all furniture";
+}
+window.clearAllHouseFurniture=clearAllFurniture;
+clearAllFurnitureButton.addEventListener("click",()=>{
+ if(!furniture.length)return;
+ if(clearAllFurnitureButton.dataset.confirming==="true"){
+  resetClearFurnitureConfirmation();clearAllFurniture();return;
+ }
+ clearAllFurnitureButton.dataset.confirming="true";
+ clearAllFurnitureButton.textContent="Confirm clear all";
+ clearFurnitureStatus.textContent="Press Confirm clear all to remove every furniture item and save an empty house.";
+ clearFurnitureConfirmTimer=setTimeout(resetClearFurnitureConfirmation,10000);
+});
 backPlaces.onclick=()=>{startPage.style.display="block";window.showWorldPicker?.();setHousePanel(false);setBuildingMode(false);house.visible=false;beach.visible=false;hideSpaceWorld();destroyCityWorld();if(castle)castle.visible=false;window.RestaurantWorld?.destroy?.();setBakeryVisible(false)};
 
 

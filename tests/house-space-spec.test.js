@@ -18,7 +18,7 @@ assert.deepStrictEqual(level.fixtures.map(fixture=>[fixture.id,fixture.room]),[
 const boundary=[...level.map[0],...level.map.at(-1),...level.map.slice(1,-1).flatMap(row=>[row[0],row.at(-1)])];
 assert(boundary.every(symbol=>symbol==="#"||symbol==="E"),"every exterior edge must be enclosed by a wall or closed door");
 assert.strictEqual(boundary.filter(symbol=>symbol==="E").length,4,"front entrance must be one enclosed four-unit door module");
-assert.strictEqual(level.map.flatMap(row=>[...row]).filter(symbol=>symbol==="D").length,5,"section walls must include explicit closed interior doors");
+assert.strictEqual(level.map.flatMap(row=>[...row]).filter(symbol=>symbol==="D").length,11,"section walls must reserve two four-unit entries and one three-unit entry");
 const openPerimeter={...level,map:[...level.map]};openPerimeter.map[0]=`.${openPerimeter.map[0].slice(1)}`;
 assert.throws(()=>House.validateLevel(openPerimeter),/perimeter must be enclosed/,"an open exterior edge must fail layout QA");
 

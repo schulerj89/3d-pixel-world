@@ -52,3 +52,10 @@ Use `HouseSpaceSpec.parseLevel()` for the text layout, build walls for every
 restaurant-sized refrigerator. Furniture placement UI should show both one-unit
 and two-unit guides and reject layouts that narrow a primary route below two
 units or any secondary passage below one unit.
+
+Before shipping a plan, run `node scripts/validate-house-layout.js`. The QA gate
+requires every interior and exterior entry run to be 3-4 contiguous unit cells
+bounded by walls. It also checks the exterior perimeter and corners, wall/door
+connectivity, unmarked seams, room bounds and reachability, fixture anchors,
+overlaps, and fixture approach clearance. `HouseSpaceSpec.validatePlan(level)`
+exposes the same reusable contract to other Node or browser QA tools.
