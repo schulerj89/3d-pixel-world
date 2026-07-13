@@ -1,29 +1,43 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path");
 const City=require("../city-world.js"),root=path.join(__dirname,".."),read=file=>fs.readFileSync(path.join(root,file),"utf8");
 
-const level=City.parseLevel(read("levels/city-98.txt")),spacing=City.spacingReport(level),roads=City.validateRoads(level),placements=City.buildingPlacements(level),lanes=City.roadLanes(level);
-assert.deepEqual([level.width,level.depth,level.cell],[98,98,7]);
+const level=City.parseLevel(read("levels/city-126.txt")),spacing=City.spacingReport(level),roads=City.validateRoads(level),placements=City.buildingPlacements(level),lanes=City.roadLanes(level),sidewalk=City.sidewalkGeometryData(level);
+assert.deepEqual([level.width,level.depth,level.cell],[126,126,9]);
 assert.equal(level.symbolAt(level.spawnCol,level.spawnRow),"X");
 assert.equal(placements.length,9,"all nine city buildings should be level-authored");
 assert(spacing.minimum>=City.MIN_SPACING,`minimum building clearance is ${spacing.minimum}`);
 assert.equal(roads.junctions,9,"the city needs a 3x3 traffic-light grid");
 assert(roads.roadTiles>=70,"the city should have a connected road network");
-assert.equal(lanes.length,6,"three horizontal and three vertical traffic lanes should reach world edges");
+assert.equal(lanes.length,12,"each of the three horizontal and vertical streets needs two opposing lanes");
+assert(lanes.every(lane=>lane.y===City.CAR_LANE_Y),"car roots must sit high enough for their wheels to touch the road");
+assert(2*City.ROAD_SCALE>=(.42*City.CAR_SCALE)*2+1,"each road must fit two full-width cars plus clearance");
 assert(City.CAR_SCALE*.45>=3,"cars should be at least as tall as the three-unit chibi");
+const roadCenter=City.cellCenter(level,2,2),sidewalkCenter=City.cellCenter(level,0,0);
+assert.equal(City.surfaceYAt(level,roadCenter.x,roadCenter.z),City.ROAD_SURFACE_Y);
+assert.equal(City.surfaceYAt(level,sidewalkCenter.x,sidewalkCenter.z),City.SIDEWALK_SURFACE_Y);
+assert.equal(sidewalk.tiles,121,"only non-road cells should receive patterned sidewalk tops");
+assert(sidewalk.curbFaces>0&&sidewalk.top.indices.length===sidewalk.tiles*6,"sidewalk geometry must be merged with authored curb edges");
+const sidewalkUs=sidewalk.top.uvs.filter((_,index)=>index%2===0),sidewalkVs=sidewalk.top.uvs.filter((_,index)=>index%2===1);
+assert(Math.max(...sidewalkUs)-Math.min(...sidewalkUs)>30&&Math.max(...sidewalkVs)-Math.min(...sidewalkVs)>30,"sidewalk UVs must use continuous world coordinates instead of resetting per cell");
 
-const tooTight=read("levels/city-98.txt").replace("cell: 7","cell: 2").replace("size: 98x98","size: 28x28");
-assert.throws(()=>City.parseLevel(tooTight),/too tight for the enlarged city kit/);
+const tooTight=read("levels/city-126.txt").replace("cell: 9","cell: 2").replace("size: 126x126","size: 28x28");
+assert.throws(()=>City.parseLevel(tooTight),/too tight for two full car lanes/);
 for(const file of City.MODEL_FILES)for(const extension of ["gltf","bin"]){
  assert(fs.existsSync(path.join(root,City.ASSET_ROOT,`${file}.${extension}`)),`missing ${file}.${extension}`);
 }
 assert(fs.existsSync(path.join(root,City.ASSET_ROOT,"citybits_texture.png")),"missing shared city atlas");
+assert(fs.existsSync(path.join(root,"assets/textures/city/patterned-paving-diffuse-1k.jpg")),"missing Poly Haven sidewalk texture");
+assert(read("assets/textures/city/SOURCE.md").includes("CC0"),"sidewalk texture needs source and license provenance");
 assert.equal(new Set(City.MODEL_FILES).size,City.MODEL_FILES.length,"the city asset registry should load each source once");
 const source=read("city-world.js");
-assert(source.includes('layout:"single-mesh"'),"city ground must remain one non-culled mesh so camera poses cannot expose missing quadrants");
-for(const pose of ["overview","buildingsNorth","buildingsCenter","buildingsSouth","trafficLights","carsEast","carsNorth"])assert(source.includes(`${pose}:{`),`missing named ${pose} QA pose`);
+assert(source.includes('layout:"merged-cell-tops"'),"sidewalks must remain a single merged textured mesh");
+assert(source.includes("lightCount+=4")&&source.includes("trafficPlacements")&&source.includes("instancedAsset"),"every junction needs four cardinal signals batched into instances");
+for(const pose of ["overview","buildingsNorth","buildingsCenter","buildingsSouth","trafficLights","roadGrounding","sidewalkGrounding","carsEast","carsNorth"])assert(source.includes(`${pose}:{`),`missing named ${pose} QA pose`);
 for(const type of "ABCDEFGH")assert(source.includes(`building${type}:{`),`missing building ${type} QA pose`);
 const html=read("index.html");
 assert(html.includes('id="goCity"')&&html.includes("assets/ui/city.svg"),"world picker needs the City button and icon");
 assert(!/goForest|forest-world\.js|forest-animal-model\.js/.test(html),"forest destination scripts and button must be removed");
 assert(!read("game.js").includes("R.shadowMap.enabled=worldShadows"),"world switching must not toggle the renderer shadow pipeline and create black city-ground artifacts");
+assert(read("game.js").includes("cityWorld?.surfaceYAt"),"player grounding must follow road and sidewalk surfaces");
+assert(read("house-system.js").includes("world.surfaceYAt?.(pose.x,pose.z)"),"City entry and QA poses must start on the authored surface");
 console.log(`city world: ${placements.length} buildings, ${roads.roadTiles} road tiles, ${roads.junctions} junctions, ${spacing.minimum.toFixed(2)} minimum units`);
