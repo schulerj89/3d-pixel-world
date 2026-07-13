@@ -14,3 +14,23 @@
 - Retrieved: 2026-07-12
 
 The sound remains governed by the linked Mixkit license; it is not relicensed under the game's source-code license.
+
+## `space-starlight-stroll.mp3`
+
+- Title: **Space Starlight Stroll**
+- Generator: ElevenLabs Music API, `music_v1`
+- API reference: https://elevenlabs.io/docs/api-reference/music/compose
+- Generation: 65-second, forced-instrumental MP3 at 44.1 kHz / 128 kbit/s, C2PA signing requested
+- Prompt direction: cheerful cozy block-building life-sim on a friendly moon base, with warm electric piano, soft marimba, rounded synth plucks, cosmic sparkles, muted bass, and light percussion; no vocals or recognizable existing melody
+- Generated: 2026-07-13
+
+## `space-coin-chime.mp3`
+
+- Title: **Space Coin Chime**
+- Generator: ElevenLabs Sound Effects API, `eleven_text_to_sound_v2`
+- API reference: https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert
+- Generation: single 0.7-second pickup chime at 22.05 kHz / 32 kbit/s
+- Prompt direction: a rounded marimba ping and tiny synth sparkle with a clean transient, short tail, and no voice
+- Generated: 2026-07-13
+
+Both ElevenLabs files were generated specifically for this project through the repository owner's account. They remain subject to the applicable ElevenLabs terms and are not separately relicensed as standalone stock audio by this notice.

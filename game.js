@@ -600,7 +600,8 @@ window.getGameDebug=()=>({
  space:spaceWorld?.debug?.()||null,
  city:cityWorld?.debug?.()||null,
  restaurant:window.RestaurantWorld?.current?.group?.userData||null,
- spaceInteractions:window.spaceInteractionRuntime?.debug?.()||null
+ spaceInteractions:window.spaceInteractionRuntime?.debug?.()||null,
+ audio:{music:window.getMusicDebug?.()||null,effects:window.getSoundEffectDebug?.()||null}
 });
 let inKitchen=false;
 let money=100;
@@ -666,6 +667,18 @@ const bakeryMusicTracks=[document.getElementById("bakeryMusic"),document.getElem
 const beachMusicTracks=[document.getElementById("beachMusic")];
 const destinationMusicTracks={space:[document.getElementById("spaceMusic")],city:[document.getElementById("cityMusic")],castle:[document.getElementById("castleMusic")]};
 const musicTracks=[...bakeryMusicTracks,...beachMusicTracks,...Object.values(destinationMusicTracks).flat()];
+const soundEffectErrors=new Map();
+window.playGameSoundEffect=(id,volume=.5)=>{
+ const sound=document.getElementById(id);if(!sound)return false;
+ sound.pause();sound.currentTime=0;sound.volume=Math.max(0,Math.min(1,volume));
+ const playPromise=sound.play();
+ if(playPromise)playPromise.then(()=>soundEffectErrors.delete(id)).catch(error=>soundEffectErrors.set(id,error?.name||"playback-error"));
+ return true;
+};
+window.getSoundEffectDebug=()=>Object.fromEntries(["blenderSound","spaceCoinSound"].map(id=>{
+ const sound=document.getElementById(id);
+ return [id,{src:sound?.currentSrc||sound?.getAttribute("src")||"",readyState:sound?.readyState||0,error:soundEffectErrors.get(id)||sound?.error?.code||"",paused:sound?.paused??true}];
+}));
 let musicTrackIndex=0,musicStarted=false,currentMusicWorld="bakery",currentMusicTrack=null,lastMusicError="",musicMuted=localStorage.getItem("bakeryMusicMuted")==="true";
 function tracksForWorld(world){return destinationMusicTracks[world]||(world==="beach"?beachMusicTracks:bakeryMusicTracks)}
 function activeMusicTracks(){return tracksForWorld(currentMusicWorld)}

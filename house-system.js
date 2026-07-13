@@ -618,7 +618,10 @@ function ensureSpaceInteractionRuntime(world){
  });
  const unsubscribeQuest=quest.subscribe(event=>{
   const state=event.snapshot;
-  if(event.type==="coin:collect")document.getElementById("msg").textContent=`Star coin collected: ${event.collectedCount} / ${state.count}`;
+  if(event.type==="coin:collect"){
+   window.playGameSoundEffect?.("spaceCoinSound",.68);
+   document.getElementById("msg").textContent=`Star coin collected: ${event.collectedCount} / ${state.count}`;
+  }
   if(event.type==="quest:success")document.getElementById("msg").textContent=`Mission complete! You earned $${event.reward}.`;
   if(event.type==="quest:failed")document.getElementById("msg").textContent="Time expired. Talk to Nova to retry.";
  });
