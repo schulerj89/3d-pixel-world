@@ -1,40 +1,62 @@
 // House shell, destination switching, building controls, and TV interaction.
-// The house shell, camera, spawn, and furniture limits all derive from this
-// one definition so future room-size changes cannot leave build bounds behind.
+// house-main-level.txt is the authoritative room/wall source; these values are a
+// conservative startup envelope used only while that file is loading.
 const HOUSE_CONFIG={
- width:15,
- depth:15,
+ width:24,
+ depth:20,
  wallHeight:5,
- wallThickness:.2,
+ wallThickness:.24,
  playerInset:.45,
  furnitureInset:.65,
  furnitureStep:.5,
- spawn:{x:0,z:2.5},
- // Frame the interior from inside the rear corner so the front wall never
- // blocks the room immediately after entering My House.
- camera:{angle:2.8,height:8,distance:11}
+ spawn:{x:0,z:8},
+ camera:{angle:2.8,height:11,distance:16}
 };
-const HOUSE_HALF_WIDTH=HOUSE_CONFIG.width/2;
-const HOUSE_HALF_DEPTH=HOUSE_CONFIG.depth/2;
 const HOUSE_BOUNDS={
- minX:-HOUSE_HALF_WIDTH+HOUSE_CONFIG.furnitureInset,
- maxX:HOUSE_HALF_WIDTH-HOUSE_CONFIG.furnitureInset,
- minZ:-HOUSE_HALF_DEPTH+HOUSE_CONFIG.furnitureInset,
- maxZ:HOUSE_HALF_DEPTH-HOUSE_CONFIG.furnitureInset,
+ minX:-HOUSE_CONFIG.width/2+HOUSE_CONFIG.furnitureInset,
+ maxX:HOUSE_CONFIG.width/2-HOUSE_CONFIG.furnitureInset,
+ minZ:-HOUSE_CONFIG.depth/2+HOUSE_CONFIG.furnitureInset,
+ maxZ:HOUSE_CONFIG.depth/2-HOUSE_CONFIG.furnitureInset,
  step:HOUSE_CONFIG.furnitureStep
 };
-let houseArea="interior",houseCity=null;
+let houseArea="interior",houseCity=null,activeHouseLayout=null,houseLayoutStatus="loading",houseLayoutError=null;
 function canWalkInHouse(x,z){
  if(houseArea==="exterior")return houseCity?.canWalk?houseCity.canWalk(x,z):x>=-18&&x<=18&&z>=7.9&&z<=35;
- return x>=-HOUSE_HALF_WIDTH+HOUSE_CONFIG.playerInset &&
-  x<=HOUSE_HALF_WIDTH-HOUSE_CONFIG.playerInset &&
-  z>=-HOUSE_HALF_DEPTH+HOUSE_CONFIG.playerInset &&
-  z<=HOUSE_HALF_DEPTH-HOUSE_CONFIG.playerInset;
+ if(activeHouseLayout)return activeHouseLayout.canWalk(x,z,HOUSE_CONFIG.playerInset);
+ return x>=-HOUSE_CONFIG.width/2+HOUSE_CONFIG.playerInset &&
+  x<=HOUSE_CONFIG.width/2-HOUSE_CONFIG.playerInset &&
+  z>=-HOUSE_CONFIG.depth/2+HOUSE_CONFIG.playerInset &&
+  z<=HOUSE_CONFIG.depth/2-HOUSE_CONFIG.playerInset;
 }
-function hbox(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;house.add(m);return m}
-hbox(HOUSE_CONFIG.width,.25,HOUSE_CONFIG.depth,0xd7b08b,0,.03,0);
-hbox(HOUSE_CONFIG.width,HOUSE_CONFIG.wallHeight,HOUSE_CONFIG.wallThickness,0xddefff,0,HOUSE_CONFIG.wallHeight/2,-HOUSE_HALF_DEPTH+HOUSE_CONFIG.wallThickness/2);
-hbox(HOUSE_CONFIG.wallThickness,HOUSE_CONFIG.wallHeight,HOUSE_CONFIG.depth,0xffe5ef,-HOUSE_HALF_WIDTH+HOUSE_CONFIG.wallThickness/2,HOUSE_CONFIG.wallHeight/2,0);
+function hbox(w,h,d,c,x,y,z,parent=house){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;parent.add(m);return m}
+const houseLayoutShell=new THREE.Group();houseLayoutShell.name="house-layout-shell";house.add(houseLayoutShell);
+function applyHouseLayout(layout){
+ activeHouseLayout=layout;houseLayoutStatus="ready";houseLayoutError=null;
+ Object.assign(HOUSE_CONFIG,{width:layout.width,depth:layout.depth,wallHeight:layout.wallHeight,wallThickness:layout.wallThickness,playerInset:layout.playerRadius,furnitureInset:layout.furnitureInset,furnitureStep:layout.furnitureStep,spawn:{...layout.spawn},camera:{...layout.camera}});
+ Object.assign(HOUSE_BOUNDS,{minX:layout.bounds.minX+layout.furnitureInset,maxX:layout.bounds.maxX-layout.furnitureInset,minZ:layout.bounds.minZ+layout.furnitureInset,maxZ:layout.bounds.maxZ-layout.furnitureInset,step:layout.furnitureStep});
+ houseLayoutShell.clear();
+ const floor=hbox(layout.width,.25,layout.depth,0xd7b08b,0,.03,0,houseLayoutShell);floor.name="house-floor";
+ for(const room of layout.rooms){
+  const colors={living:0xe0bd98,kitchen:0xd6c19f,bedroom:0xddb7aa,entry_hall:0xd9c4a5,flex_room:0xd1bd9c};
+  const panel=hbox(room.maxX-room.minX,.03,room.maxZ-room.minZ,colors[room.id]||0xd7b08b,(room.minX+room.maxX)/2,.17,(room.minZ+room.maxZ)/2,houseLayoutShell);
+  panel.name=`room-floor-${room.id}`;panel.userData.roomId=room.id;
+ }
+ for(const wall of layout.walls){
+  const length=wall.end-wall.start;
+  const mesh=wall.type==="cell"
+   ?hbox(wall.width,layout.wallHeight,wall.depth,0xf2e8dc,wall.x,layout.wallHeight/2,wall.z,houseLayoutShell)
+   :wall.orientation==="H"
+    ?hbox(length,layout.wallHeight,layout.wallThickness,0xf2e8dc,(wall.start+wall.end)/2,layout.wallHeight/2,wall.fixed,houseLayoutShell)
+    :hbox(layout.wallThickness,layout.wallHeight,length,0xf2e8dc,wall.fixed,layout.wallHeight/2,(wall.start+wall.end)/2,houseLayoutShell);
+  mesh.name=`house-wall-${wall.id}`;mesh.userData.wallId=wall.id;
+ }
+ document.body.dataset.houseLayoutStatus="ready";
+ document.body.dataset.houseGridCell=String(layout.gridCell);
+}
+window.HouseLayout?.load("house-main-level.txt").then(applyHouseLayout).catch(error=>{
+ houseLayoutStatus="error";houseLayoutError=error.message;document.body.dataset.houseLayoutStatus="error";
+ console.error("House layout failed to load",error);
+});
 const houseExterior=window.createHouseExterior?.(THREE)||null;
 if(houseExterior)house.add(houseExterior.group);
 function registerHouseCity(city){
@@ -56,7 +78,7 @@ function setHouseArea(area){
  houseArea=area==="exterior"?"exterior":"interior";
  houseCity?.setActive?.(houseArea==="exterior");
  if(buildingMode&&houseArea!=="interior")setBuildingMode(false);
- const spawn=houseArea==="exterior"?(houseCity?.exteriorSpawn||houseExterior?.exteriorSpawn||{x:0,z:10.1}):(houseExterior?.interiorSpawn||{x:0,z:5.25});
+ const spawn=houseArea==="exterior"?(houseCity?.exteriorSpawn||houseExterior?.exteriorSpawn||{x:0,z:12.6}):(activeHouseLayout?.spawn||houseExterior?.interiorSpawn||HOUSE_CONFIG.spawn);
  P.position.set(spawn.x,0,spawn.z);P.rotation.y=houseArea==="exterior"?0:Math.PI;
  cameraHeight=houseArea==="exterior"?10:HOUSE_CONFIG.camera.height;
  cameraDistance=houseArea==="exterior"?14:HOUSE_CONFIG.camera.distance;
@@ -751,6 +773,17 @@ window.getHouseFurnitureDebug=()=>({
    z:+item.position.z.toFixed(2),
    rotation:+item.rotation.y.toFixed(3)
  }))
+});
+
+window.getHouseLayoutDebug=()=>({
+ status:houseLayoutStatus,
+ error:houseLayoutError,
+ area:houseArea,
+ player:{x:+P.position.x.toFixed(2),z:+P.position.z.toFixed(2),room:activeHouseLayout?.roomAt(P.position.x,P.position.z)||null},
+ walkable:activeHouseLayout?activeHouseLayout.canWalk(P.position.x,P.position.z,HOUSE_CONFIG.playerInset):null,
+ furnitureBounds:{...HOUSE_BOUNDS},
+ layout:activeHouseLayout?.debug?.()||null,
+ shell:{walls:houseLayoutShell.children.filter(child=>child.userData.wallId).length,rooms:houseLayoutShell.children.filter(child=>child.userData.roomId).length}
 });
 
 document.getElementById("deleteFurniture").onclick=()=>{const item=selectedFurniture();if(!item)return;if(item===seatedFurniture)leaveSeat();unregisterFurnitureAction(item);house.remove(item);furniture.splice(selectedFurnitureIndex,1);selectedFurnitureIndex=Math.min(selectedFurnitureIndex,furniture.length-1);updateFurnitureLabel();saveWorld()};
