@@ -607,6 +607,10 @@ setInterval(()=>{
 // ===== Finish Orders =====
 (function(){
  const finishOrdersBtn=document.getElementById("finishOrders");
+ const ordersPanel=document.getElementById("orders");
+ ordersPanel.setAttribute("role","dialog");
+ ordersPanel.setAttribute("aria-label","Current bakery orders");
+ finishOrdersBtn.textContent="✅ Finish & serve";
 
  finishOrdersBtn.addEventListener("pointerdown",e=>{
    e.preventDefault();

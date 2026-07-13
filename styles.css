@@ -239,6 +239,16 @@ body.kitchen-clean #lookPad{opacity:.82}
   background:#8fffa7;font-weight:bold;font-size:13px;box-shadow:0 3px #40995a;
 }
 #finishOrders:active{transform:translateY(2px);box-shadow:0 1px #40995a}
+
+/* Orders are one composed card: title, readable tickets, then the action. */
+#orders{counter-reset:bakery-order;box-sizing:border-box!important;top:112px!important;right:12px!important;width:min(320px,calc(100vw - 24px))!important;max-height:min(460px,calc(100vh - 130px))!important;padding:14px!important;overflow:auto!important;border:3px solid #657098!important;border-radius:22px!important;background:linear-gradient(160deg,#252b48,#171b30)!important;color:#fff!important;box-shadow:0 12px 34px #11162a88!important;text-align:left!important}
+body.kitchen-clean #orders.hud-open{display:flex!important;flex-direction:column;gap:9px}
+#orders h3{order:0;margin:0 0 3px!important;padding:2px 4px 9px;border-bottom:1px solid #ffffff24;color:#fff!important;font-size:20px!important;letter-spacing:.04em;text-align:left!important}
+#orders>div{counter-increment:bakery-order;order:1;display:flex;align-items:center;gap:10px;min-height:44px;box-sizing:border-box;margin:0!important;padding:9px 11px!important;border:1px solid #ffffff22;border-radius:13px!important;background:#ffffff10!important;font-size:15px;font-weight:800}
+#orders>div::before{content:counter(bakery-order);display:grid;flex:0 0 28px;width:28px;height:28px;place-items:center;border-radius:50%;background:#ffd76b;color:#44320c;font-size:13px;font-weight:900}
+#finishOrders{position:static!important;order:2;width:100%!important;min-height:48px;height:auto!important;margin:4px 0 0!important;padding:12px 14px!important;border:2px solid #caffd5!important;border-radius:14px!important;background:linear-gradient(#9affb0,#72dc8a)!important;color:#173d23;font-size:15px!important;font-weight:900!important;box-shadow:0 4px 0 #3d9654!important;touch-action:manipulation}
+#finishOrders:active{transform:translateY(3px);box-shadow:0 1px 0 #3d9654!important}
+@media(max-width:520px){#orders{top:108px!important;width:calc(100vw - 20px)!important;right:10px!important;padding:12px!important}#orders h3{font-size:18px!important}#orders>div{min-height:42px;font-size:14px}}
 #page5Button{
   display:none;position:fixed;right:15px;top:300px;z-index:40;
   width:auto;height:auto;padding:11px 14px;border:0;border-radius:14px;
