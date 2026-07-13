@@ -65,8 +65,8 @@
    const settings=config||{};
    const action={
     target,
-    icon:String(settings.icon||"✨"),
-    label:String(settings.label||"Interact"),
+    icon:settings.icon||"✨",
+    label:settings.label||"Interact",
     range:Math.max(.1,Number(settings.range)||2.5),
     priority:Number(settings.priority)||0,
     anchorOffset:Number.isFinite(settings.anchorOffset)?settings.anchorOffset:.4,
@@ -117,9 +117,11 @@
    const left=rect.left+(projected.x+1)*rect.width*.5;
    const top=rect.top+(1-projected.y)*rect.height*.5;
    active=best;
-   iconElement.textContent=best.icon;
-   labelElement.textContent=best.label;
-   button.setAttribute("aria-label",best.label);
+   const icon=typeof best.icon==="function"?best.icon(best.target,best):best.icon;
+   const label=typeof best.label==="function"?best.label(best.target,best):best.label;
+   iconElement.textContent=String(icon||"✨");
+   labelElement.textContent=String(label||"Interact");
+   button.setAttribute("aria-label",String(label||"Interact"));
    button.style.transform=`translate3d(${Math.round(left)}px,${Math.round(top)}px,0) translate(-50%,-100%)`;
    button.hidden=false;
    button.setAttribute("aria-hidden","false");

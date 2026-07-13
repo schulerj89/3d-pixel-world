@@ -1025,7 +1025,7 @@ if(d>.12){q.position.x+=dx/d*.025;q.position.z+=dz/d*.025;q.rotation.z=Math.sin(
 else if(u.stage===0 && i===0){u.stage=1}
 else if(u.stage===1){if(--u.wait<0){u.stage=2;document.getElementById("msg").textContent="Use the bakery order TV to finish orders and earn money! 📺"}}
 else if(u.stage===2){S.remove(q);customers.splice(i,1)}
-});R.render(S,C);perfFrames++;const now=performance.now(),elapsed=now-perfSampleStart;if(elapsed>=500){perfState.fps=Math.round(perfFrames*1000/elapsed);perfState.frameMs=+(elapsed/perfFrames).toFixed(1);perfState.drawCalls=R.info.render.calls;perfState.triangles=R.info.render.triangles;perfFrames=0;perfSampleStart=now;if(perfOverlay)perfOverlay.textContent=`${perfState.fps} FPS · ${perfState.frameMs} ms · ${perfState.drawCalls} calls · ${perfState.triangles} tris`}}animate();
+});window.objectActions?.update();R.render(S,C);perfFrames++;const now=performance.now(),elapsed=now-perfSampleStart;if(elapsed>=500){perfState.fps=Math.round(perfFrames*1000/elapsed);perfState.frameMs=+(elapsed/perfFrames).toFixed(1);perfState.drawCalls=R.info.render.calls;perfState.triangles=R.info.render.triangles;perfFrames=0;perfSampleStart=now;if(perfOverlay)perfOverlay.textContent=`${perfState.fps} FPS · ${perfState.frameMs} ms · ${perfState.drawCalls} calls · ${perfState.triangles} tris`}}animate();
 addEventListener('resize',()=>{C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,1.25));perfState.pixelRatio=R.getPixelRatio()});
 
 // Keep the bakery and house as two separate places.

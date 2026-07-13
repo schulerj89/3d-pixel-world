@@ -293,18 +293,23 @@ function registerFurnitureAction(item){
  if(kind!=="sofa"&&kind!=="chair"&&kind!=="tv")return;
  const isSeat=kind==="sofa"||kind==="chair";
  const config={
-  object:item,
-  icon:isSeat?"🛋️":"📺",
-  label:isSeat?"Sit down":"TV controls",
+  icon:()=>isSeat?(sitting?"🚶":"🛋️"):"📺",
+  label:()=>isSeat?(sitting?"Stand up":"Sit down"):"TV controls",
   range:isSeat?2.25:2.4,
-  anchorOffset:new THREE.Vector3(0,isSeat?(kind==="sofa"?1.75:1.9):2.75,0),
-  enabled:()=>currentPlace==="house"&&!buildingMode&&(!sitting||(isSeat&&seatedFurniture===item)),
+  anchorOffset:0,
+  world:"house",
+  getAnchor:(target,out)=>{
+   const point=target.userData.actionAnchor||{x:0,y:isSeat?(kind==="sofa"?2.05:1.9):2.75,z:0};
+   out.set(point.x,point.y,point.z);return target.localToWorld(out);
+  },
+  enabled:()=>currentPlace==="house"&&!buildingMode&&
+   (isSeat?(!sitting||seatedFurniture===item):tvControlsPanelEl.style.display!=="block"),
   onAction:()=>{
    if(isSeat){if(sitting)leaveSeat();else takeSeat(item);return}
    tvControlsPanelEl.style.display="block";
   }
  };
- item.userData.objectActionRegistration=window.objectActions.register(config)||config;
+ item.userData.objectActionRegistration=window.objectActions.register(item,config)||config;
 }
 function registerPendingFurnitureActions(){furniture.forEach(registerFurnitureAction)}
 window.registerHouseFurnitureActions=registerPendingFurnitureActions;
@@ -367,6 +372,12 @@ document.querySelectorAll("#tvControlsPanel [data-channel]").forEach(b=>b.onclic
 document.getElementById("closeTVControls").onclick=()=>tvControlsPanelEl.style.display="none";
 setInterval(refreshHouseButtons,150);
 let buildingMode=false;
+window.objectActions=window.createObjectActionSystem({
+ THREE,camera:C,renderer:R,
+ getPlayerPosition:()=>P.position,
+ getWorld:()=>currentPlace,
+ isBuildMode:()=>buildingMode
+});
 const buildingTools=document.getElementById("buildingTools");
 const saveHouseButton=document.getElementById("saveHouse");
 const buildHouseButton=document.getElementById("buildHouse");
