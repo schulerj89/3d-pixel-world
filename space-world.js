@@ -52,22 +52,38 @@
     // Decorative stars hover above the central route.
     const stars=new THREE.InstancedMesh(sphere,mats.glow,28);
     for(let i=0;i<28;i++){const a=i/28*Math.PI*2,r=17+(i%4)*3;rotation.identity();matrix.compose(new THREE.Vector3(Math.cos(a)*r,3+(i%4)*.75,Math.sin(a)*r),rotation,new THREE.Vector3(.08,.08,.08));stars.setMatrixAt(i,matrix)}stars.instanceMatrix.needsUpdate=true;group.add(stars);
-    function npc(kind,x,z,sitting=false,turn=0){const n=new THREE.Group(),isAlien=kind==="alien",body=isAlien?mats.purple:mats.white,face=isAlien?mats.alien:mats.skin;
-      mesh(box,body,0,sitting?1:1.45,0,.78,.9,.48,n);mesh(sphere,face,0,sitting?1.72:2.2,0,.86,.92,.82,n);
-      if(isAlien){mesh(sphere,mats.dark,-.16,sitting?1.82:2.3,.39,.12,.18,.08,n);mesh(sphere,mats.dark,.16,sitting?1.82:2.3,.39,.12,.18,.08,n);mesh(cone,mats.alien,-.2,sitting?2.3:2.78,0,.15,.55,.15,n);mesh(cone,mats.alien,.2,sitting?2.3:2.78,0,.15,.55,.15,n)}
-      else mesh(box,mats.visor,0,sitting?1.8:2.28,.39,.58,.28,.08,n);
-      [-.48,.48].forEach(ax=>mesh(box,body,ax,sitting?1.15:1.42,0,.2,.75,.22,n));
-      [-.22,.22].forEach(lx=>{const leg=mesh(box,body,lx,sitting?.58:.55,sitting?.35:0,.25,.82,.28,n);if(sitting)leg.rotation.x=Math.PI/2});
+    const alienFallbacks=[];let disposed=false,alienAsset=null;
+    group.userData.alienAsset={status:"primitive-fallback",source:"Quaternius Animated Alien Pack",license:"CC0-1.0"};
+    function npc(kind,x,z,sitting=false,turn=0){const n=new THREE.Group(),visual=new THREE.Group(),isAlien=kind==="alien",body=isAlien?mats.purple:mats.white,face=isAlien?mats.alien:mats.skin;n.add(visual);
+      mesh(box,body,0,sitting?1:1.45,0,.78,.9,.48,visual);mesh(sphere,face,0,sitting?1.72:2.2,0,.86,.92,.82,visual);
+      if(isAlien){mesh(sphere,mats.dark,-.16,sitting?1.82:2.3,.39,.12,.18,.08,visual);mesh(sphere,mats.dark,.16,sitting?1.82:2.3,.39,.12,.18,.08,visual);mesh(cone,mats.alien,-.2,sitting?2.3:2.78,0,.15,.55,.15,visual);mesh(cone,mats.alien,.2,sitting?2.3:2.78,0,.15,.55,.15,visual)}
+      else mesh(box,mats.visor,0,sitting?1.8:2.28,.39,.58,.28,.08,visual);
+      [-.48,.48].forEach(ax=>mesh(box,body,ax,sitting?1.15:1.42,0,.2,.75,.22,visual));
+      [-.22,.22].forEach(lx=>{const leg=mesh(box,body,lx,sitting?.58:.55,sitting?.35:0,.25,.82,.28,visual);if(sitting)leg.rotation.x=Math.PI/2});
       if(sitting)mesh(box,mats.metal,0,.42,0,1.25,.14,.7,n);
-      n.position.set(x,0,z);n.rotation.y=turn;n.userData.npcType=kind;group.add(n)
+      n.position.set(x,0,z);n.rotation.y=turn;n.userData.npcType=kind;group.add(n);if(isAlien)alienFallbacks.push({visual,sitting})
     }
     [{k:"alien",x:-6,z:-5},{k:"alien",x:7,z:-6,s:true,t:2.5},{k:"alien",x:-18,z:16,t:1},{k:"astronaut",x:5,z:7},{k:"astronaut",x:20,z:17,s:true,t:-2},{k:"astronaut",x:-19,z:-18,t:2.8},{k:"alien",x:2,z:-2,s:true},{k:"astronaut",x:12,z:-21,t:.8},{k:"alien",x:23,z:-10,t:-1.2},{k:"astronaut",x:-24,z:5,s:true,t:2}].forEach(v=>npc(v.k,v.x,v.z,v.s,v.t));
+    if(window.QuaterniusAlienAsset){
+      group.userData.alienAsset.status="loading";
+      window.QuaterniusAlienAsset.load(THREE).then(asset=>{
+        if(disposed){asset.dispose();return}
+        alienAsset=asset;
+        alienFallbacks.forEach(({visual,sitting})=>{
+          visual.clear();const model=new THREE.Mesh(asset.geometry,asset.material);
+          const modelScale=sitting?.72:.9;model.scale.setScalar(modelScale);model.position.y=sitting?.44:0;
+          model.castShadow=model.receiveShadow=false;visual.add(model)
+        });
+        group.userData.alienAsset.status="loaded";
+        group.userData.alienAsset.instances=alienFallbacks.length;
+      }).catch(error=>{if(!disposed){group.userData.alienAsset.status="fallback-error";console.warn("Using primitive alien fallback",error)}})
+    }
     const structures=window.spaceStructureFactory?window.spaceStructureFactory(THREE):null;
     if(structures)group.add(structures.group);
     const bounds={minX:-34.3,maxX:34.3,minZ:-34.3,maxZ:34.3};
     const collisionBoxes=structures?.collisionBoxes||[];
     return {group,bounds,spawn:{x:0,z:29},camera:{angle:.25,height:15,distance:22},background:0x090b24,name:"Moonlight Space Station",
       canWalk(x,z){const radius=.32;if(x<bounds.minX||x>bounds.maxX||z<bounds.minZ||z>bounds.maxZ)return false;return !collisionBoxes.some(box=>x>box.minX-radius&&x<box.maxX+radius&&z>box.minZ-radius&&z<box.maxZ+radius)},
-      dispose(){structures?.dispose();group.parent?.remove(group);resources.forEach(r=>r.dispose?.())}};
+      dispose(){disposed=true;alienAsset?.dispose();structures?.dispose();group.parent?.remove(group);resources.forEach(r=>r.dispose?.())}};
   };
 })();
