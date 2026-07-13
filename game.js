@@ -1018,8 +1018,8 @@ const worldZ=rightZ*vx+forwardZ*(-vz);
 let nextX=P.position.x+worldX*PLAYER_MOVE_SPEED*dt;
 let nextZ=P.position.z+worldZ*PLAYER_MOVE_SPEED*dt;
 if(Math.hypot(worldX,worldZ)>.08){
-  playerTurn=Math.atan2(worldX,worldZ);
-  P.rotation.y=playerTurn;
+  if(!window.characterFacing?.faceMovement(P,worldX,worldZ))P.rotation.y=Math.atan2(worldX,worldZ);
+  playerTurn=P.rotation.y;
 }
 // The ASCII map owns bakery collision; the centralized house dimensions own
 // the home boundary so the avatar cannot walk beyond the enlarged floor.
