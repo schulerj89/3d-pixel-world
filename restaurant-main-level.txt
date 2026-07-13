@@ -1,7 +1,7 @@
 ; Starlight Restaurant main dining room v1
 ; Units are world units. One map character is one 1x1 floor cell.
 ; Coordinates are zero-based column,row from the north-west corner.
-; # wall | . walkable floor | D doorway | T table | C chair
+; # wall | . walkable floor | D kitchen doorway | E front entrance | T table | C chair
 ; B booth | H host stand | P plant. Non-floor symbols are collision cells.
 name: Starlight Restaurant
 room: dining
@@ -10,7 +10,7 @@ cell: 1
 origin: -20,-20
 spawn: 19,30
 connect: kitchen:north:18-21
-legend: #=wall .=floor D=doorway T=table C=chair B=booth H=host-stand P=plant
+legend: #=wall .=floor D=kitchen-doorway E=front-entrance T=table C=chair B=booth H=host-stand P=plant
 map:
 ##################DDDD##################
 #......................................#
@@ -51,4 +51,4 @@ map:
 #..P................................P..#
 #......................................#
 #......................................#
-########################################
+###################EE###################
