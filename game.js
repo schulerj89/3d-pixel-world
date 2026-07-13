@@ -501,7 +501,9 @@ function addPlayerShortCurl(x,y,z,s){
 SHORT_HAIR_VOXELS.forEach(a=>addPlayerShortCurl(...a));
 
 let cashier=person(0xff7fa8);cashier.position.set(2.7,0,-.3);
-let vx=0,vz=0,walk=0;const customers=[]; // No customers in this version.function spawn(){if(customers.length>5)return;let q=person(Math.random()*0xffffff);q.position.set(6.5,0,4.5);q.userData={stage:0,wait:180+Math.random()*180};customers.push(q)}// Customers removed.
+let vx=0,vz=0,walk=0;
+const PLAYER_MOVE_SPEED=5.376; // 20% faster than the previous 4.48 units/second.
+const customers=[]; // No customers in this version.function spawn(){if(customers.length>5)return;let q=person(Math.random()*0xffffff);q.position.set(6.5,0,4.5);q.userData={stage:0,wait:180+Math.random()*180};customers.push(q)}// Customers removed.
 const pad=document.getElementById('pad'),stick=document.getElementById('stick');let active=false;
 function joy(e){let r=pad.getBoundingClientRect(),p=e.touches?e.touches[0]:e,dx=p.clientX-(r.left+72.5),dy=p.clientY-(r.top+72.5),d=Math.hypot(dx,dy),max=43;if(d>max){dx*=max/d;dy*=max/d}stick.style.transform=`translate(${dx}px,${dy}px)`;vx=dx/max;vz=dy/max}
 pad.addEventListener('pointerdown',e=>{active=true;pad.setPointerCapture(e.pointerId);joy(e)});pad.addEventListener('pointermove',e=>{if(active)joy(e)});function stop(){active=false;vx=vz=0;stick.style.transform='translate(0,0)'}pad.addEventListener('pointerup',stop);pad.addEventListener('pointercancel',stop);
@@ -581,7 +583,8 @@ window.getGameDebug=()=>({
  sceneId:currentPlace,loadedWorlds:[...disposableWorlds.keys(),...(spaceWorld?["space"]:[]),...(forestWorld?["forest"]:[]),...(castle?["castle"]:[])],
  player:{x:+P.position.x.toFixed(2),y:+P.position.y.toFixed(2),z:+P.position.z.toFixed(2)},
  render:{calls:R.info.render.calls,triangles:R.info.render.triangles},
- memory:{geometries:R.info.memory.geometries,textures:R.info.memory.textures}
+ memory:{geometries:R.info.memory.geometries,textures:R.info.memory.textures},
+ forest:forestWorld?.debug?.()||null
 });
 let inKitchen=false;
 let money=100;
@@ -981,10 +984,8 @@ const rightX=Math.cos(cameraAngle);
 const rightZ=-Math.sin(cameraAngle);
 const worldX=rightX*vx+forwardX*(-vz);
 const worldZ=rightZ*vx+forwardZ*(-vz);
-// 4.48 units/second is exactly 40% faster than the previous 3.2.
-const playerMoveSpeed=4.48;
-let nextX=P.position.x+worldX*playerMoveSpeed*dt;
-let nextZ=P.position.z+worldZ*playerMoveSpeed*dt;
+let nextX=P.position.x+worldX*PLAYER_MOVE_SPEED*dt;
+let nextZ=P.position.z+worldZ*PLAYER_MOVE_SPEED*dt;
 if(Math.hypot(worldX,worldZ)>.08){
   playerTurn=Math.atan2(worldX,worldZ);
   P.rotation.y=playerTurn;

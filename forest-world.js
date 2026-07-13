@@ -35,7 +35,7 @@ FFFFPFFFFF`;
   const [spawnCol,spawnRow]=(values.spawn||"5,8").split(",").map(Number);
   return {name:values.name||"Forest",width,depth,cell:Number(values.cell)||8,seed:Number(values.seed)||1,spawnCol,spawnRow,map};
  }
- const LEVEL=parseLevel(LEVEL_TEMPLATE),HALF=LEVEL.width/2;
+ const LEVEL=(window.levelTemplateParser?.parse||parseLevel)(LEVEL_TEMPLATE),HALF=LEVEL.width/2;
  const CONFIG={size:LEVEL.width,halfSize:HALF,spawn:cellCenter(LEVEL.spawnCol,LEVEL.spawnRow),camera:{angle:.28,height:12,distance:18}};
  function cellCenter(col,row){return {x:-HALF+col*LEVEL.cell+LEVEL.cell/2,z:-HALF+row*LEVEL.cell+LEVEL.cell/2}}
  function hash(seed,a,b,c=0){let n=(seed^Math.imul(a+101,374761393)^Math.imul(b+137,668265263)^Math.imul(c+17,2246822519))>>>0;n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967296}
