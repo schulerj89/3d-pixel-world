@@ -1,0 +1,22 @@
+.conversation-prompt{
+ position:fixed;left:50%;bottom:22%;z-index:55;transform:translateX(-50%);
+ padding:10px 16px;border:3px solid #bff7ff;border-radius:8px;background:#17213ee8;color:#fff;
+ box-shadow:0 4px 0 #071023,0 0 18px #4eeaff55;font:800 14px/1.15 "Trebuchet MS",system-ui,sans-serif;
+ letter-spacing:.04em;text-transform:uppercase;
+}
+.conversation-prompt[hidden],.conversation-panel[hidden]{display:none}
+.conversation-panel{
+ position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));z-index:56;transform:translateX(-50%);
+ width:min(720px,calc(100vw - 28px));box-sizing:border-box;padding:18px 20px 14px;
+ border:4px solid #bff7ff;border-radius:10px;background:linear-gradient(180deg,#17213ef5,#0a1027f8);color:#f4fbff;
+ box-shadow:0 7px 0 #050917,0 0 28px #35dff34d;font-family:"Trebuchet MS",system-ui,sans-serif;
+}
+.conversation-speaker{margin:0 0 7px;color:#72ecff;font-size:16px;line-height:1.1;letter-spacing:.08em;text-transform:uppercase}
+.conversation-text{min-height:2.6em;margin:0;font-size:18px;line-height:1.45}
+.conversation-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+.conversation-actions button{padding:9px 13px;border:2px solid #7289c7;border-radius:6px;background:#26345f;color:#fff;font:800 14px/1.1 inherit}
+.conversation-actions button:hover,.conversation-actions button:focus-visible{border-color:#74edff;background:#35477d;outline:none}
+.conversation-actions button:disabled{opacity:.5}
+.conversation-hint{margin:12px 0 0;color:#9dadce;font-size:11px;letter-spacing:.04em;text-align:right}
+@media(max-width:520px){.conversation-panel{padding:15px}.conversation-text{font-size:16px}.conversation-actions button{flex:1 1 100%}}
+@media(prefers-reduced-motion:reduce){.conversation-panel,.conversation-prompt{scroll-behavior:auto}}
