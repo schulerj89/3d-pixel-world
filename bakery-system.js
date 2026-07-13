@@ -575,6 +575,7 @@ setInterval(()=>{
       if(madeShake){
         const name = madeShake==="strawberry" ? "🍓 Strawberry" : "🍫 Chocolate";
         shakeResult.innerHTML=name+" milkshake ready! <span style='font-size:28px'>🥤</span><br>Red and white striped straw added! ❤️🤍";
+        if(window.bakeryProductCompleted)window.bakeryProductCompleted(madeShake+" milkshake","blender");
         document.getElementById("msg").textContent="Your milkshake is finished with a striped straw! ❤️🤍";
       }else{
         document.getElementById("msg").textContent="You grabbed a striped straw! ❤️🤍";
@@ -604,25 +605,7 @@ setInterval(()=>{
 })();
 
 
-// ===== Finish Orders =====
-(function(){
- const finishOrdersBtn=document.getElementById("finishOrders");
- const ordersPanel=document.getElementById("orders");
- ordersPanel.setAttribute("role","dialog");
- ordersPanel.setAttribute("aria-label","Current bakery orders");
- finishOrdersBtn.textContent="✅ Finish & serve";
-
- finishOrdersBtn.addEventListener("pointerdown",e=>{
-   e.preventDefault();
-   e.stopPropagation();
-   servedCount+=3;
-   money+=15;
-   updateMoney();
-   newOrders();
-   document.getElementById("msg").textContent="Finished! Here are the next 3 orders. ✅📺";
- });
-
-})();
+// Serving and rewards are owned by bakery-order-integration.js.
 
 
 // ===== TOUCH DRAG CAMERA CONTROL =====

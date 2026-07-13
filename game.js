@@ -593,6 +593,7 @@ const foods=["🧁 Cupcake","🍪 Cookies","🎂 Cake","🥐 Croissant","🍞 Sw
 function updateMoney(){document.getElementById("money").textContent="💵 $"+money}
 updateMoney();
 function newOrders(){
+ if(window.BakeryOrderTracker){window.BakeryOrderTracker.refresh();return}
  document.getElementById("order1").textContent=foods[Math.floor(Math.random()*foods.length)];
  document.getElementById("order2").textContent=foods[Math.floor(Math.random()*foods.length)];
  document.getElementById("order3").textContent=foods[Math.floor(Math.random()*foods.length)];
@@ -891,7 +892,8 @@ stoveButton.addEventListener("pointerdown",e=>{
    showRecipe();
    document.getElementById("msg").textContent="You put "+item+" into the stove! 🔥";
  }else{
-   document.getElementById("msg").textContent="The stove cooked "+r.emoji+" "+r.name+"! Now tap ✅ Finish on the order TV to earn money. 📺";
+   document.getElementById("msg").textContent="The stove cooked "+r.emoji+" "+r.name+"! Take it to the order TV to serve. 📺";
+   if(window.bakeryProductCompleted)window.bakeryProductCompleted(r.name,"stove");
    stoveIngredients=[];
    recipeIndex=(recipeIndex+1)%recipes.length;
    addedIngredients=0;showRecipe();
