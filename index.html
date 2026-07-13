@@ -23,15 +23,15 @@
 <div id="houseShop">
   <div id="houseShopCard">
     <button id="closeHouseShop">✖ Close Shop</button>
-    <h2>🏠 House Furniture Shop</h2>
+    <h2><img class="gameIcon headingIcon" src="assets/ui/gvesster/shopping-bag.png?v=__BUILD_VERSION__" alt=""> House Furniture Shop</h2>
     <div>Decorate your home and explore every world!</div>
     <div id="houseShopGrid">
-      <button data-buy-furniture="bookshelf" data-price="20">📚 Bookshelf<br>💵 $20</button>
-      <button data-buy-furniture="rug" data-price="15">🧶 Cozy Rug<br>💵 $15</button>
-      <button data-buy-furniture="dresser" data-price="25">🗄️ Dresser<br>💵 $25</button>
-      <button data-buy-furniture="plant" data-price="10">🪴 House Plant<br>💵 $10</button>
-      <button data-buy-furniture="desk" data-price="30">🖥️ Desk<br>💵 $30</button>
-      <button data-buy-furniture="vanity" data-price="35">🪞 Vanity<br>💵 $35</button>
+      <button data-buy-furniture="bookshelf" data-price="20">📚 Bookshelf<br><img class="gameIcon priceIcon" src="assets/ui/gvesster/coin.png?v=__BUILD_VERSION__" alt=""> $20</button>
+      <button data-buy-furniture="rug" data-price="15">🧶 Cozy Rug<br><img class="gameIcon priceIcon" src="assets/ui/gvesster/coin.png?v=__BUILD_VERSION__" alt=""> $15</button>
+      <button data-buy-furniture="dresser" data-price="25">🗄️ Dresser<br><img class="gameIcon priceIcon" src="assets/ui/gvesster/coin.png?v=__BUILD_VERSION__" alt=""> $25</button>
+      <button data-buy-furniture="plant" data-price="10">🪴 House Plant<br><img class="gameIcon priceIcon" src="assets/ui/gvesster/coin.png?v=__BUILD_VERSION__" alt=""> $10</button>
+      <button data-buy-furniture="desk" data-price="30">🖥️ Desk<br><img class="gameIcon priceIcon" src="assets/ui/gvesster/coin.png?v=__BUILD_VERSION__" alt=""> $30</button>
+      <button data-buy-furniture="vanity" data-price="35">🪞 Vanity<br><img class="gameIcon priceIcon" src="assets/ui/gvesster/coin.png?v=__BUILD_VERSION__" alt=""> $35</button>
     </div>
     <div id="houseShopMessage">Choose something for your house! ✨</div>
   </div>
@@ -100,19 +100,19 @@
    <div class="magicChoice"><p>Magic accessories</p><button id="startAstronautHelmet" class="option" type="button" aria-pressed="false">Astronaut helmet</button></div>
   </section>
   <section id="customizeRealm" class="customizePanel realmGrid" role="tabpanel" hidden>
-   <button class="place" id="goBakery">🍽️<span>Restaurant</span></button><button class="place" id="goHouse">🏠<span>My House</span></button><button class="place" id="goBeach">🏖️<span>Beach</span></button><button class="place" id="goSpace">🚀<span>Space</span></button><button class="place" id="goForest">🌲<span>Forest</span></button><button class="place" id="goCastle">🏰<span>Castle</span></button>
+   <button class="place" id="goBakery">🍽️<span>Restaurant</span></button><button class="place" id="goHouse"><img class="gameIcon realmIcon" src="assets/ui/gvesster/house.png?v=__BUILD_VERSION__" alt=""><span>My House</span></button><button class="place" id="goBeach">🏖️<span>Beach</span></button><button class="place" id="goSpace"><img class="gameIcon realmIcon" src="assets/ui/gvesster/rocket.png?v=__BUILD_VERSION__" alt=""><span>Space</span></button><button class="place" id="goForest">🌲<span>Forest</span></button><button class="place" id="goCastle">🏰<span>Castle</span></button>
   </section>
  </div>
 </div>
 </div></div>
 <button id="menuGoCastle" type="button" hidden>🏰 Go to Castle</button>
-<button id="housePanelToggle" aria-expanded="false" aria-controls="housePanel">🏠 House</button>
+<button id="housePanelToggle" aria-expanded="false" aria-controls="housePanel"><img class="gameIcon" src="assets/ui/gvesster/house.png?v=__BUILD_VERSION__" alt=""> House</button>
 <div id="housePanel" aria-hidden="true">
- <div class="housePanelHeader"><b>🏠 My House</b><button id="closeHousePanel" aria-label="Close house menu">×</button></div>
+ <div class="housePanelHeader"><b><img class="gameIcon" src="assets/ui/gvesster/house.png?v=__BUILD_VERSION__" alt=""> My House</b><button id="closeHousePanel" aria-label="Close house menu">×</button></div>
  <div class="houseTabs" role="tablist"><button class="active" data-house-tab="home">Home</button><button data-house-tab="build">Build</button></div>
  <section class="houseTab active" data-house-view="home">
   <p id="buildMessage"></p>
-  <div class="houseQuickActions"><button id="openHouseShop">🛍️ Furniture Shop</button><button id="backPlaces">⬅️ Places</button></div>
+  <div class="houseQuickActions"><button id="openHouseShop"><img class="gameIcon" src="assets/ui/gvesster/shopping-bag.png?v=__BUILD_VERSION__" alt=""> Furniture Shop</button><button id="backPlaces">⬅️ Places</button></div>
  </section>
  <section class="houseTab" data-house-view="build">
   <div class="buildModeRow"><button id="buildHouse">🔨 Start building</button><button id="saveHouse">✓ Done & save</button></div>
@@ -146,7 +146,7 @@
   <p id="shopMessage">Use the money you earn in your bakery to buy clothes!</p>
   <button id="closeAvatar" class="option">✅ Done</button>
  </div>
-</div><div id="money">💵 $100</div>
+</div><div id="money" aria-label="Money"><img class="gameIcon" src="assets/ui/gvesster/coin.png?v=__BUILD_VERSION__" alt=""><span id="moneyValue">$100</span></div>
 <div id="recipePanel">
 <h3>📋 What are we making?</h3>
 <div id="makeChoices">
@@ -161,7 +161,7 @@
 <div id="recipeName">🧁 Cupcake</div><div style="font-size:13px;text-align:center;margin:6px">Walk to the wall shelf. The ingredients now have little 3D models!</div>
 <div id="ingredientList"></div>
 <button id="makeFood">🧺 GRAB FROM SHELF</button><button id="ingredientGrab">🍰 GRAB FOR FOOD</button><button id="shakeGrab">🥤 ADD TO BLENDER</button>
-</div><div id="orders"><button id="finishOrders">✅ Finish</button><h3>📺 ORDERS</h3><div id="order1">🧁 Cupcake</div><div id="order2">🍪 Cookies</div><div id="order3">🎂 Cake</div></div><button id="page5Button" style="display:none">➡️ Storage</button><button id="hudMenuButton" aria-expanded="false" aria-controls="hudDrawer">☰ Menu</button><div id="hudDrawer"><b>World Menu</b><button id="menuGoBakery" type="button">🍽️ Go to Restaurant</button><button id="menuGoHouse" type="button">🏠 Go to My House</button><button id="menuGoBeach" type="button">🏖️ Go to Beach</button><button id="musicToggle" type="button" aria-pressed="false">🎵 Music on</button></div><div id="kitchenTools"><button data-panel="recipePanel">📋 Recipe</button><button data-panel="orders">📺 Orders</button><button data-panel="inventoryBox">📦 Bag</button></div><div id="roomTeleport"><b>Teleport</b><button data-room="bakery">🧁 Bakery</button><button data-room="kitchen">🍰 Kitchen</button><button data-room="storage">📦 Storage</button><button id="teleportBeach" type="button">🏖️ Beach</button></div><div id="roomName">Main Bakery</div><div id="game"></div><div id="pad"><div id="stick"></div></div><div id="lookLabel">📷 LOOK</div><div id="lookPad"><div id="lookStick"></div></div><button id="kitchenBack" style="display:none">⬅️ Bakery</button><div id="itemLabel" class="legacy-grab-control" aria-hidden="true"></div><button id="grabButton" class="legacy-grab-control" type="button" tabindex="-1" aria-hidden="true"></button><button id="stoveButton">🔥 PUT INGREDIENT IN STOVE</button><div id="msg"></div>
+</div><div id="orders"><button id="finishOrders">✅ Finish</button><h3>📺 ORDERS</h3><div id="order1">🧁 Cupcake</div><div id="order2">🍪 Cookies</div><div id="order3">🎂 Cake</div></div><button id="page5Button" style="display:none">➡️ Storage</button><button id="hudMenuButton" aria-expanded="false" aria-controls="hudDrawer">☰ Menu</button><div id="hudDrawer"><b><img class="gameIcon" src="assets/ui/gvesster/planet.png?v=__BUILD_VERSION__" alt=""> World Menu</b><button id="menuGoBakery" type="button">🍽️ Go to Restaurant</button><button id="menuGoHouse" type="button"><img class="gameIcon" src="assets/ui/gvesster/house.png?v=__BUILD_VERSION__" alt=""> Go to My House</button><button id="menuGoBeach" type="button">🏖️ Go to Beach</button><button id="musicToggle" type="button" aria-pressed="false">🎵 Music on</button></div><div id="kitchenTools"><button data-panel="recipePanel">📋 Recipe</button><button data-panel="orders">📺 Orders</button><button data-panel="inventoryBox">📦 Bag</button></div><div id="roomTeleport"><b>Teleport</b><button data-room="bakery">🧁 Bakery</button><button data-room="kitchen">🍰 Kitchen</button><button data-room="storage">📦 Storage</button><button id="teleportBeach" type="button">🏖️ Beach</button></div><div id="roomName">Main Bakery</div><div id="game"></div><div id="pad"><div id="stick"></div></div><div id="lookLabel">📷 LOOK</div><div id="lookPad"><div id="lookStick"></div></div><button id="kitchenBack" style="display:none">⬅️ Bakery</button><div id="itemLabel" class="legacy-grab-control" aria-hidden="true"></div><button id="grabButton" class="legacy-grab-control" type="button" tabindex="-1" aria-hidden="true"></button><button id="stoveButton">🔥 PUT INGREDIENT IN STOVE</button><div id="msg"></div>
 <audio id="bakeryMusic" preload="metadata" src="assets/audio/bakery-bounce.mp3?v=__BUILD_VERSION__"></audio>
 <audio id="sprinkleMusic" preload="metadata" src="assets/audio/sprinkle-parade.mp3?v=__BUILD_VERSION__"></audio>
 <audio id="beachMusic" preload="metadata" src="assets/audio/sunny-shores.mp3?v=__BUILD_VERSION__"></audio>
