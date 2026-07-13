@@ -1,0 +1,35 @@
+"use strict";
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const path=require("node:path");
+const {DEFAULT_CONFIG,normalizeConfig,CoinQuestController}=require("../coin-quest-system.js");
+
+let clock=1000,rewards=0;const events=[];
+const config=normalizeConfig({id:"test-coins",count:3,timeLimitSeconds:5,reward:10,positions:[{x:1,y:0,z:2},{x:3,y:0,z:4}]});
+assert.equal(config.positions.length,3,"missing positions get deterministic fallbacks");
+assert.deepEqual(config.positions[0],{x:1,y:0,z:2});
+const quest=new CoinQuestController(config,{now:()=>clock,onReward:value=>{rewards+=value},onEvent:event=>events.push(event.type)});
+assert.equal(quest.snapshot().phase,"idle");
+quest.start();assert.equal(quest.snapshot().remainingMs,5000);assert.equal(quest.snapshot().run,1);
+clock=2200;quest.update();assert.equal(quest.snapshot().remainingMs,3800);
+assert.equal(quest.collect(0),true);assert.equal(quest.collect(0),false,"a coin cannot be collected twice");
+assert.equal(quest.collect(1),true);assert.equal(quest.collect(2),true);
+assert.equal(quest.snapshot().phase,"success");assert.equal(rewards,10,"configured reward is granted once");
+assert.equal(quest.collect(2),false);assert.equal(rewards,10);
+clock=3000;quest.retry();assert.equal(quest.snapshot().phase,"active");assert.equal(quest.snapshot().collectedCount,0);assert.equal(quest.snapshot().run,2);
+clock=8100;quest.update();assert.equal(quest.snapshot().phase,"failed");assert.equal(quest.snapshot().remainingMs,0);assert.equal(rewards,10);
+assert.ok(events.includes("quest:start"));assert.ok(events.includes("quest:success"));assert.ok(events.includes("quest:retry"));assert.ok(events.includes("quest:failed"));
+
+assert.equal(DEFAULT_CONFIG.reward,10);assert.equal(DEFAULT_CONFIG.count,6);
+const source=fs.readFileSync(path.join(__dirname,"..","coin-quest-system.js"),"utf8");
+assert.match(source,/CylinderGeometry/,"primitive fallback is available before/when GLTF fails");
+assert.match(source,/prototype\.clone\(true\)/,"one loaded prototype is cloned across pickups");
+assert.match(source,/Math\.sin\(elapsed\*config\.hoverSpeed/,"coins hover deterministically");
+assert.match(source,/anchor\.rotation\.y\+=/,"coins rotate every update");
+assert.match(source,/getRenderInfo/,"browser render metrics can be exposed in debug state");
+const assetPath=path.join(__dirname,"..","assets","models","quaternius-platformer-coin","Coin.gltf");
+const sourcePath=path.join(path.dirname(assetPath),"SOURCE.md");
+assert.ok(fs.existsSync(assetPath));assert.ok(fs.statSync(assetPath).size<100*1024,"coin asset stays below 100 KB");
+assert.match(fs.readFileSync(sourcePath,"utf8"),/CC0/);assert.match(fs.readFileSync(sourcePath,"utf8"),/quaternius\.com/);
+assert.ok(fs.existsSync(path.join(path.dirname(assetPath),"LICENSE-CC0.txt")));
+console.log("coin quest system tests passed");
