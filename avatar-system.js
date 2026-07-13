@@ -3,7 +3,10 @@ const startPage=document.getElementById("startPage"),housePanel=document.getElem
 let furniture=[];
 const saved=JSON.parse(localStorage.getItem("my3DWorld")||"{}");
 // The Styloo student has one locked outfit/hair mesh; retain only its four color choices.
-delete saved.characterType;delete saved.hairStyle;delete saved.outfit;delete saved.outfitColor;delete saved.astronautHelmet;
+const legacyShirt=Number(saved.shirt),storedOutfitColor=Number(saved.outfitColor);
+const hasStoredOutfit=saved.outfitColor!=null&&Number.isFinite(storedOutfitColor),hasLegacyShirt=saved.shirt!=null&&Number.isFinite(legacyShirt);
+saved.outfitColor=hasStoredOutfit?storedOutfitColor:(hasLegacyShirt?legacyShirt:0xb77cff);
+delete saved.characterType;delete saved.hairStyle;delete saved.outfit;delete saved.shirt;delete saved.astronautHelmet;
 localStorage.setItem("my3DWorld",JSON.stringify(saved));
 function selectCustomizationButton(area,button){
  area.querySelectorAll("button").forEach(b=>{const selected=b===button;b.classList.toggle("selected",selected);b.setAttribute("aria-pressed",selected)});
@@ -189,7 +192,7 @@ const titleScreen=document.getElementById("titleScreen"),customizeStep=document.
 
 colorButtons("startHairColor",[0x2b1a12,0x6b3c35,0xc9873c,0xf2d36b,0x222222,0xff79b0],c=>{materialColor(playerHairTop,c);materialColor(playerHairSide,c);materialColor(pvHairTop,c);materialColor(pvHairSide,c);playerPuffPieces.forEach(m=>materialColor(m,c));pvPuffPieces.forEach(m=>materialColor(m,c));playerLongPieces.forEach(m=>materialColor(m,c));pvLongPieces.forEach(m=>materialColor(m,c));playerShortCurlPieces.forEach(m=>materialColor(m,c));pvShortCurlPieces.forEach(m=>materialColor(m,c));saved.hair=c},saved.hair??0x6b3c35);
 colorButtons("startSkin",[0xf2bb91,0xd99568,0xb97850,0x7b4932,0x4b2b20],c=>{materialColor(playerHead,c);materialColor(playerLeftArm,c);materialColor(playerRightArm,c);saved.skin=c;materialColor(pvHead,c);materialColor(pvArm1,c);materialColor(pvArm2,c)},saved.skin??0xf2bb91);
-colorButtons("startShirt",[0xb77cff,0xff73aa,0x55c985,0x5b9cff,0xffc83d],c=>{materialColor(playerShirt,c);materialColor(pvShirt,c);saved.shirt=c;setFallbackOutfitColor(c)},Number(saved.shirt??0xb77cff));
+colorButtons("startOutfitColor",[0xb77cff,0xff73aa,0x55c985,0x5b9cff,0xffc83d],c=>{materialColor(playerShirt,c);materialColor(pvShirt,c);saved.outfitColor=c;setFallbackOutfitColor(c)},saved.outfitColor);
 colorButtons("startPants",[0x5870c8,0x292b35,0xd95b91,0x397b55,0xf1f1f1],c=>{materialColor(playerLeftLeg,c);materialColor(playerRightLeg,c);saved.pants=c;materialColor(pvLeg1,c);materialColor(pvLeg2,c)},saved.pants??0x5870c8);
 function showEverydayFallback(){
  Object.entries(playerWearables).forEach(([key,value])=>(value.setVisible||((visible)=>value.group.visible=visible))(key==="Everyday"));
@@ -199,13 +202,13 @@ function setFallbackOutfitColor(color){
  Object.values(playerWearables).forEach(value=>value.colorMeshes.forEach(mesh=>materialColor(mesh,color)));
  Object.values(previewWearables).forEach(value=>value.colorMeshes.forEach(mesh=>materialColor(mesh,color)));
 }
-setFallbackOutfitColor(Number(saved.shirt??0xb77cff));showEverydayFallback();
+setFallbackOutfitColor(saved.outfitColor);showEverydayFallback();
 playerAstronautHelmet.visible=false;previewAstronautHelmet.visible=false;
 if(saved.skin){materialColor(playerHead,saved.skin);materialColor(playerLeftArm,saved.skin);materialColor(playerRightArm,saved.skin)}
-if(saved.shirt)materialColor(playerShirt,saved.shirt);
+materialColor(playerShirt,saved.outfitColor);
 if(saved.pants){materialColor(playerLeftLeg,saved.pants);materialColor(playerRightLeg,saved.pants);materialColor(pvLeg1,saved.pants);materialColor(pvLeg2,saved.pants)}
 if(saved.skin){materialColor(pvHead,saved.skin);materialColor(pvArm1,saved.skin);materialColor(pvArm2,saved.skin)}
-if(saved.shirt)materialColor(pvShirt,saved.shirt);
+materialColor(pvShirt,saved.outfitColor);
 if(saved.hair){materialColor(playerHairTop,saved.hair);materialColor(playerHairSide,saved.hair);materialColor(pvHairTop,saved.hair);materialColor(pvHairSide,saved.hair);playerPuffPieces.forEach(m=>materialColor(m,saved.hair));pvPuffPieces.forEach(m=>materialColor(m,saved.hair));playerLongPieces.forEach(m=>materialColor(m,saved.hair));pvLongPieces.forEach(m=>materialColor(m,saved.hair));playerShortCurlPieces.forEach(m=>materialColor(m,saved.hair));pvShortCurlPieces.forEach(m=>materialColor(m,saved.hair))}
 function saveWorld(){saved.furniture=furniture.filter(x=>x.userData.kind!=="remote").map(x=>({
  kind:x.userData.kind,

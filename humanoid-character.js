@@ -33,9 +33,8 @@
   });
   model.userData.characterMaterialsCloned=true;
   const saved=values||readCustomization();
-  const outfit=saved.outfit&&saved.outfit!=="Everyday"?Number(saved.outfitColor):Number(saved.shirt);
   const colors={character:Number(saved.skin??0xf2bb91),hairvariant:Number(saved.hair??0x6b3c35),
-   schooloutfit:Number(outfit||0xb77cff),schoolskirt:Number(saved.pants??0x5870c8)};
+   schooloutfit:Number(saved.outfitColor??0xb77cff),schoolskirt:Number(saved.pants??0x5870c8)};
   materials.forEach(material=>{
    const color=colors[material.name];
    if(Number.isFinite(color)&&material.color)material.color.setHex(color);

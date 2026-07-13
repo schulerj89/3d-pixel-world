@@ -964,7 +964,7 @@ function buyWear(type,item){
   money-=item.price;updateMoney();owned.add(item.name);
   shopMessage.textContent="You bought the "+item.name+" "+type+"! 🎉";
  }
- if(type==="shirt"){materialColor(playerShirt,item.color);materialColor(pvShirt,item.color);saved.shirt=item.color}
+ if(type==="shirt"){materialColor(playerShirt,item.color);materialColor(pvShirt,item.color);saved.outfitColor=item.color}
  else{materialColor(playerLeftLeg,item.color);materialColor(playerRightLeg,item.color);materialColor(pvLeg1,item.color);materialColor(pvLeg2,item.color);saved.pants=item.color}
  saveWorld();
  renderShop();

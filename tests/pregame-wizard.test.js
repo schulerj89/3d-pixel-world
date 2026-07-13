@@ -7,10 +7,10 @@ const read=file=>fs.readFileSync(path.join(root,file),"utf8");
 const html=read("index.html"),css=read("pregame-wizard.css"),flow=read("pregame-wizard.js"),avatar=read("avatar-system.js"),house=read("house-system.js");
 
 assert(!html.includes("Who will you be?"),"character-type screen must be removed");
-for(const id of ["adventureTypeScreen","characterTypeOptions","startHairStyle","customizeOutfit","startOutfit","startOutfitColor","startAstronautHelmet"]){
+for(const id of ["adventureTypeScreen","characterTypeOptions","startHairStyle","customizeOutfit","startOutfit","startShirt","startAstronautHelmet"]){
  assert(!html.includes(`id="${id}"`),`obsolete startup control remains: ${id}`);
 }
-for(const id of ["startHairColor","startSkin","startPants","startShirt"]){
+for(const id of ["startHairColor","startSkin","startPants","startOutfitColor"]){
  assert(html.includes(`id="${id}"`),`required color control missing: ${id}`);
 }
 assert((html.match(/class="magicChoice"/g)||[]).length===4,"startup must expose exactly four concise color controls");
@@ -22,9 +22,10 @@ assert(flow.includes("worldPickerHeading")&&flow.includes("customizeHeading"),"s
 assert(css.includes("orientation:landscape")&&css.includes("max-height:540px"),"wizard needs compact iPhone landscape rules");
 assert(!css.includes("min-height:430px"),"wizard must not inherit the old short-screen scroll trap");
 assert(css.includes("overflow:hidden"),"wizard viewport must remain scroll free");
-assert(avatar.includes("delete saved.characterType")&&avatar.includes("delete saved.outfit"),"obsolete persisted type/outfit choices must be retired");
+assert(avatar.includes("delete saved.characterType")&&avatar.includes("delete saved.outfit")&&avatar.includes("delete saved.shirt"),"obsolete persisted type/outfit choices must be retired");
+assert(avatar.includes("storedOutfitColor")&&avatar.includes("legacyShirt"),"legacy shirt saves must migrate to the canonical outfit color");
 assert(avatar.includes('localStorage.setItem("my3DWorld",JSON.stringify(saved))'),"retired fields must be cleared before the Styloo loader reads customization");
-assert(!avatar.includes("startOutfit")&&!avatar.includes("startAstronautHelmet"),"obsolete startup controls must not be wired");
+assert(!avatar.includes('colorButtons("startOutfit"')&&!avatar.includes("startAstronautHelmet"),"obsolete startup controls must not be wired");
 assert(avatar.includes("titleScreen?.hidden")&&avatar.includes("!customizeStep.hidden"),"large preview must render only while customization is visible");
 assert(house.includes("window.showPregameCustomization?.()")&&house.includes("window.showWorldPicker?.()"),"in-game Edit and Places actions must reopen the correct wizard step");
 console.log("pre-game wizard: four colors, two steps, compact landscape, and world routing validated");
