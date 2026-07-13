@@ -1,5 +1,5 @@
 (function(global){
-  const DEFAULTS=Object.freeze({minScale:.45,maxScale:2.25,absoluteMin:3.2,absoluteMax:80});
+  const DEFAULTS=Object.freeze({minScale:.18,maxScale:2.25,absoluteMin:1.8,absoluteMax:80});
 
   function positiveNumber(value,label){
     if(!Number.isFinite(value)||value<=0)throw new TypeError(`${label} must be a positive finite number`);
