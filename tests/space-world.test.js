@@ -27,8 +27,16 @@ for(const spec of Object.values(Space.ASSET_REGISTRY)){
 assert(fs.existsSync(path.join(root,Space.ASSET_ROOT,"spacebits_texture.png")),"missing shared Space Base Bits texture atlas");
 assert.strictEqual(new Set(Object.values(Space.ASSET_REGISTRY).map(spec=>spec.file)).size,26,"asset registry should reuse twenty-six source models");
 const source=read("space-world.js");
-for(const pose of ["overview","landing","roads","cargo","aliens"])assert(source.includes(`${pose}:{`),`missing named ${pose} screenshot pose`);
+for(const pose of ["overview","landing","roads","cargo","aliens","alienExtraSmall","alienSmall"])assert(source.includes(`${pose}:{`),`missing named ${pose} screenshot pose`);
 assert(source.includes("depthWrite:false,depthTest:true"),"starfield must respect scene depth instead of rendering through the floor and props");
+assert(source.includes("alienMixers.forEach(mixer=>mixer.update(dt))"),"Space Realm must advance authored alien idle clips");
+assert(source.includes("grounded:alienGrounding.every"),"alien ground-contact status must be exposed for QA");
+assert(source.includes("space-alien-contact-shadows"),"aliens need an instanced ground-contact cue");
+assert(read("house-system.js").includes("dataset.spaceAlienGrounded"),"browser QA must expose alien ground-contact status");
+
+const alienAsset=require("../alien-model.js");
+for(const spec of alienAsset.MODEL_SPECS)assert(fs.existsSync(path.join(root,alienAsset.ASSET_ROOT,spec.file)),`missing animated alien ${spec.file}`);
+assert.strictEqual(alienAsset.source.license,"CC0-1.0");
 
 const broken=read("levels/space-80.txt").replace("...L.....rr.....p...","...Lp....rr.........");
 assert.throws(()=>Space.parseLevel(broken),/only .* units apart/,"layout validation must reject props with less than two units of clearance");

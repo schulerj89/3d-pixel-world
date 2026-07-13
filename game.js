@@ -1010,7 +1010,7 @@ function updatePlayerWalkAnimation(isMoving,dt){
  P.rotation.z=THREE.MathUtils.lerp(P.rotation.z,Math.sin(walk)*.035*walkStrength,easing);
  P.position.y=THREE.MathUtils.lerp(P.position.y,groundY+Math.abs(Math.sin(walk))*.06*walkStrength,easing);
 }
-let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);const worldShadows=currentPlace!=="beach"&&currentPlace!=="city";if(sun.castShadow!==worldShadows){sun.castShadow=worldShadows;R.shadowMap.enabled=worldShadows}moveCameraControl(dt);let playerMoved=false;if(!window.isPlayerSeated?.()&&Math.abs(vx)+Math.abs(vz)>.08){
+let clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);const worldShadows=currentPlace!=="beach"&&currentPlace!=="city";if(sun.castShadow!==worldShadows)sun.castShadow=worldShadows;moveCameraControl(dt);let playerMoved=false;if(!window.isPlayerSeated?.()&&Math.abs(vx)+Math.abs(vz)>.08){
 // Movement is relative to the camera direction.
 const forwardX=-Math.sin(cameraAngle);
 const forwardZ=-Math.cos(cameraAngle);
@@ -1042,6 +1042,7 @@ updateCastleFloorPresentation();
 window.houseWorldApi?.update?.(dt);
 window.beachTownApi?.update?.(dt,currentPlace==="beach",C);
 if(currentPlace==="city")cityWorld?.update?.(dt,P.position);
+spaceWorld?.update?.(dt,currentPlace==="space");
 if(currentPlace==="beach"){
  const wadeDepth=THREE.MathUtils.clamp((BEACH_CONFIG.waterEdgeZ-P.position.z)/5,0,1);
  P.userData.wading=wadeDepth>0;
@@ -1064,7 +1065,7 @@ addEventListener('resize',()=>{C.aspect=innerWidth/innerHeight;C.updateProjectio
 // Keep the bakery and house as two separate places.
 const bakeryObjects=S.children.filter(obj=>obj!==P && obj!==C && !obj.isLight);
 const house=new THREE.Group();house.visible=false;S.add(house);
-let spaceWorld=null;
+var spaceWorld=null;
 function ensureSpaceWorld(){
  if(!spaceWorld){
   const factory=window.worldFactories&&window.worldFactories.space;

@@ -205,7 +205,7 @@ async function showRestaurant(){
  currentPlace="restaurant";P.visible=true;
  document.body.classList.add("restaurant-mode");
  document.body.classList.remove("bakery-mode","house-mode","beach-mode","space-mode","city-mode","castle-mode","kitchen-clean","storage-mode","kitchen-room-mode","house-building");
- S.background.set(0xf4cfc4);startPage.style.display="none";
+ S.background.set(window.RestaurantWorld.BACKGROUND_COLOR);startPage.style.display="none";
  setBakeryVisible(false);page5Group.visible=false;house.visible=false;beach.visible=false;hideSpaceWorld();
  if(castle)castle.visible=false;
  world.group.visible=true;inKitchen=false;inStorage=false;
@@ -215,7 +215,9 @@ async function showRestaurant(){
  document.getElementById("msg").textContent="";
  const debugParams=new URLSearchParams(location.search),debugView=world.debugViews?.[debugParams.get("restaurantView")],debugRoom=debugParams.get("restaurantRoom");
  const spawn=debugView?.position||world.spawns?.[debugRoom||debugView?.room]||world.spawn,camera=debugView?.camera||world.camera;
+ document.body.dataset.restaurantAssetStatus=world.group.userData.assets.status;
  P.position.set(spawn.x,world.floorSurfaceY||0,spawn.z);P.rotation.y=Math.PI;
+ P.visible=debugView?.hidePlayer!==true;
  cameraAngle=camera.angle;cameraHeight=camera.height;cameraDistance=camera.distance;updateCamera();
  window.switchWorldMusic?.("restaurant");
 }
@@ -281,6 +283,7 @@ async function showSpace(){
  P.position.set(pose.x,0,pose.z);P.rotation.y=Math.PI;P.visible=pose.hidePlayer!==true;
  cameraAngle=pose.angle;cameraHeight=pose.height;cameraDistance=pose.distance;updateCamera();
  document.body.dataset.spacePose=poseId;document.body.dataset.spaceAssetStatus=world.group.userData.assets.status;document.body.dataset.spaceAliens=String(world.group.userData.npcs.aliens);document.body.dataset.spaceOtherNpcs=String(world.group.userData.npcs.nonAliens);
+ document.body.dataset.spaceAlienGrounded=String(world.group.userData.npcs.grounded);document.body.dataset.spaceAlienAnimations=world.group.userData.npcs.idleAnimations.join(",");document.body.dataset.spaceAlienModels=world.group.userData.npcs.alienModels.join(",");
  if(window.switchWorldMusic)window.switchWorldMusic("space");
 }
 async function showCity(){

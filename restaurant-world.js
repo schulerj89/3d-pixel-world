@@ -7,8 +7,14 @@
  "use strict";
  const BUILD_VERSION="__BUILD_VERSION__";
  const KIT_URL=`assets/models/restaurant/kaykit-restaurant-kit.glb?v=${BUILD_VERSION}`;
+ const BACKGROUND_COLOR=0x87ceeb;
+ const EXTRA_ASSETS=Object.freeze({
+  cashRegister:Object.freeze({assetId:"restaurant.front.cash-register",url:`assets/models/restaurant-extras/cash-register.glb?v=${BUILD_VERSION}`,position:Object.freeze({x:0,y:1.03,z:15.5}),scale:1.15,yaw:Math.PI})
+ });
+ const CASH_DESK=Object.freeze({assetId:"restaurant.front.cash-desk",sourceScene:"kitchencounter_straight_A_backsplash",position:Object.freeze({x:0,y:0,z:15.5}),scale:1,yaw:Math.PI,collision:Object.freeze([1,1.03])});
+ const FRONT_ENTRANCE=Object.freeze({assetId:"restaurant.front.entrance",frameAssetId:"restaurant.front.entrance-frame",frameScene:"wall_doorway",doorAssetId:"restaurant.front.door",doorScene:"door_A",position:Object.freeze({x:0,y:0,z:20}),doorOffsetX:-.8,yaw:0,collision:Object.freeze([2,.25])});
  const ROOM_FILES={dining:"restaurant-main-level.txt",kitchen:"restaurant-kitchen-level.txt"};
- const WALKABLE=new Set([".","D"]);
+ const WALKABLE=new Set([".","D","E"]);
  const PLAYER_RADIUS=.28;
  const WALL=Object.freeze({sourceScene:"wall",moduleLength:4,height:4,thickness:.5});
  const KITCHEN_FLOOR=Object.freeze({sourceScene:"floor_kitchen",tileSize:4,surfaceY:0,thickness:.5,fixtureBaseY:0,playerBaseY:0});
@@ -22,6 +28,10 @@
   "restaurant-wall-north-doorway":Object.freeze({room:"dining",position:Object.freeze({x:0,z:-16}),camera:Object.freeze({angle:0,height:6.5,distance:8})}),
   "restaurant-wall-southwest":Object.freeze({room:"dining",position:Object.freeze({x:-14,z:16}),camera:Object.freeze({angle:2.35,height:7,distance:8})}),
   "restaurant-wall-southeast":Object.freeze({room:"dining",position:Object.freeze({x:14,z:16}),camera:Object.freeze({angle:-2.35,height:7,distance:8})}),
+  "restaurant-chair-table":Object.freeze({room:"dining",position:Object.freeze({x:-11.5,z:12.5}),camera:Object.freeze({angle:0,height:5.5,distance:7})}),
+  "restaurant-cash-register":Object.freeze({room:"dining",position:Object.freeze({x:0,z:14}),camera:Object.freeze({angle:Math.PI,height:4.4,distance:5.5}),hidePlayer:true}),
+  "restaurant-front-door":Object.freeze({room:"dining",position:Object.freeze({x:0,z:19.5}),camera:Object.freeze({angle:0,height:4.5,distance:6}),hidePlayer:true}),
+  "restaurant-sky-overview":Object.freeze({room:"dining",position:Object.freeze({x:0,z:5}),camera:Object.freeze({angle:.35,height:9,distance:11})}),
   "kitchen-wall-northwest":Object.freeze({room:"kitchen",position:Object.freeze({x:-8,z:-41}),camera:Object.freeze({angle:.8,height:6.5,distance:7})}),
   "kitchen-wall-northeast":Object.freeze({room:"kitchen",position:Object.freeze({x:9,z:-41}),camera:Object.freeze({angle:-.8,height:6.5,distance:7})})
  });
@@ -66,7 +76,7 @@
   const room=roomAt(rooms,x,z);if(!room)return false;
   const centerCol=Math.floor((x-room.originX)/room.cell),centerRow=Math.floor((z-room.originZ)/room.cell);
   for(let row=centerRow-2;row<=centerRow+2;row++)for(let col=centerCol-2;col<=centerCol+2;col++){
-   const symbol=room.map[row]?.[col];if(!symbol||symbol==="."||symbol==="D")continue;
+   const symbol=room.map[row]?.[col];if(!symbol||WALKABLE.has(symbol))continue;
    const center=cellCenter(room,col,row);
    if(symbol==="#"){
     const boundary=wallCellCollision(room,col,row,center);
@@ -76,6 +86,8 @@
    const half=Math.abs(Math.sin(transform.yaw))>.5?[baseHalf[1],baseHalf[0]]:baseHalf;
    if(Math.abs(x-transform.x)<half[0]+PLAYER_RADIUS&&Math.abs(z-transform.z)<half[1]+PLAYER_RADIUS)return false;
   }
+  if(room.room==="dining"&&Math.abs(x-CASH_DESK.position.x)<CASH_DESK.collision[0]+PLAYER_RADIUS&&Math.abs(z-CASH_DESK.position.z)<CASH_DESK.collision[1]+PLAYER_RADIUS)return false;
+  if(room.room==="dining"&&Math.abs(x-FRONT_ENTRANCE.position.x)<FRONT_ENTRANCE.collision[0]+PLAYER_RADIUS&&Math.abs(z-FRONT_ENTRANCE.position.z)<FRONT_ENTRANCE.collision[1]+PLAYER_RADIUS)return false;
   return true;
  }
  function wallCellCollision(room,col,row,center){
@@ -179,8 +191,8 @@
  function assetTransform(room,symbol,col,row,position){
   let x=position.x,z=position.z,yaw=0;
   if(symbol==="C"){
-   if(room.map[row]?.[col+1]==="T"){x-=.58;yaw=-Math.PI/2}
-   else if(room.map[row]?.[col-1]==="T"){x+=.58;yaw=Math.PI/2}
+   if(room.map[row]?.[col+1]==="T"){x-=.58;yaw=Math.PI/2}
+   else if(room.map[row]?.[col-1]==="T"){x+=.58;yaw=-Math.PI/2}
   }
   if(symbol==="B")yaw=Math.abs(x)<room.width*.25?0:(x<room.originX+room.width/2?Math.PI/2:-Math.PI/2);
   if(room.room==="kitchen"&&WALL_FIXTURES.has(symbol)){
@@ -192,7 +204,37 @@
   }
   return {x,z,yaw};
  }
- function buildRuntime(THREE,scene,rooms,kit=null,assetError=""){
+ function addFrontArea(THREE,group,kit,extras,loadedAssetIds){
+  const front=new THREE.Group();front.name="restaurant-front-area";
+  const deskPrototype=sourceScene(kit,CASH_DESK.sourceScene);
+  if(deskPrototype){
+   const desk=deskPrototype.clone(true);desk.position.set(CASH_DESK.position.x,CASH_DESK.position.y,CASH_DESK.position.z);desk.rotation.y=CASH_DESK.yaw;desk.scale.setScalar(CASH_DESK.scale);desk.userData={assetId:CASH_DESK.assetId,sourceScene:CASH_DESK.sourceScene,placeholder:false};desk.traverse(object=>{if(object.isMesh){object.castShadow=object.receiveShadow=true}});front.add(desk);loadedAssetIds.push(CASH_DESK.assetId);
+  }else{
+   const desk=new THREE.Mesh(new THREE.BoxGeometry(2,1,1.1),new THREE.MeshStandardMaterial({color:0x9d6f55,roughness:.85}));desk.position.set(CASH_DESK.position.x,.5,CASH_DESK.position.z);desk.userData={assetId:CASH_DESK.assetId,placeholder:true};front.add(desk);
+  }
+  for(const [key,spec] of Object.entries(EXTRA_ASSETS)){
+   const prototype=extras[key]?.scene;
+   if(prototype){
+    const art=prototype.clone(true);art.name=spec.assetId;art.position.set(spec.position.x,spec.position.y,spec.position.z);art.rotation.y=spec.yaw;art.scale.setScalar(spec.scale);art.userData={assetId:spec.assetId,url:spec.url,placeholder:false};art.traverse(object=>{if(object.isMesh){object.castShadow=object.receiveShadow=true}});front.add(art);loadedAssetIds.push(spec.assetId);
+   }else{
+    const register=new THREE.Mesh(new THREE.BoxGeometry(.7,.5,.55),new THREE.MeshStandardMaterial({color:0x303840,roughness:.6}));register.position.set(spec.position.x,spec.position.y+.25,spec.position.z);register.userData={assetId:spec.assetId,placeholder:true};front.add(register);
+   }
+  }
+  const entrance=new THREE.Group();entrance.name=FRONT_ENTRANCE.assetId;
+  const framePrototype=sourceScene(kit,FRONT_ENTRANCE.frameScene),doorPrototype=sourceScene(kit,FRONT_ENTRANCE.doorScene);
+  if(framePrototype&&doorPrototype){
+   [[framePrototype,FRONT_ENTRANCE.frameAssetId,FRONT_ENTRANCE.frameScene,0],[doorPrototype,FRONT_ENTRANCE.doorAssetId,FRONT_ENTRANCE.doorScene,FRONT_ENTRANCE.doorOffsetX]].forEach(([prototype,assetId,source,offsetX])=>{
+    const art=prototype.clone(true);art.position.set(FRONT_ENTRANCE.position.x+offsetX,FRONT_ENTRANCE.position.y,FRONT_ENTRANCE.position.z);art.rotation.y=FRONT_ENTRANCE.yaw;art.userData={assetId,sourceScene:source,offsetX,placeholder:false};art.traverse(object=>{if(object.isMesh){object.castShadow=object.receiveShadow=true}});entrance.add(art);loadedAssetIds.push(assetId);
+   });
+  }else{
+   const frameMaterial=new THREE.MeshStandardMaterial({color:0xf4d6cc,roughness:.9}),doorMaterial=new THREE.MeshStandardMaterial({color:0x35a684,roughness:.75});
+   [[.45,4,.5,-1.78,2],[.45,4,.5,1.78,2],[3.1,.45,.5,0,3.78]].forEach(([w,h,d,x,y])=>{const part=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),frameMaterial);part.position.set(x,y,FRONT_ENTRANCE.position.z);entrance.add(part)});
+   const door=new THREE.Mesh(new THREE.BoxGeometry(1.65,2.8,.22),doorMaterial);door.position.set(0,1.4,FRONT_ENTRANCE.position.z);door.userData={assetId:FRONT_ENTRANCE.doorAssetId,offsetX:FRONT_ENTRANCE.doorOffsetX,placeholder:true};entrance.add(door);
+  }
+  entrance.userData={assetId:FRONT_ENTRANCE.assetId,frameScene:FRONT_ENTRANCE.frameScene,doorScene:FRONT_ENTRANCE.doorScene,placeholder:!(framePrototype&&doorPrototype)};front.add(entrance);
+  front.userData={assetId:"restaurant.front-area",cashDesk:CASH_DESK,entrance:FRONT_ENTRANCE,props:EXTRA_ASSETS};group.add(front);return front;
+ }
+ function buildRuntime(THREE,scene,rooms,kit=null,assetError="",extras={}){
   validateConnection(rooms[0],rooms[1]);
   const group=new THREE.Group();group.name="restaurant-world";group.visible=false;
   const materials={diningFloor:new THREE.MeshStandardMaterial({color:0xd9ae86,roughness:1})};
@@ -220,14 +262,19 @@
    placements.forEach((p,i)=>{matrix.makeTranslation(p.x,spec.height,p.z);batch.setMatrixAt(i,matrix)});batch.instanceMatrix.needsUpdate=true;batch.castShadow=batch.receiveShadow=true;
    batch.userData={assetId:spec.assetId,symbol,placeholder:true,instanceCount:placements.length};group.add(batch);
   }
-  group.userData={destination:"restaurant",rooms:rooms.map(room=>({id:room.room,width:room.width,depth:room.depth,layoutFile:ROOM_FILES[room.room]})),assetRegistry:ASSET_REGISTRY,assets:{url:KIT_URL,status:kit?"ready":"fallback",loadedAssetIds,error:assetError},floor:{kitchen:KITCHEN_FLOOR},npcs:0,orders:false,hud:false};
+  addFrontArea(THREE,group,kit,extras,loadedAssetIds);
+  const urls=[KIT_URL,...Object.values(EXTRA_ASSETS).map(spec=>spec.url)],externalReady=Object.keys(EXTRA_ASSETS).every(key=>extras[key]?.scene),entranceReady=sourceScene(kit,FRONT_ENTRANCE.frameScene)&&sourceScene(kit,FRONT_ENTRANCE.doorScene);
+  group.userData={destination:"restaurant",rooms:rooms.map(room=>({id:room.room,width:room.width,depth:room.depth,layoutFile:ROOM_FILES[room.room]})),assetRegistry:ASSET_REGISTRY,assets:{url:KIT_URL,urls,status:kit&&externalReady&&entranceReady?"ready":"fallback",loadedAssetIds,error:assetError},floor:{kitchen:KITCHEN_FLOOR},npcs:0,orders:false,hud:false};
   scene.add(group);
   const spawns=Object.fromEntries(rooms.map(room=>[room.room,cellCenter(room,room.spawnCol,room.spawnRow)]));
   const cameraPoses={
    kitchenOverview:{sceneId:"kitchen",name:"kitchen-overview",target:{x:0,z:-30},angle:0,height:11,distance:15},
    kitchenNorthWall:{sceneId:"kitchen",name:"kitchen-north-wall",target:{x:0,z:-39},angle:0,height:6.5,distance:10},
    kitchenWestWall:{sceneId:"kitchen",name:"kitchen-west-wall",target:{x:-8.5,z:-34},angle:Math.PI/2,height:6.5,distance:10},
-   kitchenEastWall:{sceneId:"kitchen",name:"kitchen-east-wall",target:{x:8.5,z:-34},angle:-Math.PI/2,height:6.5,distance:10}
+   kitchenEastWall:{sceneId:"kitchen",name:"kitchen-east-wall",target:{x:8.5,z:-34},angle:-Math.PI/2,height:6.5,distance:10},
+   restaurantChairTable:{sceneId:"dining",name:"restaurant-chair-table",target:{x:-11.5,z:12.5},angle:0,height:5.5,distance:7},
+   restaurantCashRegister:{sceneId:"dining",name:"restaurant-cash-register",target:{x:0,z:14},angle:Math.PI,height:4.4,distance:5.5},
+   restaurantFrontDoor:{sceneId:"dining",name:"restaurant-front-door",target:{x:0,z:19.5},angle:0,height:4.5,distance:6}
   };
   return {group,rooms,spawns,spawn:spawns.dining,camera:{angle:.35,height:8.5,distance:8.8},cameraPoses,debugViews:DEBUG_VIEWS,floorSurfaceY:KITCHEN_FLOOR.surfaceY,canWalk:(x,z)=>canWalk(rooms,x,z)};
  }
@@ -240,9 +287,13 @@
   const Loader=globalThis.ThreeGLTFLoader?.GLTFLoader;if(!Loader)return Promise.reject(new Error("Restaurant GLTF loader is unavailable"));
   return new Promise((resolve,reject)=>new Loader().load(KIT_URL,resolve,undefined,reject));
  }
+ function loadExtraAssets(){
+  const Loader=globalThis.ThreeGLTFLoader?.GLTFLoader;if(!Loader)return Promise.resolve({models:{},errors:["Restaurant GLTF loader is unavailable"]});
+  return Promise.all(Object.entries(EXTRA_ASSETS).map(([key,spec])=>new Promise(resolve=>new Loader().load(spec.url,model=>resolve({key,model}),undefined,error=>resolve({key,error:String(error?.message||error)}))))).then(results=>({models:Object.fromEntries(results.filter(result=>result.model).map(result=>[result.key,result.model])),errors:results.filter(result=>result.error).map(result=>`${result.key}: ${result.error}`)}));
+ }
  async function ensure(THREE,scene,fetchImpl){
   if(runtime)return runtime;if(loading)return loading;
-  loading=Promise.all([loadRooms(fetchImpl),loadKit().then(kit=>({kit,error:""})).catch(error=>({kit:null,error:String(error?.message||error) }))]).then(([rooms,asset])=>runtime=buildRuntime(THREE,scene,rooms,asset.kit,asset.error)).finally(()=>loading=null);return loading;
+  loading=Promise.all([loadRooms(fetchImpl),loadKit().then(kit=>({kit,error:""})).catch(error=>({kit:null,error:String(error?.message||error) })),loadExtraAssets()]).then(([rooms,asset,extras])=>runtime=buildRuntime(THREE,scene,rooms,asset.kit,[asset.error,...extras.errors].filter(Boolean).join("; "),extras.models)).finally(()=>loading=null);return loading;
  }
  function disposeRuntimeResources(root){
   const geometries=new Set(),materials=new Set(),textures=new Set();
@@ -255,5 +306,5 @@
   return {geometries:geometries.size,materials:materials.size,textures:textures.size};
  }
  function destroy(){if(!runtime)return;const root=runtime.group;disposeRuntimeResources(root);root.parent?.remove(root);runtime=null}
- return {KIT_URL,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,WALL,KITCHEN_FLOOR,DEBUG_VIEWS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,wallCellCollision,doorwayCells,validateConnection,sourceScene,firstMesh,buildKitchenFloor,wallBoundaryLines,wallSegments,buildWalls,assetTransform,buildRuntime,loadRooms,loadKit,disposeRuntimeResources,ensure,destroy,get current(){return runtime}};
+ return {KIT_URL,BACKGROUND_COLOR,EXTRA_ASSETS,CASH_DESK,FRONT_ENTRANCE,ROOM_FILES,ASSET_REGISTRY,WALKABLE,PLAYER_RADIUS,WALL,KITCHEN_FLOOR,DEBUG_VIEWS,parseLevel,cellCenter,roomAt,symbolAtWorld,canWalk,wallCellCollision,doorwayCells,validateConnection,sourceScene,firstMesh,buildKitchenFloor,wallBoundaryLines,wallSegments,buildWalls,assetTransform,addFrontArea,buildRuntime,loadRooms,loadKit,loadExtraAssets,disposeRuntimeResources,ensure,destroy,get current(){return runtime}};
 });

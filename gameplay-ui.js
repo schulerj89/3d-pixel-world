@@ -384,7 +384,8 @@
 
   function positionTVScreen(){
     // Channel artwork is rendered on the 3D screen, never as a floating panel.
-    tvScreenEl.style.display="none";
+    const screenPanel=document.getElementById("tvScreen");
+    if(screenPanel)screenPanel.style.display="none";
   }
 
   function paintTVScreen(name){

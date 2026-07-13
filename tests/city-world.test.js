@@ -19,9 +19,11 @@ for(const file of City.MODEL_FILES)for(const extension of ["gltf","bin"]){
 assert(fs.existsSync(path.join(root,City.ASSET_ROOT,"citybits_texture.png")),"missing shared city atlas");
 assert.equal(new Set(City.MODEL_FILES).size,City.MODEL_FILES.length,"the city asset registry should load each source once");
 const source=read("city-world.js");
+assert(source.includes('layout:"single-mesh"'),"city ground must remain one non-culled mesh so camera poses cannot expose missing quadrants");
 for(const pose of ["overview","buildingsNorth","buildingsCenter","buildingsSouth","trafficLights","carsEast","carsNorth"])assert(source.includes(`${pose}:{`),`missing named ${pose} QA pose`);
 for(const type of "ABCDEFGH")assert(source.includes(`building${type}:{`),`missing building ${type} QA pose`);
 const html=read("index.html");
 assert(html.includes('id="goCity"')&&html.includes("assets/ui/city.svg"),"world picker needs the City button and icon");
 assert(!/goForest|forest-world\.js|forest-animal-model\.js/.test(html),"forest destination scripts and button must be removed");
+assert(!read("game.js").includes("R.shadowMap.enabled=worldShadows"),"world switching must not toggle the renderer shadow pipeline and create black city-ground artifacts");
 console.log(`city world: ${placements.length} buildings, ${roads.roadTiles} road tiles, ${roads.junctions} junctions, ${spacing.minimum.toFixed(2)} minimum units`);

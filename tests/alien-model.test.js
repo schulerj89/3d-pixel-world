@@ -3,37 +3,27 @@ const fs=require("fs");
 const path=require("path");
 const asset=require("../alien-model.js");
 
-class Attribute{constructor(array,itemSize){this.array=array;this.itemSize=itemSize;this.count=array.length/itemSize}}
-class Geometry{
-  constructor(){this.attributes={}}
-  setAttribute(name,attribute){this.attributes[name]=attribute}
-  computeBoundingBox(){
-    const values=this.attributes.position.array,min={x:Infinity,y:Infinity,z:Infinity},max={x:-Infinity,y:-Infinity,z:-Infinity};
-    for(let i=0;i<values.length;i+=3){
-      min.x=Math.min(min.x,values[i]);min.y=Math.min(min.y,values[i+1]);min.z=Math.min(min.z,values[i+2]);
-      max.x=Math.max(max.x,values[i]);max.y=Math.max(max.y,values[i+1]);max.z=Math.max(max.z,values[i+2]);
-    }
-    this.boundingBox={min,max};
-  }
-  computeBoundingSphere(){this.boundingSphere=true}
-}
-const THREE={BufferGeometry:Geometry,Float32BufferAttribute:Attribute};
-const text=fs.readFileSync(path.join(__dirname,"..","assets","models","alien","quaternius-alien.obj"),"utf8");
-const geometry=asset.parse(THREE,text);
+const root=path.join(__dirname,"..");
+assert.strictEqual(asset.source.name,"Ultimate Space Kit");
+assert.strictEqual(asset.source.author,"Quaternius");
+assert.strictEqual(asset.source.license,"CC0-1.0");
+assert.strictEqual(asset.MODEL_SPECS.length,2,"two alien variants should be reused across five placements");
+assert(fs.readFileSync(path.join(root,"alien-model.js"),"utf8").includes("cloneNode.bindMatrix.copy(sourceNode.bindMatrix)"),"skinned clones must preserve the authored bind matrix");
 
-assert(geometry.attributes.position.count>8000,"expected the complete triangulated alien mesh");
-assert.strictEqual(geometry.attributes.position.count,geometry.attributes.normal.count);
-assert.strictEqual(geometry.attributes.position.count,geometry.attributes.color.count);
-assert(geometry.boundingBox&&geometry.boundingSphere,"bounds should be ready for rendering/culling");
-const bounds=asset.readBounds(geometry);
-assert(bounds.min.y<0&&bounds.max.y>2.9,"expected authored alien vertical bounds");
-for(const [scale,surfaceY] of [[.9,0],[.72,.49]]){
-  const y=asset.groundedY(bounds,scale,surfaceY);
-  assert(Math.abs(y+bounds.min.y*scale-surfaceY)<1e-8,"scaled model bottom should match its support surface");
+for(const spec of asset.MODEL_SPECS){
+  const file=path.join(root,asset.ASSET_ROOT,spec.file),json=JSON.parse(fs.readFileSync(file,"utf8"));
+  assert(fs.statSync(file).size<250*1024,`${spec.file} exceeds the per-alien source budget`);
+  assert(json.animations.some(animation=>animation.name===spec.animation),`${spec.file} is missing ${spec.animation}`);
+  assert(json.skins?.length>0&&json.meshes?.length>0,`${spec.file} must retain its rigged mesh`);
+  assert(json.buffers.every(buffer=>buffer.uri.startsWith("data:")),`${spec.file} should be a self-contained glTF`);
 }
-const colors=new Set();
-for(let i=0;i<geometry.attributes.color.array.length;i+=3){
-  colors.add(Array.from(geometry.attributes.color.array.slice(i,i+3)).map(v=>v.toFixed(2)).join(","));
+
+assert.strictEqual(asset.selectIdleClip([{name:"Walk"},{name:"Flying_Idle"}]).name,"Flying_Idle");
+assert.strictEqual(asset.selectIdleClip([{name:"Idle_Breathe"}],"missing").name,"Idle_Breathe");
+assert.strictEqual(asset.selectIdleClip([{name:"Walk"}]),null);
+for(const [minY,scale,surfaceY] of [[1.5,.9,0],[1.37,.72,.25]]){
+  const y=asset.groundedY({min:{y:minY}},scale,surfaceY);
+  assert(Math.abs(y+minY*scale-surfaceY)<1e-8,"scaled alien bottom should match its support surface");
 }
-assert.strictEqual(colors.size,5,"all five authored material regions should survive as vertex colors");
-console.log(`alien model: ${geometry.attributes.position.count/3} triangles, ${colors.size} vertex-color regions`);
+
+console.log("animated aliens: 2 CC0 glTF variants, rigged Flying_Idle clips, 351 KB total");

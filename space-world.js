@@ -41,7 +41,7 @@
   K:{assetId:"space.utility.structure-tall",file:"structure_tall",scale:3,footprint:[5.3,5.3],size:[5.3,6,5.3],color:0xaab5c2},
   U:{assetId:"space.road.tunnel",file:"tunnel_straight_A",scale:3,footprint:[6,2.8],size:[6,1.8,2.8],color:0x77869a,collidable:false}
  });
- const ALIEN_SPEC=Object.freeze({assetId:"space.npc.alien",footprint:[1.4,1.4]});
+ const ALIEN_SPEC=Object.freeze({assetId:"space.npc.alien.cc0",footprint:[1.5,1.5]});
  const WALKABLE=new Set([".","r","X"]);
 
  function parseLevel(text){
@@ -106,6 +106,14 @@
   [-.16,.16].forEach(x=>{const eye=new THREE.Mesh(new THREE.SphereGeometry(.5,8,6),darkMaterial);eye.scale.set(.12,.18,.08);eye.position.set(x,2.04,.4);group.add(eye)});
   group.userData.placeholder=true;return group;
  }
+ function buildAlienShadows(THREE,placements,parent){
+  const geometry=new THREE.CircleGeometry(.68,16);geometry.rotateX(-Math.PI/2);
+  const material=new THREE.MeshBasicMaterial({color:0x080b18,transparent:true,opacity:.34,depthWrite:false});
+  const shadows=new THREE.InstancedMesh(geometry,material,placements.length),matrix=new THREE.Matrix4();
+  shadows.name="space-alien-contact-shadows";shadows.userData={assetId:"space.npc.alien.contact-shadow",instanceCount:placements.length};shadows.renderOrder=2;
+  placements.forEach((placement,index)=>{matrix.makeTranslation(placement.x,.012,placement.z);shadows.setMatrixAt(index,matrix)});shadows.instanceMatrix.needsUpdate=true;parent.add(shadows);
+  return {instances:placements.length,drawCalls:1};
+ }
  function roadCells(level){
   const cells=[];level.map.forEach((line,row)=>[...line].forEach((symbol,col)=>{if(ROAD_SYMBOLS.has(symbol))cells.push({symbol,col,row,...cellCenter(level,col,row)})}));return cells;
  }
@@ -140,42 +148,52 @@
  }
  function create(THREE){
   const group=new THREE.Group();group.name="space-world";group.userData={destination:"space",layout:{url:LEVEL_URL,status:"loading"},assets:{source:"KayKit: Space Base Bits",license:"CC0-1.0",status:"loading",loadedAssetIds:[],errors:[]},npcs:{aliens:0,nonAliens:0}};
-  const collisionBoxes=[];let disposed=false,level=null,spacing=null,roadInfo={tiles:0,drawCalls:0};
+  const collisionBoxes=[],alienMixers=[],alienGrounding=[];let disposed=false,level=null,spacing=null,roadInfo={tiles:0,drawCalls:0},alienShadowInfo={instances:0,drawCalls:0};
   const debugPoses=Object.freeze({
    spawn:{x:2,z:34,angle:.25,height:15,distance:22},
    overview:{x:0,z:0,angle:.38,height:42,distance:52},
    landing:{x:-20.9,z:-14,angle:.15,height:11,distance:17},
    roads:{x:0,z:4,angle:.18,height:17,distance:25},
    cargo:{x:12,z:18,angle:.28,height:11,distance:16},
-   aliens:{x:-14,z:-2,angle:.45,height:4.8,distance:6.5,hidePlayer:true}
+   aliens:{x:-14,z:-2,angle:.45,height:4.8,distance:6.5,hidePlayer:true},
+   alienExtraSmall:{x:-14,z:-2,angle:.32,height:3.4,distance:4.8,hidePlayer:true},
+   alienSmall:{x:22,z:-2,angle:-.28,height:3.6,distance:5.1,hidePlayer:true}
   });
   const world={group,bounds:{minX:-39.6,maxX:39.6,minZ:-39.6,maxZ:39.6},spawn:{x:2,z:34},camera:{angle:.25,height:15,distance:22},debugPoses,background:0x020316,name:"Starfall Spaceport",
    canWalk(x,z){if(x<world.bounds.minX||x>world.bounds.maxX||z<world.bounds.minZ||z>world.bounds.maxZ)return false;return !collisionBoxes.some(box=>Math.abs(x-box.x)<box.halfX+PLAYER_RADIUS&&Math.abs(z-box.z)<box.halfZ+PLAYER_RADIUS)},
-   debug(){return {layout:group.userData.layout,assets:group.userData.assets,npcs:group.userData.npcs,placements:placementsFromLevel(level||{map:[]}).length,collisionBoxes:collisionBoxes.length,minimumSpacing:spacing?.minimum??null,roads:roadInfo,background:{stars:BACKGROUND_STAR_COUNT,planets:2},spawn:world.spawn}},
-   dispose(){disposed=true;group.parent?.remove(group);disposeResources(group)}
+   update(dt,isActive=true){if(isActive)alienMixers.forEach(mixer=>mixer.update(dt))},
+   debug(){return {layout:group.userData.layout,assets:group.userData.assets,npcs:group.userData.npcs,alienGrounding,alienShadows:alienShadowInfo,placements:placementsFromLevel(level||{map:[]}).length,collisionBoxes:collisionBoxes.length,minimumSpacing:spacing?.minimum??null,roads:roadInfo,background:{stars:BACKGROUND_STAR_COUNT,planets:2},spawn:world.spawn}},
+   dispose(){disposed=true;alienMixers.forEach(mixer=>mixer.stopAllAction());group.parent?.remove(group);disposeResources(group)}
   };
-  world.ready=Promise.all([loadLevel(),loadAssets(),globalThis.QuaterniusAlienAsset?.load?.(THREE).catch(error=>({error}))||Promise.resolve(null)]).then(([loadedLevel,assets,alienAsset])=>{
+  world.ready=Promise.all([loadLevel(),loadAssets(),globalThis.QuaterniusAlienAsset?.load?.(THREE).catch(error=>({variants:[],loadedAssetIds:[],errors:[String(error?.message||error)]}))||Promise.resolve({variants:[],loadedAssetIds:[],errors:["Alien asset runtime is unavailable"]})]).then(([loadedLevel,assets,alienAssets])=>{
    if(disposed)return world;level=loadedLevel;spacing=validateSpacing(level);world.name=level.name||world.name;world.bounds={minX:-level.width/2+PLAYER_RADIUS,maxX:level.width/2-PLAYER_RADIUS,minZ:-level.depth/2+PLAYER_RADIUS,maxZ:level.depth/2-PLAYER_RADIUS};world.spawn=cellCenter(level,level.spawnCol,level.spawnRow);
    group.add(buildSpaceBackdrop(THREE,Number(level.seed)||92817));
    const floor=new THREE.Mesh(new THREE.BoxGeometry(level.width,.3,level.depth),new THREE.MeshStandardMaterial({color:0x2b2851,roughness:.94}));floor.position.y=-.15;floor.receiveShadow=true;floor.userData.assetId="space.terrain.floor";group.add(floor);roadInfo=buildRoads(THREE,level,group);
+   const placements=placementsFromLevel(level);alienShadowInfo=buildAlienShadows(THREE,placements.filter(placement=>placement.symbol==="a"),group);
    let aliens=0;
-   for(const placement of placementsFromLevel(level)){
+   for(const placement of placements){
     let object;
     if(placement.symbol==="a"){
      aliens++;object=alienFallback(THREE);
-     if(alienAsset&&!alienAsset.error){object.clear();const model=new THREE.Mesh(alienAsset.geometry,alienAsset.material);const scale=.9;model.scale.setScalar(scale);model.position.y=globalThis.QuaterniusAlienAsset.groundedY(alienAsset.bounds,scale,0);model.userData.placeholder=false;object.add(model);object.userData.placeholder=false}
+     const asset=alienAssets.variants[(aliens-1)%alienAssets.variants.length];
+     if(asset){
+      const instance=globalThis.QuaterniusAlienAsset.createInstance(THREE,asset,aliens-1,0);object=instance.model;object.userData.placeholder=false;
+      if(instance.mixer)alienMixers.push(instance.mixer);
+      alienGrounding.push({assetId:asset.spec.id,animation:instance.clipName,x:placement.x,z:placement.z,bottomY:+instance.bounds.min.y.toFixed(4),groundError:+instance.groundError.toFixed(4)});
+     }else alienGrounding.push({assetId:"fallback",animation:null,x:placement.x,z:placement.z,bottomY:0,groundError:0});
     }else{
      const prototype=assets.prototypes.get(placement.symbol);object=prototype?prototype.clone(true):placeholder(THREE,placement.spec);object.scale.setScalar(prototype?placement.spec.scale:1);
     }
-    object.position.x=placement.x;object.position.z=placement.z;object.name=placement.spec.assetId;object.userData.assetId=placement.spec.assetId;object.userData.level={symbol:placement.symbol,col:placement.col,row:placement.row};
+    object.position.x=placement.x;object.position.z=placement.z;object.name=object.userData.assetId||placement.spec.assetId;object.userData.assetId=object.userData.assetId||placement.spec.assetId;object.userData.level={symbol:placement.symbol,col:placement.col,row:placement.row};
     object.traverse(child=>{if(child.isMesh){child.castShadow=false;child.receiveShadow=true}});group.add(object);
     if(placement.spec.collidable!==false)collisionBoxes.push({x:placement.x,z:placement.z,halfX:placement.spec.footprint[0]/2,halfZ:placement.spec.footprint[1]/2,assetId:placement.spec.assetId});
    }
    group.userData.layout={url:LEVEL_URL,status:"ready",size:`${level.width}x${level.depth}`,cell:level.cell,minimumSpacing:spacing.minimum,roadTiles:roadInfo.tiles};
-   group.userData.assets={source:"KayKit: Space Base Bits",license:"CC0-1.0",status:assets.errors.length?(assets.loadedAssetIds.length?"partial":"fallback"):"ready",loadedAssetIds:assets.loadedAssetIds,errors:assets.errors};
-   group.userData.npcs={aliens,nonAliens:0,alienAsset:alienAsset?.error?"fallback":"ready"};return world;
+   const allErrors=[...assets.errors,...alienAssets.errors],loadedAssetIds=[...assets.loadedAssetIds,...alienAssets.loadedAssetIds];
+   group.userData.assets={source:"KayKit: Space Base Bits + Quaternius Ultimate Space Kit",license:"CC0-1.0",status:allErrors.length?(loadedAssetIds.length?"partial":"fallback"):"ready",loadedAssetIds,errors:allErrors};
+   group.userData.npcs={aliens,nonAliens:0,alienAsset:alienAssets.variants.length?"ready":"fallback",alienModels:alienAssets.loadedAssetIds,idleAnimations:[...new Set(alienGrounding.map(item=>item.animation).filter(Boolean))],grounded:alienGrounding.every(item=>Math.abs(item.groundError)<.01)};return world;
   }).catch(error=>{group.userData.layout.status="error";group.userData.layout.error=String(error?.message||error);throw error});
   return world;
  }
- return {LEVEL_URL,ASSET_ROOT,ASSET_REGISTRY,ALIEN_SPEC,MIN_SPACING,PLAYER_RADIUS,BACKGROUND_STAR_COUNT,ROAD_SYMBOLS,WALKABLE,parseLevel,cellCenter,placementsFromLevel,roadCells,footprintDistance,spacingReport,validateSpacing,loadLevel,loadAssets,buildRoads,buildSpaceBackdrop,disposeResources,create};
+ return {LEVEL_URL,ASSET_ROOT,ASSET_REGISTRY,ALIEN_SPEC,MIN_SPACING,PLAYER_RADIUS,BACKGROUND_STAR_COUNT,ROAD_SYMBOLS,WALKABLE,parseLevel,cellCenter,placementsFromLevel,roadCells,footprintDistance,spacingReport,validateSpacing,loadLevel,loadAssets,buildRoads,buildAlienShadows,buildSpaceBackdrop,disposeResources,create};
 });
