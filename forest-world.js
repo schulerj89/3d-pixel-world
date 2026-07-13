@@ -5,23 +5,43 @@
  // Keep this embedded fallback aligned with forest-level.txt. The parser is
  // public so tooling can preview/validate the same compact level language.
  const LEVEL_TEMPLATE=`
-name: Whimsy Forest
-size: 80x80
+name: Grand Whimsy Forest
+size: 240x240
 cell: 8
 seed: 73421
-spawn: 4,8
+spawn: 14,27
 legend: F=forest P=path C=clearing L=lake G=glen R=rock-garden
 map:
-FFFFPFFFFF
-FFCFPFFGFF
-FFFFPFFFFF
-FPPPPPPPFF
-FPFFPFFPFF
-FPFCCCFRFF
-FPFCPCFFFF
-FPPPPPPPLF
-FFFFPFFFFF
-FFFFPFFFFF`;
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFLLLLFFFFFPFFFFFFFFFFFFFFF
+FFFFFLLLLFFFFFPFFFFFFFFFFFFFFF
+FFFFFLLLLFFFFFPFFFFFFFFFFFFFFF
+FFFFFLLLLFFFFCCCFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFGGFFFFFFPFFFFFFFRRFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFPPPPPPPPPPPPPPPPPPPPPPPPPPFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFLLLLFFFFF
+FFFFFFFFFFFFFCCCFFFFFLLLLFFFFF
+FFFFFFFFFFFFFFPFFFFFFLLLLFFFFF
+FFFFFFFFFFFFFFPFFFFFFLLLLFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFCCFFFFFFFPFFFFFFFFGGFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFPFFFFFFFFFFFFFFF`;
 
  function parseLevel(text){
   const lines=text.trim().split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
@@ -31,11 +51,12 @@ FFFFPFFFFF`;
    if(readingMap){map.push(line);continue}
    const split=line.indexOf(":");if(split>0)values[line.slice(0,split).trim()]=line.slice(split+1).trim();
   }
-  const [width,depth]=(values.size||"80x80").split("x").map(Number);
-  const [spawnCol,spawnRow]=(values.spawn||"5,8").split(",").map(Number);
+  const [width,depth]=(values.size||"240x240").split("x").map(Number);
+  const [spawnCol,spawnRow]=(values.spawn||"14,27").split(",").map(Number);
   return {name:values.name||"Forest",width,depth,cell:Number(values.cell)||8,seed:Number(values.seed)||1,spawnCol,spawnRow,map};
  }
  const LEVEL=(window.levelTemplateParser?.parse||parseLevel)(LEVEL_TEMPLATE),HALF=LEVEL.width/2;
+ const CHUNK_COLS=LEVEL.width/LEVEL.cell,CHUNK_ROWS=LEVEL.depth/LEVEL.cell,STREAM_RADIUS=2;
  const CONFIG={size:LEVEL.width,halfSize:HALF,spawn:cellCenter(LEVEL.spawnCol,LEVEL.spawnRow),camera:{angle:.28,height:12,distance:18}};
  function cellCenter(col,row){return {x:-HALF+col*LEVEL.cell+LEVEL.cell/2,z:-HALF+row*LEVEL.cell+LEVEL.cell/2}}
  function hash(seed,a,b,c=0){let n=(seed^Math.imul(a+101,374761393)^Math.imul(b+137,668265263)^Math.imul(c+17,2246822519))>>>0;n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967296}
@@ -83,8 +104,8 @@ FFFFPFFFFF`;
    }
    function removeChunk(chunkKey){const chunk=chunks.get(chunkKey);if(!chunk)return;root.remove(chunk);chunks.delete(chunkKey);collisionByChunk.delete(chunkKey);stats.disposedChunks++;stats.activeChunks=chunks.size;}
    function update(playerX,playerZ){
-    const col=Math.max(0,Math.min(9,Math.floor((playerX+HALF)/LEVEL.cell))),row=Math.max(0,Math.min(9,Math.floor((playerZ+HALF)/LEVEL.cell))),wanted=new Set();
-    const candidates=[];for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){const x=col+dx,z=row+dz;if(x>=0&&x<10&&z>=0&&z<10)candidates.push({col:x,row:z,d:dx*dx+dz*dz})}
+    const col=Math.max(0,Math.min(CHUNK_COLS-1,Math.floor((playerX+HALF)/LEVEL.cell))),row=Math.max(0,Math.min(CHUNK_ROWS-1,Math.floor((playerZ+HALF)/LEVEL.cell))),wanted=new Set();
+    const candidates=[];for(let dz=-STREAM_RADIUS;dz<=STREAM_RADIUS;dz++)for(let dx=-STREAM_RADIUS;dx<=STREAM_RADIUS;dx++){const x=col+dx,z=row+dz;if(x>=0&&x<CHUNK_COLS&&z>=0&&z<CHUNK_ROWS)candidates.push({col:x,row:z,d:dx*dx+dz*dz})}
     candidates.sort((a,b)=>a.d-b.d).forEach(item=>{const chunkKey=key(item.col,item.row);wanted.add(chunkKey);if(!chunks.has(chunkKey))buildChunk(item.col,item.row)});
     [...chunks.keys()].forEach(chunkKey=>{if(!wanted.has(chunkKey))removeChunk(chunkKey)});
     stats.treeInstances=stats.flowerInstances=stats.rockInstances=0;
@@ -97,15 +118,15 @@ FFFFPFFFFF`;
    }
    // Six friendly forest residents are landmark NPCs rather than chunk-owned
    // objects, so they never pop out while the player approaches a clearing.
-   const animalSpots=[[-20,-28],[-12,4],[4,4],[12,4],[20,-20],[28,20]];
+   const animalSpots=[[-12,92],[12,76],[-56,8],[44,-12],[-72,-72],[76,-84]];
    const animalBodies=animalSpots.map(([x,z],i)=>({x,y:.75,z,sx:i===3?1.3:1,sy:.8,sz:1.1}));
    const animalHeads=animalSpots.map(([x,z],i)=>({x,y:1.35,z:z-.38,sx:i===1?.82:1,sy:1,sz:1}));
    makeInstances(geos.animalBody,mats.brown,animalBodies,"animal",root);makeInstances(geos.animalHead,mats.orange,animalHeads,"animal",root);stats.animalCount=animalSpots.length;
    update(CONFIG.spawn.x,CONFIG.spawn.z);
    return {
     root,config:CONFIG,update,canWalk,
-    metadata:{...window.worldFactories.forest.metadata,maxActiveChunks:9,chunkSize:LEVEL.cell,drawCallBudget:32,instanceBudgetPerActiveSet:260},
-    debug(){return {...stats,maxActiveChunks:9,chunkSize:LEVEL.cell,seed:LEVEL.seed,worldSize:`${LEVEL.width}x${LEVEL.depth}`,activeChunkKeys:[...chunks.keys()]};},
+    metadata:{...window.worldFactories.forest.metadata,maxActiveChunks:25,totalChunks:CHUNK_COLS*CHUNK_ROWS,chunkSize:LEVEL.cell,generationLookAheadUnits:STREAM_RADIUS*LEVEL.cell,drawCallBudget:140,instanceBudgetPerActiveSet:800},
+    debug(){return {...stats,maxActiveChunks:25,totalChunks:CHUNK_COLS*CHUNK_ROWS,chunkSize:LEVEL.cell,generationLookAheadUnits:STREAM_RADIUS*LEVEL.cell,seed:LEVEL.seed,worldSize:`${LEVEL.width}x${LEVEL.depth}`,activeChunkKeys:[...chunks.keys()]};},
     destroy(){scene.remove(root);chunks.clear();collisionByChunk.clear();resources.forEach(item=>item.dispose?.())}
    };
   }
