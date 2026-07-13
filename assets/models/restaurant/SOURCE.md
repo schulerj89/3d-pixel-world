@@ -9,7 +9,9 @@ This directory contains a curated derivative of **KayKit: Restaurant Bits 1.0 FR
 - Downloaded archive SHA-256: `75F75F0A1AE569F3F2348FA7A04CCD45D2F010D419045755C70AE43289B68E4B`
 - Archive root/version: `KayKit_Restaurant_Bits_1.0_FREE`
 
-`kaykit-restaurant-kit.glb` is a curated, optimized derivative containing 29 separately addressable glTF scenes. It is 503,564 bytes with SHA-256 `66A6930D382CB6014FE459F628BC5F9D960EF9B487D0E76BE803633540AFF44D`. It contains 16,456 triangles, 18,855 uploaded vertices, 32 meshes/primitives, one material, and one 128x128 WebP gradient atlas. The atlas has an estimated 87,380-byte decoded GPU allocation including mip levels.
+`kaykit-restaurant-kit.glb` is a curated, optimized derivative containing 31 separately addressable glTF scenes. It is 549,488 bytes with SHA-256 `613A6109FBF3CDAB31B4E52FD5E1C2146F6C187FC4738B099D83960827351ADE`. It contains 17,766 triangles, 20,677 uploaded vertices, 34 meshes/primitives, one material, and one 128x128 WebP gradient atlas. The atlas has an estimated 87,380-byte decoded GPU allocation including mip levels.
+
+The two added blank variants were verified visually before runtime integration and rebuilt from the official Godot Asset Library repository at commit `153c8a7535b48237854cb54ff6890679f8c574d1`: `stove_multi` is the undecorated four-burner stove, and `kitchentable_A_large` is the undecorated prep table.
 
 The source pack's 1024x1024 atlas is explicitly designed by the creator to be downsampled to 128x128. The derivative uses `EXT_texture_webp` and `KHR_mesh_quantization`, both supported by the repository's bundled GLTFLoader. No Draco or Meshopt decoder is required.
 
@@ -37,11 +39,13 @@ fridge_A_decorated
 oven
 extractorhood
 stove_multi_decorated
+stove_multi
 kitchencounter_sink_backsplash
 kitchencounter_straight_A_backsplash
 kitchencounter_innercorner_backsplash
 kitchencabinet
 kitchentable_A_large_decorated
+kitchentable_A_large
 dishrack_plates
 shelf_papertowel_decorated
 cuttingboard
