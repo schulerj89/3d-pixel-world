@@ -445,8 +445,12 @@
   function updateRemotePickup(){
     setRoomLabel();
 
-    // Old floating remote menus stay hidden.
+    // Floating remote pickup badges are retired. Keep both legacy entry
+    // points inert even if another refresh path tries to restore them.
     oldOpenRemote.style.display="none";
+    oldOpenRemote.hidden=true;
+    pickupBtn.style.display="none";
+    pickupBtn.hidden=true;
     remotePanelEl.style.display="none";
 
     const avatarShopOpen=avatarShop.style.display==="block";
@@ -467,23 +471,7 @@
     }
 
     setRemoteVisible(handRemote,false,"hand");
-    const remote=nearestRemote();
-    if(!remote || buildingMode){
-      setRemoteVisible(pickupBtn,false,"pickup");
-      return;
-    }
-
-    const p=remote.position.clone();
-    p.y+=.8;
-    p.project(C);
-    if(p.z<-1||p.z>1){
-      setRemoteVisible(pickupBtn,false,"pickup");
-      return;
-    }
-
-    setRemoteVisible(pickupBtn,true,"pickup");
-    pickupBtn.style.left=((p.x*.5+.5)*innerWidth-pickupBtn.offsetWidth/2)+"px";
-    pickupBtn.style.top=((-p.y*.5+.5)*innerHeight-pickupBtn.offsetHeight/2)+"px";
+    // The actual remote controls are opened contextually beside the TV.
   }
 
   pickupBtn.addEventListener("pointerdown",e=>{
@@ -496,6 +484,15 @@
     remote.visible=false;
     setRemoteVisible(handRemote,true,"hand");
     document.getElementById("msg").textContent="You picked up the TV remote! Use the remote at the bottom-right. 📱";
+  });
+
+  // Open the usable remote only after the player explicitly interacts with
+  // the physical TV; do not advertise it as a persistent floating badge.
+  document.getElementById("houseAction").addEventListener("pointerdown",()=>{
+    if(document.getElementById("houseAction").dataset.action!=="tv")return;
+    carryingRemote=true;
+    pickedRemoteObject=null;
+    setRemoteVisible(handRemote,true,"hand");
   });
 
   document.getElementById("putRemoteDown").addEventListener("pointerdown",e=>{

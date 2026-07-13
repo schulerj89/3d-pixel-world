@@ -241,11 +241,15 @@ function hasFurniture(kind){return furniture.some(f=>f.userData.kind===kind)}
 function nearFurniture(kind,range=1.8){return furniture.find(f=>f.userData.kind===kind&&Math.hypot(f.position.x-P.position.x,f.position.z-P.position.z)<range)}
 function refreshHouseButtons(){
  const inHouse=currentPlace==="house";
- openTVRemoteBtn.style.display=(inHouse&&hasFurniture("tv"))?"block":"none";
+ // Retire the legacy floating badge. Its refresh loop used to fight the
+ // newer remote UI hide loop, causing the top-right control to flash.
+ openTVRemoteBtn.style.display="none";
+ openTVRemoteBtn.hidden=true;
  if(!inHouse||buildingMode){houseActionBtn.style.display="none";return}
- const chair=nearFurniture("chair"),fridge=nearFurniture("fridge");
+ const chair=nearFurniture("chair"),fridge=nearFurniture("fridge"),tv=nearFurniture("tv",2.4);
  if(chair){houseActionBtn.style.display="block";houseActionBtn.textContent=sitting?"🚶 STAND":"🪑 SIT";houseActionBtn.dataset.action="sit"}
  else if(fridge){houseActionBtn.style.display="block";houseActionBtn.textContent="🧊 OPEN FRIDGE";houseActionBtn.dataset.action="fridge"}
+ else if(tv){houseActionBtn.style.display="block";houseActionBtn.textContent="TV CONTROLS";houseActionBtn.dataset.action="tv"}
  else houseActionBtn.style.display="none";
 }
 houseActionBtn.onclick=()=>{
@@ -255,8 +259,12 @@ houseActionBtn.onclick=()=>{
   else{sitting=false;P.position.z+=1}
  }
  if(houseActionBtn.dataset.action==="fridge")document.getElementById("msg").textContent="Inside: milk, fruit, cake, and juice! 🥛🍓🍰";
+ if(houseActionBtn.dataset.action==="tv"){
+  const handRemote=document.getElementById("handRemote");
+  if(handRemote){handRemote.style.display="block";handRemote.setAttribute("aria-hidden","false")}
+ }
 };
-openTVRemoteBtn.onclick=()=>{remotePanelEl.style.display="block"};
+openTVRemoteBtn.onclick=null;
 let tvAnimationTimer=null,tvFrame=0;
 const channelScenes={
  news:[
