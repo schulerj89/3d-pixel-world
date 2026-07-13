@@ -10,7 +10,7 @@
   const box=(w,h,d,mat,x,y,z,parent=group)=>{const geometry=new THREE.BoxGeometry(w,h,d);resources.push(geometry);const mesh=new THREE.Mesh(geometry,mat);mesh.position.set(x,y,z);mesh.castShadow=mesh.receiveShadow=true;parent.add(mesh);return mesh};
   box(6.3,5,.24,wall,-4.35,2.5,7.38);box(6.3,5,.24,wall,4.35,2.5,7.38);
   box(2.4,1.05,.24,wall,0,4.48,7.38);box(2.7,.18,.65,trim,0,3.91,7.48);
-  const door=box(2.05,3.75,.18,doorMat,0,1.88,7.54);door.name="house-front-door";door.userData.actionAnchor={x:0,y:4.35,z:0};
+  const door=box(2.05,3.75,.18,doorMat,0,1.88,7.54);door.name="house-front-door";door.userData.actionAnchor={x:0,y:2.15,z:0};
   box(.13,.13,.18,metal,.72,1.95,.14,door);
   box(4.5,.22,2.2,wood,0,.08,8.45);box(2.3,.1,6.2,trim,0,.02,12.4);
   const mailbox=new THREE.Group();mailbox.name="house-mailbox";mailbox.position.set(-4.5,0,11.1);group.add(mailbox);

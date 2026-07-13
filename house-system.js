@@ -52,6 +52,7 @@ window.houseWorldApi={
 };
 function setHouseArea(area){
  houseArea=area==="exterior"?"exterior":"interior";
+ houseCity?.setActive?.(houseArea==="exterior");
  if(buildingMode&&houseArea!=="interior")setBuildingMode(false);
  const spawn=houseArea==="exterior"?(houseCity?.exteriorSpawn||houseExterior?.exteriorSpawn||{x:0,z:10.1}):(houseExterior?.interiorSpawn||{x:0,z:5.25});
  P.position.set(spawn.x,0,spawn.z);P.rotation.y=houseArea==="exterior"?0:Math.PI;
@@ -187,8 +188,7 @@ function showHouse(){P.visible=true;
  setHudMenu(false);closeKitchenPanels();
  document.getElementById("roomTeleport").style.display="none";
  setBuildingMode(false);
- houseArea="interior";
- P.position.set(HOUSE_CONFIG.spawn.x,0,HOUSE_CONFIG.spawn.z);
+ setHouseArea("interior");
  cameraAngle=HOUSE_CONFIG.camera.angle;
  cameraHeight=HOUSE_CONFIG.camera.height;
  cameraDistance=HOUSE_CONFIG.camera.distance;
