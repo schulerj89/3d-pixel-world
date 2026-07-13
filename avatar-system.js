@@ -35,6 +35,32 @@ document.getElementById("continueToCustomize").addEventListener("click",()=>{
  showCharacterCustomization();
 });
 document.getElementById("backToCharacterTypes").addEventListener("click",showCharacterTypeChooser);
+const customizeTabs=[...document.querySelectorAll("[data-customize-tab]")];
+function showCustomizePanel(panelId){
+ customizeTabs.forEach(tab=>{
+  const selected=tab.dataset.customizeTab===panelId;
+  tab.classList.toggle("selected",selected);
+  tab.setAttribute("aria-selected",String(selected));
+  tab.tabIndex=selected?0:-1;
+ });
+ document.querySelectorAll(".customizePanel").forEach(panel=>{
+  const selected=panel.id===panelId;
+  panel.hidden=!selected;
+  panel.classList.toggle("selected",selected);
+ });
+}
+customizeTabs.forEach((tab,index)=>{
+ tab.addEventListener("click",()=>showCustomizePanel(tab.dataset.customizeTab));
+ tab.addEventListener("keydown",event=>{
+  if(event.key!=="ArrowLeft"&&event.key!=="ArrowRight")return;
+  event.preventDefault();
+  const direction=event.key==="ArrowRight"?1:-1;
+  const next=customizeTabs[(index+direction+customizeTabs.length)%customizeTabs.length];
+  showCustomizePanel(next.dataset.customizeTab);
+  next.focus();
+ });
+});
+showCustomizePanel("customizeLooks");
 chooseCharacterType(saved.characterType||"princess",false);
 function selectCustomizationButton(area,button){
  area.querySelectorAll("button").forEach(b=>{const selected=b===button;b.classList.toggle("selected",selected);b.setAttribute("aria-pressed",selected)});

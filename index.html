@@ -66,6 +66,7 @@
 <div id="startPage">
 <section id="adventureTypeScreen" aria-labelledby="adventureTitle">
  <div class="adventureSparkles" aria-hidden="true">🌈 ✨ 🌈</div>
+ <div class="buildVersion" aria-label="Game version">Build __BUILD_VERSION__</div>
  <p class="adventureEyebrow">YOUR ADVENTURE</p>
  <h1 id="adventureTitle">Who will you be?</h1>
  <p class="adventureIntro">Pick a character type to begin. You can customize every look on the next screen!</p>
@@ -79,27 +80,32 @@
  <button id="continueToCustomize" type="button">Customize my character <span aria-hidden="true">→</span></button>
 </section>
 <div id="startCard" aria-hidden="true">
-<button id="backToCharacterTypes" type="button">← Character type</button>
-<h1>✨ My 3D World ✨</h1><h2>Customize your character</h2>
-<div style="display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap">
-<div>
-<div id="characterPreview3D" style="width:210px;height:270px;background:#e9f7ff;border:5px solid white;border-radius:22px;box-shadow:0 5px 15px #0002"></div>
-<p style="margin:5px">Drag the character to turn it! 🔄</p>
+<header class="customizeHeader"><button id="backToCharacterTypes" type="button">← Heroes</button><div><h1>✨ Enchanted Wardrobe ✨</h1><p>Shape your hero, then choose a realm.</p></div></header>
+<div class="customizeLayout">
+ <div class="previewPedestal"><div id="characterPreview3D"></div><small>Drag to spin your hero ↻</small></div>
+ <div class="customizeWorkbench">
+  <div class="customizeTabs" role="tablist" aria-label="Character customization steps">
+   <button class="customizeTab selected" type="button" role="tab" aria-selected="true" aria-controls="customizeLooks" data-customize-tab="customizeLooks">✨ Looks</button>
+   <button class="customizeTab" type="button" role="tab" aria-selected="false" aria-controls="customizeOutfit" data-customize-tab="customizeOutfit">🪄 Outfit</button>
+   <button class="customizeTab" type="button" role="tab" aria-selected="false" aria-controls="customizeRealm" data-customize-tab="customizeRealm">🗺️ Realm</button>
+  </div>
+  <section id="customizeLooks" class="customizePanel selected" role="tabpanel">
+   <div class="magicChoice"><p>Skin</p><div id="startSkin"></div></div>
+   <div class="magicChoice"><p>Hair style</p><div id="startHairStyle"></div></div>
+   <div class="magicChoice"><p>Hair color</p><div id="startHairColor"></div></div>
+   <div class="magicChoice"><p>Shirt</p><div id="startShirt"></div></div>
+   <div class="magicChoice"><p>Pants</p><div id="startPants"></div></div>
+  </section>
+  <section id="customizeOutfit" class="customizePanel" role="tabpanel" hidden>
+   <div class="magicChoice wide"><p>Adventure outfit</p><div id="startOutfit"></div></div>
+   <div class="magicChoice"><p>Outfit color</p><div id="startOutfitColor"></div></div>
+   <div class="magicChoice"><p>Magic accessories</p><button id="startAstronautHelmet" class="option" type="button" aria-pressed="false">Astronaut helmet</button></div>
+  </section>
+  <section id="customizeRealm" class="customizePanel realmGrid" role="tabpanel" hidden>
+   <button class="place" id="goBakery">🧁<span>Bakery</span></button><button class="place" id="goHouse">🏠<span>My House</span></button><button class="place" id="goBeach">🏖️<span>Beach</span></button><button class="place" id="goSpace">🚀<span>Space</span></button><button class="place" id="goForest">🌲<span>Forest</span></button><button class="place" id="goCastle">🏰<span>Castle</span></button>
+  </section>
+ </div>
 </div>
-<div>
-<p>Skin color</p><div id="startSkin"></div>
-<p>Hair style</p><div id="startHairStyle"></div><p>Hair color</p><div id="startHairColor"></div><p>Shirt color</p><div id="startShirt"></div>
-<p>Pants color</p><div id="startPants"></div>
-<p>Adventure outfit</p><div id="startOutfit"></div>
-<p>Outfit color</p><div id="startOutfitColor"></div>
-<p>Space accessories</p><button id="startAstronautHelmet" class="option" type="button" aria-pressed="false">Astronaut helmet</button></div></div>
-<h2>Where do you want to go?</h2>
-<button class="place" id="goBakery">🧁<br>Bakery</button>
-<button class="place" id="goHouse">🏠<br>My House</button>
-<button class="place" id="goBeach">🏖️<br>Beach</button>
-<button class="place" id="goSpace">🚀<br>Space</button>
-<button class="place" id="goForest">🌲<br>Forest</button>
-<button class="place" id="goCastle">🏰<br>Castle</button>
 </div></div>
 <button id="menuGoCastle" type="button" hidden>🏰 Go to Castle</button>
 <button id="housePanelToggle" aria-expanded="false" aria-controls="housePanel">🏠 House</button>
