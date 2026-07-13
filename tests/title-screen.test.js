@@ -16,6 +16,8 @@ for(const asset of ["title-screen.css","title-screen.js"]){
  assert(html.includes(`${asset}?v=__BUILD_VERSION__`),`${asset} must be cache busted`);
 }
 assert(css.includes("orientation:landscape")&&css.includes("max-height:540px"),"title CSS needs a compact landscape layout");
+assert(css.includes("margin:14px auto 18px"),"compact landscape copy needs breathing room above the Start Game button");
+assert(css.includes("#titleCharacterPreview{inset:4% 0 2%}"),"compact landscape chibi must sit lower over its pedestal");
 assert(css.includes("overflow:hidden"),"title must not scroll on short landscape screens");
 assert(script.includes("anim_iddle"),"title chibi must play the authored idle animation");
 assert(script.includes("styloo-chibi-student.glb?v=__BUILD_VERSION__"),"title model must use the cache-busted Styloo asset");
