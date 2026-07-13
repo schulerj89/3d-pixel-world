@@ -582,22 +582,23 @@ window.runWorldTransition=(label,place,build)=>{
  window.switchWorldMusic?.(place);
  worldLoadingTitle.textContent=label;
  worldLoading.classList.add("open");worldLoading.setAttribute("aria-hidden","false");
- return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(()=>{
+ return new Promise((resolve,reject)=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(()=>{
   let result;
   try{
    if(window.releaseLargeWorlds)window.releaseLargeWorlds(place);
    window.unloadDisposableWorlds(place);
    result=build();
-  }finally{worldLoading.classList.remove("open");worldLoading.setAttribute("aria-hidden","true")}
-  resolve(result);
+  }catch(error){worldLoading.classList.remove("open");worldLoading.setAttribute("aria-hidden","true");reject(error);return}
+  Promise.resolve(result).finally(()=>{worldLoading.classList.remove("open");worldLoading.setAttribute("aria-hidden","true")}).then(resolve,reject);
  },40))));
 };
 window.getGameDebug=()=>({
- sceneId:currentPlace,loadedWorlds:[...disposableWorlds.keys(),...(spaceWorld?["space"]:[]),...(forestWorld?["forest"]:[]),...(castle?["castle"]:[])],
+ sceneId:currentPlace,loadedWorlds:[...disposableWorlds.keys(),...(window.RestaurantWorld?.current?["restaurant"]:[]),...(spaceWorld?["space"]:[]),...(forestWorld?["forest"]:[]),...(castle?["castle"]:[])],
  player:{x:+P.position.x.toFixed(2),y:+P.position.y.toFixed(2),z:+P.position.z.toFixed(2)},
  render:{calls:R.info.render.calls,triangles:R.info.render.triangles},
  memory:{geometries:R.info.memory.geometries,textures:R.info.memory.textures},
- forest:forestWorld?.debug?.()||null
+ forest:forestWorld?.debug?.()||null,
+ restaurant:window.RestaurantWorld?.current?.group?.userData||null
 });
 let inKitchen=false;
 let money=100;
@@ -713,7 +714,7 @@ function setHudMenu(open){hudDrawer.classList.toggle("open",open);hudMenuButton.
 hudMenuButton.addEventListener("pointerdown",event=>{event.preventDefault();const open=!hudDrawer.classList.contains("open");if(open){closeKitchenPanels();if(currentPlace==="house")setHousePanel(false)}setHudMenu(open)});
 hudDrawer.addEventListener("pointerdown",event=>{if(event.target.closest("button"))setHudMenu(false)});
 document.getElementById("menuGoHouse").addEventListener("pointerdown",event=>{event.preventDefault();showHouse()});
-document.getElementById("menuGoBakery").addEventListener("pointerdown",event=>{event.preventDefault();showBakery()});
+document.getElementById("menuGoBakery").addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Setting the tables…","restaurant",showRestaurant)});
 document.getElementById("menuGoBeach").addEventListener("pointerdown",event=>{event.preventDefault();showBeach()});
 menuGoSpace.addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Launching Space…","space",showSpace)});
 document.getElementById("menuGoCastle").addEventListener("pointerdown",event=>{event.preventDefault();window.runWorldTransition("Raising the castle gates…","castle",showCastle)});
@@ -1025,6 +1026,7 @@ if(Math.hypot(worldX,worldZ)>.08){
 // The ASCII map owns bakery collision; the centralized house dimensions own
 // the home boundary so the avatar cannot walk beyond the enlarged floor.
 const canMove=currentPlace==="bakery"?canWalkAt(nextX,nextZ):
+ currentPlace==="restaurant"?Boolean(window.RestaurantWorld?.current?.canWalk(nextX,nextZ)):
  currentPlace==="house"?canWalkInHouse(nextX,nextZ):
  currentPlace==="beach"?canWalkOnBeach(nextX,nextZ):
  currentPlace==="space"?ensureSpaceWorld().canWalk(nextX,nextZ):
@@ -1259,6 +1261,7 @@ function destroyCastleWorld(){
 window.worldFactories=window.worldFactories||{};
 window.worldFactories.castle={create:createCastleWorld,destroy:destroyCastleWorld,metadata:{destination:"castle",size:"30x30",stories:2,spawnOutside:true,lazy:true}};
 window.releaseLargeWorlds=except=>{
+ if(except!=="restaurant")window.RestaurantWorld?.destroy?.();
  if(except!=="space")destroySpaceWorld();
  if(except!=="forest")destroyForestWorld();
  if(except!=="castle")destroyCastleWorld();
