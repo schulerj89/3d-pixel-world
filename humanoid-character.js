@@ -67,7 +67,13 @@
    previous?.fadeOut(.14);this.active=state;
   }
   update(dt,state){this.setState(state);this.mixer?.update(dt)}
-  applyCustomization(values){if(this.model)cloneAndTintMaterials(this.model,values)}
+  applyCustomization(values){
+   if(!this.model)return;
+   // Legacy wardrobe controls still update the voxel fallback so it is ready
+   // if this asset ever fails. Keep those pieces hidden while the rig is live.
+   this.fallbackChildren.forEach(child=>child.visible=false);
+   cloneAndTintMaterials(this.model,values);
+  }
   restoreFallback(error){
    if(this.model)this.root.remove(this.model);
    this.model=null;this.mixer=null;this.fallbackChildren.forEach(child=>child.visible=true);
@@ -77,24 +83,28 @@
 
  const debug={status:"loading",source:"Quaternius Ultimate Modular Men Pack",assetBytes:ASSET_BYTES,
   requiredClips:Object.values(REQUIRED_CLIPS),loadedClips:[],fallback:true,error:null,preview:false};
+ const debugNode=global.document?.createElement?.("output")||null;
+ if(debugNode){debugNode.id="characterAssetStatus";debugNode.hidden=true;global.document.body.appendChild(debugNode)}
+ const publishDebug=()=>{if(debugNode)debugNode.textContent=JSON.stringify({...debug,state:world?.active||""})};
  const world=new AnimatedHumanoidInstance(global.playerAvatarRoot);
  const preview=global.avatarPreviewRoot?new AnimatedHumanoidInstance(global.avatarPreviewRoot,{preview:true}):null;
  const system={
   update(dt,moving,inputStrength=0){
    const state=moving?(inputStrength>.72?"run":"walk"):"idle";
-   world.update(dt,state);preview?.update(dt,"idle");debug.state=state;
+   world.update(dt,state);preview?.update(dt,"idle");debug.state=state;publishDebug();
   },
   applyCustomization(values){world.applyCustomization(values);preview?.applyCustomization(values)},
   debug(){return {...debug,state:world.active}}
  };
  global.customHumanoidCharacter=system;
  global.getCharacterAssetDebug=()=>system.debug();
+ publishDebug();
  Promise.all([world.load(),preview?.load()].filter(Boolean)).then(()=>{
   debug.status="ready";debug.fallback=false;debug.preview=Boolean(preview?.model);
-  debug.loadedClips=[...Object.values(REQUIRED_CLIPS)];system.applyCustomization();
+  debug.loadedClips=[...Object.values(REQUIRED_CLIPS)];system.applyCustomization();publishDebug();
  }).catch(error=>{
   world.restoreFallback(error);preview?.restoreFallback(error);
-  debug.status="fallback";debug.fallback=true;debug.error=String(error?.message||error);
+  debug.status="fallback";debug.fallback=true;debug.error=String(error?.message||error);publishDebug();
   console.warn("Animated humanoid unavailable; keeping voxel character.",error);
  });
 })(window);

@@ -1165,7 +1165,9 @@ function canWalkOnBeach(x,z){
 // The castle is intentionally lazy: its meshes do not consume GPU resources
 // until the destination is visited, and the shared world loader can dispose it.
 const CASTLE_CONFIG={size:30,worldSize:40,spawn:{x:0,z:18},camera:{angle:0,height:11,distance:16},gateHalfWidth:2.25,frontWallZ:14,backWallZ:-14,upperY:4.35};
-let castle=null;
+// `animate()` runs once while this classic script is still evaluating. `var`
+// keeps the lazy castle reference safely undefined during that first frame.
+var castle=null;
 function castleBox(parent,geometry,material,x,y,z,cast=false){
  const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.castShadow=cast;mesh.receiveShadow=true;parent.add(mesh);return mesh;
 }
